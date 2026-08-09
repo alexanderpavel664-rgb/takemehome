@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AnimalType {
+  DOG
+  CAT
+  OTHER
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum AgeGroup {
+  BABY
+  YOUNG
+  ADULT
+  SENIOR
+}
+
+enum AnimalStatus {
+  AVAILABLE
+  ADOPTED
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  displayName String
+  phone       String?
+  publicEmail String?
+  county      String?
+  city        String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  animals Animal[]
+}
+
+model Animal {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  type        AnimalType
+  sex         Sex
+  ageGroup    AgeGroup
+  ageText     String
+  county      String
+  city        String
+  description String
+  photoUrl    String?
+  status      AnimalStatus @default(AVAILABLE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([county])
+  @@index([ageGroup])
+  @@index([sex])
+  @@index([status])
+}
