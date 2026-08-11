@@ -51,6 +51,8 @@ export type CountyCode = (typeof COUNTIES)[number]["code"];
 
 export const COUNTY_CODES = COUNTIES.map((c) => c.code) as readonly CountyCode[];
 
-export function countyName(code: CountyCode): string {
+// Accepte string : la base stocke le code sans contrainte de type, et un
+// code inconnu retombe simplement sur lui-même.
+export function countyName(code: string): string {
   return COUNTIES.find((c) => c.code === code)?.name ?? code;
 }
