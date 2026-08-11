@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
@@ -21,6 +22,7 @@ export default async function ContPage() {
   const animals = await prisma.animal.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: "desc" },
+    include: { photos: { orderBy: { position: "asc" }, take: 1 } },
   });
 
   return (
@@ -42,6 +44,32 @@ export default async function ContPage() {
         <ul>
           {animals.map((animal) => (
             <li key={animal.id}>
+              {/* Format fixe 160×120, recadrage centré (object-position par
+                  défaut). Seule entorse au zéro-CSS : object-fit et l'aplat
+                  sans photo sont impossibles en HTML nu. */}
+              {animal.photos[0] ? (
+                <Image
+                  src={animal.photos[0].url}
+                  alt={`Photo de ${animal.name}`}
+                  width={160}
+                  height={120}
+                  style={{ width: 160, height: 120, objectFit: "cover" }}
+                />
+              ) : (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    width: 160,
+                    height: 120,
+                    background: "#ddd",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {animal.name}
+                </span>
+              )}
+              <br />
               <strong>{animal.name}</strong> ({TYPE_LABELS[animal.type]}) —{" "}
               {STATUS_LABELS[animal.status]} — mis à jour{" "}
               {relativeTimeFr(animal.updatedAt)}

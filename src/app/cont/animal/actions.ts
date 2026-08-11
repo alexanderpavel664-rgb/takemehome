@@ -3,15 +3,18 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { del } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { COUNTY_CODES } from "@/lib/counties";
+import { isOwnedAnimalPhotoUrl } from "@/lib/animal-photo";
 import {
   AgeGroup,
   AnimalSize,
   AnimalStatus,
   AnimalType,
   Sex,
+  type Prisma,
 } from "@/generated/prisma/client";
 
 export type AnimalFormState = { error: string } | null;
@@ -113,6 +116,37 @@ function parseAnimalForm(
   };
 }
 
+// photoUrl est renseigné par le formulaire après l'upload client vers Vercel
+// Blob. La valeur vient du navigateur : on n'accepte que des URLs du store,
+// dans l'espace animale/<userId>/ du refuge connecté (voir animal-photo.ts).
+function parsePhotoUrl(
+  formData: FormData,
+  userId: string,
+): { ok: true; url: string | null } | { ok: false; error: string } {
+  const url = text(formData, "photoUrl");
+  if (!url) {
+    return { ok: true, url: null };
+  }
+  if (!isOwnedAnimalPhotoUrl(url, userId)) {
+    return { ok: false, error: "Adresse de photo invalide." };
+  }
+  return { ok: true, url };
+}
+
+// La suppression côté store est un nettoyage best-effort : la base fait foi,
+// et un échec réseau ici ne doit pas faire échouer l'action (le blob orphelin
+// n'est plus référencé nulle part). del() est idempotent côté Vercel.
+async function deleteBlobs(urls: string[]): Promise<void> {
+  if (urls.length === 0) {
+    return;
+  }
+  try {
+    await del(urls);
+  } catch (error) {
+    console.error("Suppression de blobs échouée :", error);
+  }
+}
+
 export async function createAnimal(
   _prevState: AnimalFormState,
   formData: FormData,
@@ -123,8 +157,20 @@ export async function createAnimal(
   if (!parsed.ok) {
     return { error: parsed.error };
   }
+  const photo = parsePhotoUrl(formData, userId);
+  if (!photo.ok) {
+    return { error: photo.error };
+  }
 
-  await prisma.animal.create({ data: { ...parsed.data, userId } });
+  await prisma.animal.create({
+    data: {
+      ...parsed.data,
+      userId,
+      ...(photo.url
+        ? { photos: { create: { url: photo.url, position: 0 } } }
+        : {}),
+    },
+  });
 
   revalidatePath("/cont");
   redirect("/cont");
@@ -141,6 +187,10 @@ export async function updateAnimal(
   if (!parsed.ok) {
     return { error: parsed.error };
   }
+  const photo = parsePhotoUrl(formData, userId);
+  if (!photo.ok) {
+    return { error: photo.error };
+  }
 
   // Isolation : le filtre { id, userId } rend l'animal d'un autre refuge
   // indistinguable d'un animal inexistant → 404, jamais 403.
@@ -150,6 +200,36 @@ export async function updateAnimal(
   });
   if (count === 0) {
     notFound();
+  }
+
+  // Remplacement de photo : nouvelle ligne en base, puis suppression des
+  // anciennes du store (jamais d'écrasement de blob — les URLs sont
+  // immuables, le cache CDN d'un overwrite mettrait jusqu'à 60 s à expirer).
+  if (photo.url) {
+    const photos = await prisma.animalPhoto.findMany({
+      where: { animalId: id },
+      select: { id: true, url: true },
+    });
+    const obsolete = photos.filter((p) => p.url !== photo.url);
+    const operations: Prisma.PrismaPromise<unknown>[] = [];
+    if (obsolete.length > 0) {
+      operations.push(
+        prisma.animalPhoto.deleteMany({
+          where: { id: { in: obsolete.map((p) => p.id) } },
+        }),
+      );
+    }
+    if (!photos.some((p) => p.url === photo.url)) {
+      operations.push(
+        prisma.animalPhoto.create({
+          data: { animalId: id, url: photo.url, position: 0 },
+        }),
+      );
+    }
+    if (operations.length > 0) {
+      await prisma.$transaction(operations);
+    }
+    await deleteBlobs(obsolete.map((p) => p.url));
   }
 
   revalidatePath("/cont");
@@ -180,10 +260,20 @@ export async function deleteAnimal(formData: FormData): Promise<void> {
   const userId = await requireUserId();
   const id = text(formData, "id");
 
+  // Les URLs sont lues avant la suppression (le cascade efface les lignes
+  // AnimalPhoto) ; le filtre sur le propriétaire garantit qu'un autre refuge
+  // ne peut pas faire supprimer des blobs qui ne sont pas les siens.
+  const photos = await prisma.animalPhoto.findMany({
+    where: { animal: { id, userId } },
+    select: { url: true },
+  });
+
   const { count } = await prisma.animal.deleteMany({ where: { id, userId } });
   if (count === 0) {
     notFound();
   }
+
+  await deleteBlobs(photos.map((p) => p.url));
 
   revalidatePath("/cont");
 }

@@ -14,7 +14,11 @@ export default async function NouAnimalPage() {
   return (
     <main>
       <h1>Ajouter un animal</h1>
-      <AnimalForm action={createAnimal} submitLabel="Créer" />
+      <AnimalForm
+        action={createAnimal}
+        userId={session.user.id}
+        submitLabel="Créer"
+      />
       <p>
         <Link href="/cont">Retour au compte</Link>
       </p>

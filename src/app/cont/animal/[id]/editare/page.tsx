@@ -23,6 +23,7 @@ export default async function EditareAnimalPage({
   // confirmerait que l'animal existe).
   const animal = await prisma.animal.findFirst({
     where: { id, userId: session.user.id },
+    include: { photos: { orderBy: { position: "asc" } } },
   });
   if (!animal) {
     notFound();
@@ -34,6 +35,8 @@ export default async function EditareAnimalPage({
       <AnimalForm
         action={updateAnimal}
         animalId={animal.id}
+        userId={session.user.id}
+        initialPhotoUrl={animal.photos[0]?.url}
         submitLabel="Enregistrer"
         initial={{
           name: animal.name,
