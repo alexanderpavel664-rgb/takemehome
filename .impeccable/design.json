@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-11T20:06:38Z",
+  "generatedAt": "2026-08-11T20:52:25Z",
   "title": "Design System: TakeMeHome",
   "extensions": {
     "colorMeta": {
@@ -54,8 +54,11 @@
       }
     },
     "typographyMeta": {
-      "logo": { "displayName": "Logo", "purpose": "« takemehome » bas de casse, 800, -0.04em, patte terracotta. Géométrie gelée." },
-      "body": { "displayName": "Body", "purpose": "Tout le texte courant, 16 px minimum pour les descriptions. Une seule famille variable." }
+      "logo": { "displayName": "Logo", "purpose": "Mot du lockup : Plus Jakarta Sans 600 vectorisé en courbes — spec de fabrication du SVG, pas un style runtime." },
+      "display": { "displayName": "Display", "purpose": "Nom de l'animal sur la fiche (600, ~32 px, line-height 1.05) ; sert aussi d'aplat de repli sans photo." },
+      "title": { "displayName": "Title", "purpose": "Titres de sections (600) ; nom d'animal sur les cartes de grille à ~19 px." },
+      "body": { "displayName": "Body", "purpose": "Texte courant 400, 15–16 px, line-height 1.5 — jamais sous 15 px pour un texte long." },
+      "label": { "displayName": "Label", "purpose": "Métadonnées, labels de champs, chips — 400, 13–14 px. Deux graisses au total : 400 et 600." }
     },
     "shadows": [
       { "name": "sheet-warm", "value": "0 -8px 32px rgba(43, 38, 34, 0.18)", "purpose": "Uniquement pour les surfaces détachées (sheet de filtres, dialogues). Teintée encre chaude, jamais noir pur. Aucune ombre au repos (La Règle du Plat)." }
@@ -73,9 +76,9 @@
       "name": "Bouton d'appel",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "L'unique bouton plein de l'écran : appel direct du publiant, libellé blanc gras ≥ 19 px, validé à côté d'une photo de chien fauve.",
+      "description": "L'unique bouton plein de l'écran : appel direct du publiant, libellé blanc 600 ≥ 19 px, validé à côté d'une photo de chien fauve.",
       "html": "<a class=\"ds-btn-call\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z\"/></svg>Sună acum</a>",
-      "css": ".ds-btn-call { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #C4552F; color: #FFFFFF; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 19px; font-weight: 700; min-height: 48px; padding: 12px 28px; border-radius: 12px; text-decoration: none; transition: background 150ms ease-out; } .ds-btn-call:hover { background: #AC4826; } .ds-btn-call:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; }"
+      "css": ".ds-btn-call { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #C4552F; color: #FFFFFF; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 19px; font-weight: 600; min-height: 48px; padding: 12px 28px; border-radius: 20px; text-decoration: none; transition: background 150ms ease-out; } .ds-btn-call:hover { background: #AC4826; } .ds-btn-call:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; }"
     },
     {
       "name": "Bouton outline",
@@ -83,7 +86,7 @@
       "refersTo": "button-outline",
       "description": "Toutes les actions non principales : bordure terracotta, fond transparent.",
       "html": "<button class=\"ds-btn-outline\">Vezi toate animalele</button>",
-      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #C4552F; border: 1.5px solid #C4552F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 16px; font-weight: 600; min-height: 44px; padding: 10px 22px; border-radius: 12px; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-outline:hover { background: rgba(196, 85, 47, 0.06); } .ds-btn-outline:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; }"
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #C4552F; border: 1.5px solid #C4552F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 16px; font-weight: 600; min-height: 44px; padding: 10px 22px; border-radius: 20px; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-outline:hover { background: rgba(196, 85, 47, 0.06); } .ds-btn-outline:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; }"
     },
     {
       "name": "Badge Adoptat",
@@ -91,7 +94,7 @@
       "refersTo": "badge-adopted",
       "description": "La bonne nouvelle : pastille pleine vert forêt, texte blanc. Seul élément autorisé à recouvrir une photo.",
       "html": "<span class=\"ds-badge-adoptat\">Adoptat</span>",
-      "css": ".ds-badge-adoptat { display: inline-block; background: #2F6B4F; color: #FFFFFF; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.01em; padding: 4px 12px; border-radius: 9999px; }"
+      "css": ".ds-badge-adoptat { display: inline-block; background: #2F6B4F; color: #FFFFFF; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; }"
     },
     {
       "name": "Chip de filtre",
@@ -99,7 +102,7 @@
       "refersTo": "card",
       "description": "Filtres de /animale. Sélection en encre chaude — jamais en terracotta.",
       "html": "<span><button class=\"ds-chip\">Pisici</button> <button class=\"ds-chip ds-chip--selected\">Căței</button></span>",
-      "css": ".ds-chip { display: inline-flex; align-items: center; background: #FFFDF8; color: #2B2622; border: 1px solid #EAE1D2; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out; } .ds-chip:hover { background: #F7F3EA; } .ds-chip:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; } .ds-chip--selected { background: #2B2622; color: #FFFFFF; border-color: #2B2622; }"
+      "css": ".ds-chip { display: inline-flex; align-items: center; background: #FFFDF8; color: #2B2622; border: 1px solid #EAE1D2; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; font-weight: 400; padding: 8px 16px; border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out; } .ds-chip:hover { background: #F7F3EA; } .ds-chip:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; } .ds-chip--selected { background: #2B2622; color: #FFFFFF; border-color: #2B2622; }"
     },
     {
       "name": "Carte animal",
@@ -107,7 +110,7 @@
       "refersTo": "card",
       "description": "Carte de la grille /animale, montrée ici dans son état sans photo : aplat crème + nom en grand. Ivoire, hairline chaude, aucune ombre au repos.",
       "html": "<article class=\"ds-card-animal\"><div class=\"ds-card-animal-photo\">Luna</div><div class=\"ds-card-animal-body\"><h3 class=\"ds-card-animal-name\">Luna</h3><p class=\"ds-card-animal-meta\">Femelă · Tânără · Cluj</p></div></article>",
-      "css": ".ds-card-animal { width: 240px; background: #FFFDF8; border: 1px solid #EAE1D2; border-radius: 12px; overflow: hidden; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-card-animal-photo { aspect-ratio: 4 / 3; background: #F7F3EA; display: grid; place-items: center; color: #2B2622; font-size: 26px; font-weight: 800; } .ds-card-animal-body { padding: 12px 14px 14px; } .ds-card-animal-name { margin: 0 0 2px; color: #2B2622; font-size: 18px; font-weight: 700; } .ds-card-animal-meta { margin: 0; color: #6B625A; font-size: 14px; }"
+      "css": ".ds-card-animal { width: 240px; background: #FFFDF8; border: 1px solid #EAE1D2; border-radius: 20px; overflow: hidden; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-card-animal-photo { aspect-ratio: 4 / 3; background: #F7F3EA; display: grid; place-items: center; color: #2B2622; font-size: 26px; font-weight: 600; } .ds-card-animal-body { padding: 12px 14px 14px; } .ds-card-animal-name { margin: 0 0 2px; color: #2B2622; font-size: 19px; font-weight: 600; } .ds-card-animal-meta { margin: 0; color: #6B625A; font-size: 14px; }"
     },
     {
       "name": "Champ de saisie",
@@ -115,7 +118,7 @@
       "refersTo": "card",
       "description": "Champ du formulaire rapide des publiants : 16 px (pas de zoom iOS), focus en encre chaude.",
       "html": "<label class=\"ds-field\">Nume<input class=\"ds-input\" type=\"text\" placeholder=\"ex. Luna\"></label>",
-      "css": ".ds-field { display: inline-flex; flex-direction: column; gap: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #2B2622; } .ds-input { background: #FFFDF8; border: 1px solid #EAE1D2; border-radius: 12px; padding: 12px 14px; font-family: inherit; font-size: 16px; font-weight: 400; color: #2B2622; min-width: 220px; } .ds-input::placeholder { color: #6B625A; } .ds-input:focus { outline: none; border-color: #2B2622; box-shadow: 0 0 0 1px #2B2622; }"
+      "css": ".ds-field { display: inline-flex; flex-direction: column; gap: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; font-weight: 400; color: #2B2622; } .ds-input { background: #FFFDF8; border: 1px solid #EAE1D2; border-radius: 20px; padding: 12px 14px; font-family: inherit; font-size: 16px; font-weight: 400; color: #2B2622; min-width: 220px; } .ds-input::placeholder { color: #6B625A; } .ds-input:focus { outline: none; border-color: #2B2622; box-shadow: 0 0 0 1px #2B2622; }"
     }
   ],
   "narrative": {
@@ -142,7 +145,7 @@
       "Do valider toute évolution du bouton d'appel à côté d'une photo de chien fauve, pas sur fond blanc.",
       "Do utiliser ș/ț à virgule souscrite (U+0219/U+021B) et déclarer lang=\"ro\" sur <html>.",
       "Do servir les vraies photos des publiants en format fixe, object-fit: cover, recadrage centré — et l'aplat crème + nom en grand quand il n'y en a pas.",
-      "Do garder les libellés des boutons pleins en gras ≥ 19 px tant que la terracotta reste à 4,49:1 sous le blanc.",
+      "Do garder les libellés des boutons pleins en 600 et ≥ 19 px tant que la terracotta reste à 4,49:1 sous le blanc — s'ils déçoivent, monter la taille, pas la graisse.",
       "Do rester sur une seule police variable (Plus Jakarta Sans via next/font) et des pages légères en 4G."
     ],
     "donts": [
