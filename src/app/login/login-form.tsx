@@ -33,11 +33,15 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
 
   async function onGoogle() {
     setError(null);
-    await authClient.signIn.social({
+    // signIn.social ne lance jamais d'exception : l'échec arrive dans { error }.
+    const { error } = await authClient.signIn.social({
       provider: "google",
       callbackURL: "/cont",
       errorCallbackURL: "/login?error=google",
     });
+    if (error) {
+      setError("La connexion avec Google a échoué. Réessaie.");
+    }
   }
 
   return (
