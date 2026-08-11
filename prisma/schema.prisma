@@ -31,6 +31,17 @@ enum AnimalStatus {
   ADOPTED
 }
 
+enum AnimalSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum AnimalPurpose {
+  ADOPTION
+  FOSTER
+}
+
 model User {
   id          String   @id @default(cuid())
   name          String
@@ -53,21 +64,33 @@ model User {
 }
 
 model Animal {
-  id          String       @id @default(cuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  type        AnimalType
-  sex         Sex
-  ageGroup    AgeGroup
-  ageText     String
-  county      String
-  city        String
-  description String
-  photoUrl    String?
-  status      AnimalStatus @default(AVAILABLE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  type         AnimalType
+  // Seuls name, type et county sont exigés à la création (formulaire rapide) :
+  // tout le reste est nullable et signifie « non renseigné ».
+  sex          Sex?
+  ageGroup     AgeGroup?
+  ageText      String?
+  size         AnimalSize?
+  county       String
+  city         String?
+  description  String?
+  sterilized   Boolean       @default(false)
+  vaccinated   Boolean       @default(false)
+  microchipped Boolean       @default(false)
+  goodWithKids Boolean       @default(false)
+  goodWithDogs Boolean       @default(false)
+  goodWithCats Boolean       @default(false)
+  // Non affiché en V1 — on prépare seulement le modèle.
+  purpose      AnimalPurpose @default(ADOPTION)
+  status       AnimalStatus  @default(AVAILABLE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  photos AnimalPhoto[]
 
   @@index([userId])
   @@index([type])
@@ -75,6 +98,19 @@ model Animal {
   @@index([ageGroup])
   @@index([sex])
   @@index([status])
+  @@index([size])
+  @@index([purpose])
+}
+
+model AnimalPhoto {
+  id        String   @id @default(cuid())
+  animalId  String
+  animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([animalId])
 }
 
 model Session {

@@ -2,6 +2,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
+import { relativeTimeFr } from "@/lib/relative-time";
+import { setAnimalStatus } from "./animal/actions";
+import { DeleteAnimalButton } from "./animal/delete-animal-button";
 import { SignOutButton } from "./sign-out-button";
 
 // La vraie vérification de session se fait ici, dans chaque page protégée :
@@ -12,6 +17,12 @@ export default async function ContPage() {
     redirect("/login");
   }
 
+  // Isolation : uniquement les animaux du refuge connecté.
+  const animals = await prisma.animal.findMany({
+    where: { userId: session.user.id },
+    orderBy: { updatedAt: "desc" },
+  });
+
   return (
     <main>
       <h1>Mon compte</h1>
@@ -20,6 +31,40 @@ export default async function ContPage() {
       <p>
         <Link href="/cont/profil">Modifier mon profil</Link>
       </p>
+
+      <h2>Mes animaux</h2>
+      <p>
+        <Link href="/cont/animal/nou">Ajouter un animal</Link>
+      </p>
+      {animals.length === 0 ? (
+        <p>Aucun animal pour l’instant.</p>
+      ) : (
+        <ul>
+          {animals.map((animal) => (
+            <li key={animal.id}>
+              <strong>{animal.name}</strong> ({TYPE_LABELS[animal.type]}) —{" "}
+              {STATUS_LABELS[animal.status]} — mis à jour{" "}
+              {relativeTimeFr(animal.updatedAt)}
+              <br />
+              <Link href={`/cont/animal/${animal.id}/editare`}>Modifier</Link>
+              <form action={setAnimalStatus}>
+                <input type="hidden" name="id" value={animal.id} />
+                <input
+                  type="hidden"
+                  name="status"
+                  value={animal.status === "AVAILABLE" ? "ADOPTED" : "AVAILABLE"}
+                />
+                <button type="submit">
+                  {animal.status === "AVAILABLE"
+                    ? "Marquer comme adopté"
+                    : "Marquer comme disponible"}
+                </button>
+              </form>
+              <DeleteAnimalButton id={animal.id} name={animal.name} />
+            </li>
+          ))}
+        </ul>
+      )}
       <SignOutButton />
     </main>
   );
