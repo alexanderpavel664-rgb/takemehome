@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-11T20:06:38Z",
+  "title": "Design System: TakeMeHome",
+  "extensions": {
+    "colorMeta": {
+      "terracotta": {
+        "role": "primary",
+        "displayName": "Terracotta",
+        "canonical": "#C4552F",
+        "tonalRamp": ["oklch(15% 0.14 35)", "oklch(26% 0.14 35)", "oklch(38% 0.14 35)", "oklch(49% 0.14 35)", "oklch(57% 0.14 35)", "oklch(72% 0.12 35)", "oklch(84% 0.08 35)", "oklch(95% 0.03 35)"]
+      },
+      "forest-adopted": {
+        "role": "secondary",
+        "displayName": "Vert Adoptat",
+        "canonical": "#2F6B4F",
+        "tonalRamp": ["oklch(15% 0.07 155)", "oklch(26% 0.07 155)", "oklch(38% 0.07 155)", "oklch(48% 0.07 155)", "oklch(60% 0.07 155)", "oklch(72% 0.06 155)", "oklch(84% 0.05 155)", "oklch(95% 0.02 155)"]
+      },
+      "cream-ground": {
+        "role": "neutral",
+        "displayName": "Crème de fond",
+        "canonical": "#F7F3EA",
+        "tonalRamp": ["oklch(15% 0.012 90)", "oklch(28% 0.012 90)", "oklch(42% 0.012 90)", "oklch(55% 0.012 90)", "oklch(68% 0.012 90)", "oklch(80% 0.012 90)", "oklch(90% 0.012 90)", "oklch(96% 0.012 90)"]
+      },
+      "card-ivory": {
+        "role": "neutral",
+        "displayName": "Ivoire carte",
+        "canonical": "#FFFDF8",
+        "tonalRamp": ["oklch(15% 0.005 95)", "oklch(28% 0.005 95)", "oklch(42% 0.005 95)", "oklch(56% 0.005 95)", "oklch(70% 0.005 95)", "oklch(83% 0.005 95)", "oklch(93% 0.005 95)", "oklch(99% 0.005 95)"]
+      },
+      "warm-ink": {
+        "role": "neutral",
+        "displayName": "Encre chaude",
+        "canonical": "#2B2622",
+        "tonalRamp": ["oklch(15% 0.012 60)", "oklch(25% 0.012 60)", "oklch(38% 0.012 60)", "oklch(50% 0.012 60)", "oklch(63% 0.012 60)", "oklch(76% 0.012 60)", "oklch(88% 0.012 60)", "oklch(95% 0.012 60)"]
+      },
+      "warm-gray": {
+        "role": "neutral",
+        "displayName": "Gris chaud",
+        "canonical": "#6B625A",
+        "tonalRamp": ["oklch(15% 0.015 65)", "oklch(27% 0.015 65)", "oklch(38% 0.015 65)", "oklch(49% 0.015 65)", "oklch(62% 0.015 65)", "oklch(75% 0.015 65)", "oklch(87% 0.015 65)", "oklch(95% 0.015 65)"]
+      },
+      "warm-border": {
+        "role": "neutral",
+        "displayName": "Bordure chaude",
+        "canonical": "#EAE1D2",
+        "tonalRamp": ["oklch(15% 0.02 85)", "oklch(28% 0.02 85)", "oklch(42% 0.02 85)", "oklch(55% 0.02 85)", "oklch(68% 0.02 85)", "oklch(80% 0.02 85)", "oklch(91% 0.02 85)", "oklch(96% 0.015 85)"]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Blanc (texte sur aplats)",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(28% 0 0)", "oklch(42% 0 0)", "oklch(56% 0 0)", "oklch(70% 0 0)", "oklch(84% 0 0)", "oklch(94% 0 0)", "oklch(100% 0 0)"]
+      }
+    },
+    "typographyMeta": {
+      "logo": { "displayName": "Logo", "purpose": "« takemehome » bas de casse, 800, -0.04em, patte terracotta. Géométrie gelée." },
+      "body": { "displayName": "Body", "purpose": "Tout le texte courant, 16 px minimum pour les descriptions. Une seule famille variable." }
+    },
+    "shadows": [
+      { "name": "sheet-warm", "value": "0 -8px 32px rgba(43, 38, 34, 0.18)", "purpose": "Uniquement pour les surfaces détachées (sheet de filtres, dialogues). Teintée encre chaude, jamais noir pur. Aucune ombre au repos (La Règle du Plat)." }
+    ],
+    "motion": [
+      { "name": "ease-quick", "value": "ease-out 150ms", "purpose": "Transitions d'état des boutons et chips. Sobre : le produit vit en 4G." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-first", "value": "0px" },
+      { "name": "desktop-column", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton d'appel",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "L'unique bouton plein de l'écran : appel direct du publiant, libellé blanc gras ≥ 19 px, validé à côté d'une photo de chien fauve.",
+      "html": "<a class=\"ds-btn-call\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z\"/></svg>Sună acum</a>",
+      "css": ".ds-btn-call { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #C4552F; color: #FFFFFF; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 19px; font-weight: 700; min-height: 48px; padding: 12px 28px; border-radius: 12px; text-decoration: none; transition: background 150ms ease-out; } .ds-btn-call:hover { background: #AC4826; } .ds-btn-call:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; }"
+    },
+    {
+      "name": "Bouton outline",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Toutes les actions non principales : bordure terracotta, fond transparent.",
+      "html": "<button class=\"ds-btn-outline\">Vezi toate animalele</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #C4552F; border: 1.5px solid #C4552F; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 16px; font-weight: 600; min-height: 44px; padding: 10px 22px; border-radius: 12px; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-outline:hover { background: rgba(196, 85, 47, 0.06); } .ds-btn-outline:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; }"
+    },
+    {
+      "name": "Badge Adoptat",
+      "kind": "chip",
+      "refersTo": "badge-adopted",
+      "description": "La bonne nouvelle : pastille pleine vert forêt, texte blanc. Seul élément autorisé à recouvrir une photo.",
+      "html": "<span class=\"ds-badge-adoptat\">Adoptat</span>",
+      "css": ".ds-badge-adoptat { display: inline-block; background: #2F6B4F; color: #FFFFFF; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.01em; padding: 4px 12px; border-radius: 9999px; }"
+    },
+    {
+      "name": "Chip de filtre",
+      "kind": "chip",
+      "refersTo": "card",
+      "description": "Filtres de /animale. Sélection en encre chaude — jamais en terracotta.",
+      "html": "<span><button class=\"ds-chip\">Pisici</button> <button class=\"ds-chip ds-chip--selected\">Căței</button></span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; background: #FFFDF8; color: #2B2622; border: 1px solid #EAE1D2; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 9999px; cursor: pointer; transition: background 150ms ease-out; } .ds-chip:hover { background: #F7F3EA; } .ds-chip:focus-visible { outline: 2px solid #2B2622; outline-offset: 2px; } .ds-chip--selected { background: #2B2622; color: #FFFFFF; border-color: #2B2622; }"
+    },
+    {
+      "name": "Carte animal",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Carte de la grille /animale, montrée ici dans son état sans photo : aplat crème + nom en grand. Ivoire, hairline chaude, aucune ombre au repos.",
+      "html": "<article class=\"ds-card-animal\"><div class=\"ds-card-animal-photo\">Luna</div><div class=\"ds-card-animal-body\"><h3 class=\"ds-card-animal-name\">Luna</h3><p class=\"ds-card-animal-meta\">Femelă · Tânără · Cluj</p></div></article>",
+      "css": ".ds-card-animal { width: 240px; background: #FFFDF8; border: 1px solid #EAE1D2; border-radius: 12px; overflow: hidden; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-card-animal-photo { aspect-ratio: 4 / 3; background: #F7F3EA; display: grid; place-items: center; color: #2B2622; font-size: 26px; font-weight: 800; } .ds-card-animal-body { padding: 12px 14px 14px; } .ds-card-animal-name { margin: 0 0 2px; color: #2B2622; font-size: 18px; font-weight: 700; } .ds-card-animal-meta { margin: 0; color: #6B625A; font-size: 14px; }"
+    },
+    {
+      "name": "Champ de saisie",
+      "kind": "input",
+      "refersTo": "card",
+      "description": "Champ du formulaire rapide des publiants : 16 px (pas de zoom iOS), focus en encre chaude.",
+      "html": "<label class=\"ds-field\">Nume<input class=\"ds-input\" type=\"text\" placeholder=\"ex. Luna\"></label>",
+      "css": ".ds-field { display: inline-flex; flex-direction: column; gap: 6px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: #2B2622; } .ds-input { background: #FFFDF8; border: 1px solid #EAE1D2; border-radius: 12px; padding: 12px 14px; font-family: inherit; font-size: 16px; font-weight: 400; color: #2B2622; min-width: 220px; } .ds-input::placeholder { color: #6B625A; } .ds-input:focus { outline: none; border-color: #2B2622; box-shadow: 0 0 0 1px #2B2622; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "De la om la om",
+    "overview": "TakeMeHome est une annonce d'adoption écrite par quelqu'un qui aime cet animal — pas une vitrine corporate. Le système visuel est du papier chaud : un fond crème calme sur lequel les photos amateur des sauveteurs sont posées comme des instantanés. Ces photos, imparfaites, sont une preuve d'authenticité, jamais un défaut à masquer : l'interface reste plate, silencieuse et régulière pour que l'animal et la personne qui le sauve soient les seules choses vivantes à l'écran. Chaque écran a une seule action qui compte — presque toujours appeler — et elle est la seule tache terracotta pleine visible. Le produit vit d'abord sur téléphone, souvent en 4G — mobile-first, desktop soigné : la légèreté est un choix esthétique autant que technique.",
+    "keyCharacteristics": [
+      "Papier chaud et plat : crème, hairlines, aucun relief au repos",
+      "Une seule action pleine par écran, en terracotta",
+      "Les photos amateur mènent ; l'interface recule",
+      "Roumain impeccable, virgule souscrite comprise",
+      "Léger en 4G par principe, pas par contrainte"
+    ],
+    "rules": [
+      { "name": "La Règle Terracotta", "body": "Terracotta = boutons + logo, rien d'autre. Un lien, une icône, un focus ring ou un graphique en terracotta est une faute ; ces rôles reviennent à l'encre chaude.", "section": "colors" },
+      { "name": "La Règle du Bouton Unique", "body": "Un seul bouton plein par écran. Toutes les autres actions sont en bordure terracotta (fond transparent) ou en encre chaude.", "section": "colors" },
+      { "name": "La Règle du Chien Fauve", "body": "La terracotta habite les mêmes tons qu'un pelage fauve. Le bouton d'appel ne se superpose jamais à une photo : il repose sur un fond opaque crème ou ivoire, libellé blanc gras. Toute évolution de ce bouton se valide à côté d'une photo de chien fauve, jamais sur fond blanc.", "section": "colors" },
+      { "name": "La Règle de la Virgule Souscrite", "body": "Les diacritiques roumains utilisent la virgule souscrite : ș (U+0219), ț (U+021B) — jamais les formes cédille ş (U+015F), ţ (U+0163). lang=\"ro\" sur <html> est obligatoire.", "section": "typography" },
+      { "name": "La Règle de la Police Unique", "body": "Une seule famille variable, un seul import. Un second poids ou une seconde famille importée = CLS et 4G punis — interdit.", "section": "typography" },
+      { "name": "La Règle du Plat", "body": "Une carte au repos n'a pas d'ombre. Si un élément projette une ombre, c'est qu'il flotte réellement au-dessus de la page (sheet, dialogue) — rien d'autre ne flotte.", "section": "elevation" },
+      { "name": "La Règle de la Sortie", "body": "Aucun état ne laisse l'utilisateur sans chemin ni explication : liste vide → un mot clair, filtre sans résultat → réinitialiser, erreur → corriger, 404 → /animale.", "section": "states" }
+    ],
+    "dos": [
+      "Do garder un seul bouton plein terracotta par écran ; toutes les autres actions en outline ou en encre.",
+      "Do valider toute évolution du bouton d'appel à côté d'une photo de chien fauve, pas sur fond blanc.",
+      "Do utiliser ș/ț à virgule souscrite (U+0219/U+021B) et déclarer lang=\"ro\" sur <html>.",
+      "Do servir les vraies photos des publiants en format fixe, object-fit: cover, recadrage centré — et l'aplat crème + nom en grand quand il n'y en a pas.",
+      "Do garder les libellés des boutons pleins en gras ≥ 19 px tant que la terracotta reste à 4,49:1 sous le blanc.",
+      "Do rester sur une seule police variable (Plus Jakarta Sans via next/font) et des pages légères en 4G."
+    ],
+    "donts": [
+      "Don't utiliser la terracotta ailleurs que sur les boutons et le logo — ni liens, ni icônes, ni états.",
+      "Don't mettre d'ombre sur une surface au repos ; les ombres appartiennent aux sheets et dialogues.",
+      "Don't utiliser d'images de stock ou décoratives sur les fiches, et jamais d'images d'animaux générées par IA.",
+      "Don't importer une seconde famille ou un second fichier de police.",
+      "Don't livrer de mode sombre en V1 : le monde est ce papier crème (retirer la bascule prefers-color-scheme du boilerplate).",
+      "Don't rouvrir le logo cœur + patte, le renommage Petly, ni la palette — décisions gelées."
+    ]
+  }
+}
