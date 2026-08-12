@@ -7,7 +7,8 @@
  * grands), au-dessus d'un coussinet organique asymétrique dont le bas remonte
  * côté droit. Patte ≈ 1,1 × la hauteur d'x, centrée sur la bande d'x, à
  * gauche du mot. Seule exception à La Règle Terracotta ; le favicon
- * (app/icon.svg et app/favicon.ico) reprend la patte seule — lisible à 16 px.
+ * (app/icon.png et app/favicon.ico, exportés de la maquette Canva) reprend
+ * la patte seule — lisible à 16 px.
  */
 
 const TERRACOTTA = "#C4552F";
