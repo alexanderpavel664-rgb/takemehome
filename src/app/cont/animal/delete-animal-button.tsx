@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteAnimal } from "./actions";
+import { Button } from "@/components/ui/button";
 
 export function DeleteAnimalButton({
   id,
@@ -19,7 +20,9 @@ export function DeleteAnimalButton({
       }}
     >
       <input type="hidden" name="id" value={id} />
-      <button type="submit">Supprimer</button>
+      <Button variant="ghost" type="submit">
+        Supprimer
+      </Button>
     </form>
   );
 }

@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { AnimalCard } from "./animal-card";
+import { animalMetaLine } from "@/lib/animal-display";
+import { countyName } from "@/lib/counties";
+import { AnimalCard } from "@/components/ui/animal-card";
 import { LoadMore } from "./load-more";
 
 /**
@@ -15,11 +17,14 @@ export async function AnimalGrid({
   count,
   moreHref,
   empty,
+  gridClassName = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4",
 }: {
   where: Prisma.AnimalWhereInput;
   count: number;
   moreHref: string;
   empty: ReactNode;
+  /** /animale plafonne à lg:grid-cols-3 : sa colonne de filtres mange ~290px en lg. */
+  gridClassName?: string;
 }) {
   const animals = await prisma.animal.findMany({
     where,
@@ -37,10 +42,19 @@ export async function AnimalGrid({
 
   return (
     <>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <ul className={gridClassName}>
         {shown.map((animal, i) => (
           <li key={animal.id}>
-            <AnimalCard animal={animal} eager={i < 4} />
+            <AnimalCard
+              href={`/animal/${animal.id}`}
+              name={animal.name}
+              meta={animalMetaLine(animal)}
+              county={countyName(animal.county)}
+              photoUrl={animal.photos[0]?.url}
+              // Sur /adoptati, chaque carte porte la pastille « Adoptat ».
+              adopted={animal.status === "ADOPTED"}
+              eager={i < 4}
+            />
           </li>
         ))}
       </ul>

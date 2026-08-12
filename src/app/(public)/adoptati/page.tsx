@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PAGE_SIZE, parseCount } from "@/lib/animal-filters";
+import { ButtonLink } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AnimalGrid } from "../animal-grid";
 import { SkeletonGrid } from "../skeleton-grid";
 
@@ -17,16 +19,24 @@ export default async function AdoptatiPage(props: PageProps<"/adoptati">) {
 
   return (
     <main className="mx-auto max-w-5xl p-4">
-      <h1 className="mb-4 text-2xl font-bold">Și-au găsit o familie</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
+        Și-au găsit o familie
+      </h1>
       <Suspense fallback={<SkeletonGrid />}>
         <AnimalGrid
           where={{ status: "ADOPTED" }}
           count={count}
           moreHref={`/adoptati?n=${count + PAGE_SIZE}`}
           empty={
-            <p className="my-10 text-center">
-              Aucun animal adopté pour l&rsquo;instant.
-            </p>
+            <EmptyState
+              title="Aucun animal adopté pour l'instant"
+              description="Dès qu'un animal aura trouvé sa famille, il apparaîtra ici."
+              action={
+                <ButtonLink variant="outline" href="/animale">
+                  Voir les animaux à adopter
+                </ButtonLink>
+              }
+            />
           }
         />
       </Suspense>

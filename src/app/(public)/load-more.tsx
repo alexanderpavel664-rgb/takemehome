@@ -1,6 +1,7 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
+import { useLinkStatus } from "next/link";
+import { ButtonLink } from "@/components/ui/button";
 
 function Label() {
   const { pending } = useLinkStatus();
@@ -18,15 +19,15 @@ function Label() {
 export function LoadMore({ href }: { href: string }) {
   return (
     <p className="my-6 text-center">
-      <Link
+      <ButtonLink
         href={href}
+        variant="outline"
         replace
         scroll={false}
         prefetch={false}
-        className="inline-block min-h-11 border-2 px-6 py-3 font-bold"
       >
         <Label />
-      </Link>
+      </ButtonLink>
     </p>
   );
 }

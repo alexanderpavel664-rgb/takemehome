@@ -29,3 +29,33 @@ export function Chip({
     />
   );
 }
+
+/**
+ * Chip-case à cocher pour les formulaires : même pilule que Chip, mais avec
+ * la sémantique d'une checkbox native (name, valeur « on » dans FormData —
+ * indispensable côté server action). Pattern peer : l'input reste dans le
+ * flux en sr-only avec la classe `peer`, et le <span> voisin porte tout le
+ * rendu via peer-checked / peer-focus-visible.
+ */
+export function ChipCheckbox({
+  label,
+  className = "",
+  ...props
+}: ComponentProps<"input"> & { label: string }) {
+  return (
+    <label className={`inline-flex cursor-pointer ${className}`}>
+      <input {...props} type="checkbox" className="peer sr-only" />
+      <span
+        className={
+          "inline-flex min-h-11 items-center justify-center rounded-pill border px-4 " +
+          "text-sm transition-colors " +
+          "border-warm-border bg-card-ivory text-warm-ink " +
+          "peer-checked:border-warm-ink peer-checked:bg-warm-ink peer-checked:text-white " +
+          "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-warm-ink"
+        }
+      >
+        {label}
+      </span>
+    </label>
+  );
+}

@@ -18,6 +18,9 @@ import {
 import { COUNTIES } from "@/lib/counties";
 import { animalPhotoPathname } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
+import { Button } from "@/components/ui/button";
+import { ChipCheckbox } from "@/components/ui/chip";
+import { Input, Select, Textarea } from "@/components/ui/field";
 import type { AnimalFormState } from "./actions";
 
 export type AnimalFormValues = {
@@ -195,126 +198,111 @@ export function AnimalForm({
   const busy = pending || preparing || progress !== null;
 
   return (
-    <form action={formAction} onSubmit={handleSubmit}>
+    <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
       {animalId && <input type="hidden" name="id" value={animalId} />}
-      <p>
-        <label htmlFor="name">Nom *</label>
-        <br />
-        <input
-          id="name"
-          name="name"
-          type="text"
-          defaultValue={initial?.name}
-          required
-        />
-      </p>
-      <p>
-        <label htmlFor="type">Type *</label>
-        <br />
-        <select
-          id="type"
-          name="type"
-          defaultValue={initial?.type ?? ""}
-          required
-        >
-          <option value="" disabled>
-            — Choisir —
+      <Input
+        label="Nom *"
+        id="name"
+        name="name"
+        type="text"
+        defaultValue={initial?.name}
+        required
+        error={state?.fieldErrors?.name}
+      />
+      <Select
+        label="Type *"
+        id="type"
+        name="type"
+        defaultValue={initial?.type ?? ""}
+        required
+        error={state?.fieldErrors?.type}
+      >
+        <option value="" disabled>
+          — Choisir —
+        </option>
+        {TYPE_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
           </option>
-          {TYPE_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </p>
-      <p>
-        <label htmlFor="sex">Sexe</label>
-        <br />
-        <select id="sex" name="sex" defaultValue={initial?.sex ?? ""}>
-          <option value="">Non renseigné</option>
-          {SEX_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </p>
-      <p>
-        <label htmlFor="ageGroup">Âge</label>
-        <br />
-        <select
-          id="ageGroup"
-          name="ageGroup"
-          defaultValue={initial?.ageGroup ?? ""}
-        >
-          <option value="">Non renseigné</option>
-          {AGE_GROUP_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </p>
-      <p>
-        <label htmlFor="ageText">Âge en toutes lettres</label>
-        <br />
-        <input
-          id="ageText"
-          name="ageText"
-          type="text"
-          defaultValue={initial?.ageText}
-          placeholder="ex. 2 ans"
-        />
-      </p>
-      <p>
-        <label htmlFor="size">Taille</label>
-        <br />
-        <select id="size" name="size" defaultValue={initial?.size ?? ""}>
-          <option value="">Non renseignée</option>
-          {SIZE_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </p>
-      <p>
-        <label htmlFor="county">Județ *</label>
-        <br />
-        <select
-          id="county"
-          name="county"
-          defaultValue={initial?.county ?? ""}
-          required
-        >
-          <option value="" disabled>
-            — Choisir un județ —
+        ))}
+      </Select>
+      <Select label="Sexe" id="sex" name="sex" defaultValue={initial?.sex ?? ""}>
+        <option value="">Non renseigné</option>
+        {SEX_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
           </option>
-          {COUNTIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </p>
-      <p>
-        <label htmlFor="city">Ville</label>
-        <br />
-        <input id="city" name="city" type="text" defaultValue={initial?.city} />
-      </p>
-      <p>
-        <label htmlFor="description">Description</label>
-        <br />
-        <textarea
-          id="description"
-          name="description"
-          defaultValue={initial?.description}
-          rows={4}
-        />
-      </p>
-      <p>
-        <label htmlFor="photo">Photo</label>
-        <br />
+        ))}
+      </Select>
+      <Select
+        label="Âge"
+        id="ageGroup"
+        name="ageGroup"
+        defaultValue={initial?.ageGroup ?? ""}
+      >
+        <option value="">Non renseigné</option>
+        {AGE_GROUP_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+      <Input
+        label="Âge en toutes lettres"
+        id="ageText"
+        name="ageText"
+        type="text"
+        defaultValue={initial?.ageText}
+        placeholder="ex. 2 ans"
+      />
+      <Select
+        label="Taille"
+        id="size"
+        name="size"
+        defaultValue={initial?.size ?? ""}
+      >
+        <option value="">Non renseignée</option>
+        {SIZE_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+      <Select
+        label="Județ *"
+        id="county"
+        name="county"
+        defaultValue={initial?.county ?? ""}
+        required
+        error={state?.fieldErrors?.county}
+      >
+        <option value="" disabled>
+          — Choisir un județ —
+        </option>
+        {COUNTIES.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.name}
+          </option>
+        ))}
+      </Select>
+      <Input
+        label="Ville"
+        id="city"
+        name="city"
+        type="text"
+        defaultValue={initial?.city}
+      />
+      <Textarea
+        label="Description"
+        id="description"
+        name="description"
+        defaultValue={initial?.description}
+        rows={4}
+      />
+      <div>
+        <label htmlFor="photo" className="mb-1 block text-sm text-warm-ink">
+          Photo
+        </label>
         {/* Pas d'attribut name : le fichier ne doit jamais partir dans la
             server action (limite de 1 Mo par défaut, 4,5 Mo sur Vercel) —
             il est envoyé au store par upload() après compression. */}
@@ -325,117 +313,132 @@ export function AnimalForm({
           ref={photoInputRef}
           onChange={handlePhotoChange}
           disabled={busy}
+          className="block w-full text-sm text-warm-gray file:mr-3 file:rounded-md file:border file:border-warm-border file:bg-card-ivory file:px-4 file:py-2 file:text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink disabled:opacity-50"
         />
-      </p>
-      {preparing && <p role="status">Préparation de la photo…</p>}
-      {photo && previewUrl && (
-        <p>
-          {/* Aperçu local d'un blob : next/image ne s'applique pas ici. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewUrl} alt="Aperçu de la photo sélectionnée" width={240} />
-          <br />
-          {/* Le format affiché dit si la bascule Safari (pas d'encodage WebP)
-              s'est déclenchée : WebP = voie normale, JPEG = bascule. */}
-          Photo prête ({photo.extension === "webp" ? "WebP" : "JPEG"}
-          {originalSize !== null && photo.blob.size < originalSize
-            ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
-            : `, ${formatSize(photo.blob.size)}`}
-          ). Elle sera envoyée à l’enregistrement.
-        </p>
-      )}
-      {!photo && !preparing && initialPhotoUrl && (
-        <p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={initialPhotoUrl} alt="Photo actuelle" width={240} />
-          <br />
-          Photo actuelle. Choisir un fichier la remplacera.
-        </p>
-      )}
-      {progress !== null && (
-        <p role="status">Envoi de la photo… {Math.round(progress)} %</p>
-      )}
-      {photoError && <p role="alert">{photoError}</p>}
+        {preparing && (
+          <p role="status" className="mt-2 text-sm text-warm-gray">
+            Préparation de la photo…
+          </p>
+        )}
+        {photo && previewUrl && (
+          <div className="mt-2">
+            {/* Aperçu local d'un blob : next/image ne s'applique pas ici. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewUrl}
+              alt="Aperçu de la photo sélectionnée"
+              width={240}
+              className="rounded-md border border-warm-border"
+            />
+            <p className="mt-1 text-sm text-warm-gray">
+              {/* Le format affiché dit si la bascule Safari (pas d'encodage WebP)
+                  s'est déclenchée : WebP = voie normale, JPEG = bascule. */}
+              Photo prête ({photo.extension === "webp" ? "WebP" : "JPEG"}
+              {originalSize !== null && photo.blob.size < originalSize
+                ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
+                : `, ${formatSize(photo.blob.size)}`}
+              ). Elle sera envoyée à l’enregistrement.
+            </p>
+          </div>
+        )}
+        {!photo && !preparing && initialPhotoUrl && (
+          <div className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={initialPhotoUrl}
+              alt="Photo actuelle"
+              width={240}
+              className="rounded-md border border-warm-border"
+            />
+            <p className="mt-1 text-sm text-warm-gray">
+              Photo actuelle. Choisir un fichier la remplacera.
+            </p>
+          </div>
+        )}
+        {progress !== null && (
+          <p role="status" className="mt-2 text-sm text-warm-gray">
+            Envoi de la photo… {Math.round(progress)} %
+          </p>
+        )}
+        {photoError && (
+          <p role="alert" className="mt-2 text-sm font-semibold text-warm-ink">
+            {photoError}
+          </p>
+        )}
+        {state?.fieldErrors?.photo && (
+          <p className="mt-2 text-sm font-semibold text-warm-ink">
+            {state.fieldErrors.photo}
+          </p>
+        )}
+      </div>
       <fieldset>
-        <legend>Santé</legend>
-        <label>
-          <input
-            type="checkbox"
+        <legend className="mb-2 text-sm text-warm-ink">Santé</legend>
+        <div className="flex flex-wrap gap-2">
+          <ChipCheckbox
+            label="Stérilisé"
             name="sterilized"
             defaultChecked={initial?.sterilized}
-          />{" "}
-          Stérilisé
-        </label>{" "}
-        <label>
-          <input
-            type="checkbox"
+          />
+          <ChipCheckbox
+            label="Vacciné"
             name="vaccinated"
             defaultChecked={initial?.vaccinated}
-          />{" "}
-          Vacciné
-        </label>{" "}
-        <label>
-          <input
-            type="checkbox"
+          />
+          <ChipCheckbox
+            label="Pucé"
             name="microchipped"
             defaultChecked={initial?.microchipped}
-          />{" "}
-          Pucé
-        </label>
+          />
+        </div>
       </fieldset>
       <fieldset>
-        <legend>S’entend bien avec</legend>
-        <label>
-          <input
-            type="checkbox"
+        <legend className="mb-2 text-sm text-warm-ink">
+          S’entend bien avec
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          <ChipCheckbox
+            label="Enfants"
             name="goodWithKids"
             defaultChecked={initial?.goodWithKids}
-          />{" "}
-          Enfants
-        </label>{" "}
-        <label>
-          <input
-            type="checkbox"
+          />
+          <ChipCheckbox
+            label="Chiens"
             name="goodWithDogs"
             defaultChecked={initial?.goodWithDogs}
-          />{" "}
-          Chiens
-        </label>{" "}
-        <label>
-          <input
-            type="checkbox"
+          />
+          <ChipCheckbox
+            label="Chats"
             name="goodWithCats"
             defaultChecked={initial?.goodWithCats}
-          />{" "}
-          Chats
-        </label>
+          />
+        </div>
       </fieldset>
-      <p>
-        <label htmlFor="status">Statut</label>
-        <br />
-        <select
-          id="status"
-          name="status"
-          defaultValue={initial?.status ?? "AVAILABLE"}
-        >
-          {STATUS_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </p>
-      {state?.error && <p role="alert">{state.error}</p>}
-      <p>
-        <button type="submit" disabled={busy}>
-          {progress !== null
-            ? "Envoi de la photo…"
-            : preparing
-              ? "Préparation de la photo…"
-              : pending
-                ? "Enregistrement…"
-                : submitLabel}
-        </button>
-      </p>
+      <Select
+        label="Statut"
+        id="status"
+        name="status"
+        defaultValue={initial?.status ?? "AVAILABLE"}
+      >
+        {STATUS_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+      {state?.formError && (
+        <p role="alert" className="text-sm font-semibold text-warm-ink">
+          {state.formError}
+        </p>
+      )}
+      <Button type="submit" variant="primary" disabled={busy}>
+        {progress !== null
+          ? "Envoi de la photo…"
+          : preparing
+            ? "Préparation de la photo…"
+            : pending
+              ? "Enregistrement…"
+              : submitLabel}
+      </Button>
     </form>
   );
 }

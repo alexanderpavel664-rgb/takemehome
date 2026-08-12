@@ -7,7 +7,9 @@ import { countyName } from "@/lib/counties";
 import { prisma } from "@/lib/prisma";
 import { relativeTimeFr } from "@/lib/relative-time";
 import { SITE_URL } from "@/lib/site";
-import { AnimalPhoto, PhotoPlaceholder } from "../../animal-image";
+import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink, buttonClasses } from "@/components/ui/button";
 
 // Sans API de requête, une route à segment dynamique serait rendue puis
 // mise en cache : statut « adopté », photos et coordonnées resteraient
@@ -87,7 +89,18 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   return (
     // pb-28 : réserve la place de la barre de contact fixée en bas.
     <main className={`mx-auto max-w-3xl p-4 ${hasContactBar ? "pb-28" : ""}`}>
-      <div className="relative aspect-[4/3] overflow-hidden border">
+      {/* Entrée principale depuis Facebook : chemin évident vers la liste,
+          en encre — jamais terracotta (La Règle Terracotta). */}
+      <p>
+        <Link
+          href="/animale"
+          className="inline-flex min-h-11 items-center text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+        >
+          ← Tous les animaux
+        </Link>
+      </p>
+
+      <div className="relative mt-2 aspect-[4/3] overflow-hidden rounded-md border border-warm-border">
         {photo ? (
           <AnimalPhoto
             src={photo.url}
@@ -96,77 +109,98 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             preload
           />
         ) : (
-          <PhotoPlaceholder name={animal.name} />
+          <PhotoFallback name={animal.name} />
         )}
       </div>
 
-      <h1 className="mt-3 flex flex-wrap items-center gap-3 text-2xl font-bold">
+      <h1 className="mt-3 flex flex-wrap items-center gap-3 text-[32px]/[1.05] font-semibold text-warm-ink">
         {animal.name}
-        {adopted && (
-          <span className="rounded-full border-2 px-3 py-1 text-sm">
-            Adoptat
-          </span>
-        )}
+        {adopted && <Badge>Adoptat</Badge>}
       </h1>
-      <p className="mt-1">{animalMetaLine(animal)}</p>
-      <p className="text-gray-600">
+      <p className="mt-1 text-base text-warm-ink">{animalMetaLine(animal)}</p>
+      <p className="text-base text-warm-gray">
         {[animal.city?.trim(), countyName(animal.county)]
           .filter(Boolean)
           .join(", ")}
       </p>
 
       {adopted && (
-        <p className="mt-4">
-          Cet animal a déjà trouvé sa famille.{" "}
-          <Link href="/animale" className="underline">
+        <div className="mt-4">
+          <p className="text-base text-warm-ink">
+            Cet animal a déjà trouvé sa famille.
+          </p>
+          <ButtonLink href="/animale" variant="outline" className="mt-3">
             Voir les animaux à adopter
-          </Link>
-        </p>
+          </ButtonLink>
+        </div>
       )}
 
       {animal.description && (
         <section className="mt-6">
-          <h2 className="font-bold">Description</h2>
-          <p className="mt-1 whitespace-pre-line">{animal.description}</p>
+          <h2 className="text-lg font-semibold text-warm-ink">Description</h2>
+          <p className="mt-1 text-base whitespace-pre-line text-warm-ink">
+            {animal.description}
+          </p>
         </section>
       )}
 
       <section className="mt-6">
-        <h2 className="font-bold">Santé</h2>
+        <h2 className="text-lg font-semibold text-warm-ink">Santé</h2>
         {/* false en base = non renseigné : on n'affiche que les certitudes. */}
-        <p className="mt-1">
+        <p
+          className={`mt-1 text-base ${health.length > 0 ? "text-warm-ink" : "text-warm-gray"}`}
+        >
           {health.length > 0 ? health.join(" · ") : "Non renseigné"}
         </p>
       </section>
 
       <section className="mt-6">
-        <h2 className="font-bold">S-a înțeles bine cu</h2>
-        <p className="mt-1">
+        <h2 className="text-lg font-semibold text-warm-ink">
+          S-a înțeles bine cu
+        </h2>
+        <p
+          className={`mt-1 text-base ${goodWith.length > 0 ? "text-warm-ink" : "text-warm-gray"}`}
+        >
           {goodWith.length > 0 ? goodWith.join(" · ") : "Non renseigné"}
         </p>
       </section>
 
-      <section className="mt-6 text-sm text-gray-600">
+      <section className="mt-6 text-sm text-warm-gray">
         <p>Refuge : {animal.user.name}</p>
         <p>Mise à jour {relativeTimeFr(animal.updatedAt)}</p>
       </section>
 
       {hasContactBar && (
         // Barre d'appel fixée en bas : atteignable au pouce, cibles ≥ 44px.
-        <div className="fixed inset-x-0 bottom-0 border-t bg-white p-3 text-black">
+        // Fond crème OPAQUE + hairline haute : le bouton d'appel repose sur
+        // le papier, jamais sur la photo (La Règle du Chien Fauve).
+        <div className="fixed inset-x-0 bottom-0 border-t border-warm-border bg-cream-ground p-3">
           <div className="mx-auto flex max-w-3xl gap-3">
             {phone && (
+              // « Sună » : LE seul bouton plein de l'écran.
               <a
                 href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-                className="flex min-h-12 flex-1 items-center justify-center border-2 border-current px-4 font-bold"
+                className={buttonClasses("primary", "flex-1")}
               >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  className="size-5"
+                >
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
                 Sună
               </a>
             )}
             {email && (
               <a
                 href={`mailto:${email}`}
-                className="flex min-h-12 flex-1 items-center justify-center border px-4"
+                className={buttonClasses("outline", "flex-1")}
               >
                 Trimite email
               </a>

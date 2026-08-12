@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { ButtonLink } from "@/components/ui/button";
 import { createAnimal } from "../actions";
 import { AnimalForm } from "../animal-form";
 
@@ -12,16 +12,20 @@ export default async function NouAnimalPage() {
   }
 
   return (
-    <main>
-      <h1>Ajouter un animal</h1>
+    <main className="mx-auto max-w-lg p-4">
+      <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
+        Ajouter un animal
+      </h1>
       <AnimalForm
         action={createAnimal}
         userId={session.user.id}
         submitLabel="Créer"
       />
-      <p>
-        <Link href="/cont">Retour au compte</Link>
-      </p>
+      <div className="mt-4">
+        <ButtonLink href="/cont" variant="ghost">
+          Retour au compte
+        </ButtonLink>
+      </div>
     </main>
   );
 }

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 
 export function LoginForm({ oauthError }: { oauthError?: string }) {
   const router = useRouter();
@@ -45,45 +47,55 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
   }
 
   return (
-    <main>
-      <h1>Connexion</h1>
-      <form onSubmit={onSubmit}>
-        <p>
-          <label htmlFor="email">Email</label>
-          <br />
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </p>
-        <p>
-          <label htmlFor="password">Mot de passe</label>
-          <br />
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </p>
-        {error && <p role="alert">{error}</p>}
-        <p>
-          <button type="submit" disabled={pending}>
-            {pending ? "Connexion en cours…" : "Se connecter"}
-          </button>
-        </p>
+    <main className="mx-auto w-full max-w-sm p-4 pt-10">
+      <h1 className="text-2xl font-semibold text-warm-ink">Connexion</h1>
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Input
+          label="Mot de passe"
+          name="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        {/* Erreur globale par nature (mauvais identifiants, échec Google) :
+            en toutes lettres sous les champs — la palette n'a pas de rouge. */}
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-warm-ink">
+            {error}
+          </p>
+        )}
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          disabled={pending}
+        >
+          {pending ? "Connexion en cours…" : "Se connecter"}
+        </Button>
       </form>
-      <p>
-        <button type="button" onClick={onGoogle}>
+      {/* Google, séparé du formulaire email par une hairline douce. */}
+      <div className="mt-6 border-t border-warm-border pt-6">
+        <Button className="w-full" onClick={onGoogle}>
           Se connecter avec Google
-        </button>
-      </p>
-      <p>
-        Pas encore de compte ? <Link href="/inregistrare">Créer un compte</Link>
+        </Button>
+      </div>
+      <p className="mt-4 text-sm text-warm-gray">
+        Pas encore de compte ?{" "}
+        <Link
+          href="/inregistrare"
+          className="py-2 text-warm-ink underline underline-offset-4"
+        >
+          Créer un compte
+        </Link>
       </p>
     </main>
   );

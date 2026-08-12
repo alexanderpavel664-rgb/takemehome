@@ -17,7 +17,18 @@ import {
   type Prisma,
 } from "@/generated/prisma/client";
 
-export type AnimalFormState = { error: string } | null;
+/** Erreurs par champ : chaque message s'affiche sous le champ concerné. */
+type FieldErrors = {
+  name?: string;
+  type?: string;
+  county?: string;
+  photo?: string;
+};
+
+export type AnimalFormState = {
+  fieldErrors?: FieldErrors;
+  formError?: string;
+} | null;
 
 // Les server actions sont accessibles par POST direct, pas seulement via
 // l'UI : chaque action revérifie la session elle-même (le proxy ne fait
@@ -74,23 +85,25 @@ type ParsedAnimal = {
 };
 
 // Seuls name, type et county sont obligatoires ; le reste vaut null
-// (« non renseigné ») ou false.
+// (« non renseigné ») ou false. Les trois champs sont validés d'un coup :
+// toutes les erreurs sont collectées, pas une correction à la fois.
 function parseAnimalForm(
   formData: FormData,
-): { ok: true; data: ParsedAnimal } | { ok: false; error: string } {
+): { ok: true; data: ParsedAnimal } | { ok: false; fieldErrors: FieldErrors } {
   const name = text(formData, "name");
-  if (!name) {
-    return { ok: false, error: "Le nom est obligatoire." };
-  }
-
   const type = optionalEnum(formData, "type", AnimalType);
-  if (!type) {
-    return { ok: false, error: "Le type d’animal est obligatoire." };
-  }
-
   const county = text(formData, "county");
-  if (!(COUNTY_CODES as readonly string[]).includes(county)) {
-    return { ok: false, error: "Le județ est obligatoire." };
+  const countyValid = (COUNTY_CODES as readonly string[]).includes(county);
+
+  if (!name || !type || !countyValid) {
+    return {
+      ok: false,
+      fieldErrors: {
+        ...(name ? {} : { name: "Le nom est obligatoire." }),
+        ...(type ? {} : { type: "Le type d’animal est obligatoire." }),
+        ...(countyValid ? {} : { county: "Le județ est obligatoire." }),
+      },
+    };
   }
 
   return {
@@ -154,12 +167,15 @@ export async function createAnimal(
   const userId = await requireUserId();
 
   const parsed = parseAnimalForm(formData);
-  if (!parsed.ok) {
-    return { error: parsed.error };
-  }
   const photo = parsePhotoUrl(formData, userId);
-  if (!photo.ok) {
-    return { error: photo.error };
+  if (!parsed.ok || !photo.ok) {
+    // Erreurs des champs et de la photo réunies en une seule réponse.
+    return {
+      fieldErrors: {
+        ...(parsed.ok ? {} : parsed.fieldErrors),
+        ...(photo.ok ? {} : { photo: photo.error }),
+      },
+    };
   }
 
   await prisma.animal.create({
@@ -184,12 +200,15 @@ export async function updateAnimal(
   const id = text(formData, "id");
 
   const parsed = parseAnimalForm(formData);
-  if (!parsed.ok) {
-    return { error: parsed.error };
-  }
   const photo = parsePhotoUrl(formData, userId);
-  if (!photo.ok) {
-    return { error: photo.error };
+  if (!parsed.ok || !photo.ok) {
+    // Erreurs des champs et de la photo réunies en une seule réponse.
+    return {
+      fieldErrors: {
+        ...(parsed.ok ? {} : parsed.fieldErrors),
+        ...(photo.ok ? {} : { photo: photo.error }),
+      },
+    };
   }
 
   // Isolation : le filtre { id, userId } rend l'animal d'un autre refuge

@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   AgeGroup,
   AnimalSize,
   Sex,
 } from "@/generated/prisma/client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { Select } from "@/components/ui/field";
 import {
   countActiveFilters,
   serializeFilters,
@@ -30,15 +34,201 @@ const BOOL_FIELDS: { key: keyof PublicFilters & string; label: string }[] = [
 ];
 
 /**
- * Bouton « Filtrează » (avec badge du nombre de filtres actifs) + bottom
- * sheet. Le sheet édite un brouillon local ; « Aplică » pousse la nouvelle
- * URL (les filtres vivent dans les searchParams), en conservant l'onglet
- * type et en repartant à la première page.
+ * Champs de filtre partagés par les deux coquilles (sheet mobile, colonne
+ * desktop). Édite un brouillon local ; « Aplică » pousse la nouvelle URL
+ * (les filtres vivent dans les searchParams) en repartant à la première
+ * page, « Resetează » conserve l'onglet type. Le brouillon se resynchronise
+ * au montage : le sheet monte à chaque ouverture, la colonne desktop est
+ * remontée par la page via key={filterKey}.
+ *
+ * `idScope` préfixe les ids des champs : les deux coquilles coexistent dans
+ * le DOM (masquées par breakpoint), leurs labels ne doivent pas se croiser.
+ */
+function FilterPanel({
+  filters,
+  idScope,
+  sheet = false,
+  onNavigate,
+}: {
+  filters: PublicFilters;
+  idScope: string;
+  /** Coquille sheet : corps scrollable + pied collé, « Aplică » en primary. */
+  sheet?: boolean;
+  /** Appelé juste avant router.push — le sheet mobile s'y ferme. */
+  onNavigate?: () => void;
+}) {
+  const router = useRouter();
+  const [draft, setDraft] = useState<PublicFilters>(filters);
+  const activeCount = countActiveFilters(filters);
+
+  function navigate(next: PublicFilters) {
+    onNavigate?.();
+    const qs = serializeFilters(next);
+    router.push(qs ? `/animale?${qs}` : "/animale");
+  }
+
+  function apply() {
+    navigate(draft);
+  }
+
+  function reset() {
+    // Ne réinitialise que les filtres du panneau : l'onglet type reste.
+    navigate({
+      tip: filters.tip,
+      sterilizat: false,
+      vaccinat: false,
+      cip: false,
+      copii: false,
+      caini: false,
+      pisici: false,
+    });
+  }
+
+  const fields = (
+    <div className="space-y-4">
+      <Select
+        label="Județ"
+        id={`${idScope}-judet`}
+        value={draft.judet ?? ""}
+        onChange={(e) =>
+          setDraft({
+            ...draft,
+            judet: (e.target.value || undefined) as CountyCode | undefined,
+          })
+        }
+      >
+        <option value="">Tous</option>
+        {COUNTIES.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.name}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        label="Âge"
+        id={`${idScope}-varsta`}
+        value={draft.varsta ?? ""}
+        onChange={(e) =>
+          setDraft({
+            ...draft,
+            varsta: (e.target.value || undefined) as AgeGroup | undefined,
+          })
+        }
+      >
+        <option value="">Tous</option>
+        {AGE_GROUP_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        label="Sexe"
+        id={`${idScope}-sex`}
+        value={draft.sex ?? ""}
+        onChange={(e) =>
+          setDraft({
+            ...draft,
+            sex: (e.target.value || undefined) as Sex | undefined,
+          })
+        }
+      >
+        <option value="">Tous</option>
+        {SEX_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        label="Taille"
+        id={`${idScope}-marime`}
+        value={draft.marime ?? ""}
+        onChange={(e) =>
+          setDraft({
+            ...draft,
+            marime: (e.target.value || undefined) as AnimalSize | undefined,
+          })
+        }
+      >
+        <option value="">Toutes</option>
+        {SIZE_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+
+      <fieldset>
+        <legend className="sr-only">Autres critères</legend>
+        <div className="flex flex-wrap gap-2">
+          {BOOL_FIELDS.map(({ key, label }) => (
+            <Chip
+              key={key}
+              selected={Boolean(draft[key])}
+              onClick={() => setDraft({ ...draft, [key]: !draft[key] })}
+            >
+              {label}
+            </Chip>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  );
+
+  if (sheet) {
+    return (
+      <>
+        <div className="flex-1 overflow-y-auto px-4 py-4">{fields}</div>
+        {/* Pied collé en bas, toujours visible sans scroller. Seul primary
+            de l'écran : il n'existe que sheet ouvert. */}
+        <div className="flex gap-3 border-t border-warm-border p-3">
+          {activeCount > 0 && (
+            <Button variant="outline" onClick={reset} className="flex-1">
+              Resetează
+            </Button>
+          )}
+          <Button variant="primary" onClick={apply} className="flex-1">
+            Aplică
+          </Button>
+        </div>
+      </>
+    );
+  }
+
+  // Colonne toujours visible : aucun bouton plein sur la page au repos
+  // (La Règle du Bouton Unique).
+  return (
+    <>
+      {fields}
+      <div className="mt-4 flex flex-col gap-2">
+        <Button variant="outline" onClick={apply}>
+          Aplică
+        </Button>
+        {activeCount > 0 && (
+          <Button variant="ghost" onClick={reset}>
+            Resetează
+          </Button>
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Coquille mobile : bouton « Filtrează » (avec pastille encre du nombre de
+ * filtres actifs) + bottom sheet. Le sheet est la seule surface détachée du
+ * papier : scrim teinté encre et ombre chaude — l'exception prévue par
+ * La Règle du Plat.
  */
 export function FilterSheet({ filters }: { filters: PublicFilters }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<PublicFilters>(filters);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const activeCount = countActiveFilters(filters);
 
   // Bloque le défilement de la liste tant que le sheet est ouvert.
@@ -51,215 +241,115 @@ export function FilterSheet({ filters }: { filters: PublicFilters }) {
     };
   }, [open]);
 
-  function openSheet() {
-    setDraft(filters);
-    setOpen(true);
-  }
-
-  function navigate(next: PublicFilters) {
-    setOpen(false);
-    const qs = serializeFilters(next);
-    router.push(qs ? `/animale?${qs}` : "/animale");
-  }
-
-  function apply() {
-    navigate(draft);
-  }
-
-  function reset() {
-    // Ne réinitialise que les filtres du sheet : l'onglet type reste.
-    navigate({
-      tip: filters.tip,
-      sterilizat: false,
-      vaccinat: false,
-      cip: false,
-      copii: false,
-      caini: false,
-      pisici: false,
-    });
-  }
+  // Dialogue modal au clavier : focus posé sur « Fermer » à l'ouverture,
+  // Échap ferme, Tab reste dans le sheet (aria-modal masque le fond aux
+  // lecteurs d'écran — le focus ne doit pas s'y échapper non plus), et le
+  // déclencheur récupère le focus à la fermeture.
+  useEffect(() => {
+    if (!open) return;
+    const trigger = triggerRef.current;
+    closeRef.current?.focus();
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      const dialog = dialogRef.current;
+      if (e.key !== "Tab" || !dialog) return;
+      const focusables = dialog.querySelectorAll<HTMLElement>(
+        "button, [href], input, select, textarea",
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      trigger?.focus();
+    };
+  }, [open]);
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={openSheet}
+    <div className="lg:hidden">
+      <Button
+        ref={triggerRef}
+        variant="outline"
+        onClick={() => setOpen(true)}
         aria-expanded={open}
-        className={
-          activeCount > 0
-            ? "min-h-11 border-2 border-current px-4 py-2 font-bold"
-            : "min-h-11 border px-4 py-2"
-        }
       >
         Filtrează
         {activeCount > 0 && (
-          <span className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-black px-1 text-sm font-bold text-white">
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-pill bg-warm-ink px-1 text-sm font-semibold text-white">
             {activeCount}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="fixed inset-0 z-10">
-          {/* Fond cliquable pour fermer, en plus du bouton X. */}
+          {/* Scrim cliquable pour fermer — pointeur uniquement : le clavier
+              a Échap et le bouton X, un arrêt de tabulation ici serait du
+              bruit. aria-modal masque déjà ce fond aux lecteurs d'écran. */}
           <button
             type="button"
-            aria-label="Fermer les filtres"
+            tabIndex={-1}
+            aria-hidden
             onClick={() => setOpen(false)}
-            className="absolute inset-0 h-full w-full bg-black/50"
+            className="absolute inset-0 h-full w-full bg-warm-ink/40"
           />
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Filtres"
-            className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col border-t bg-white text-black"
+            className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-[20px] border-t border-warm-border bg-card-ivory text-warm-ink shadow-[0_-8px_30px_color-mix(in_oklab,var(--color-warm-ink)_20%,transparent)]"
           >
-            <div className="flex items-center justify-between border-b px-4 py-2">
-              <h2 className="font-bold">Filtres</h2>
+            <div className="flex items-center justify-between border-b border-warm-border px-4 py-2">
+              <h2 className="text-lg font-semibold text-warm-ink">Filtres</h2>
               <button
+                ref={closeRef}
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer"
-                className="flex h-11 w-11 items-center justify-center text-2xl"
+                className="flex h-11 w-11 items-center justify-center text-2xl text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
               >
                 ×
               </button>
             </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-3">
-              <label className="block py-2">
-                Județ
-                <select
-                  value={draft.judet ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      judet: (e.target.value || undefined) as
-                        | CountyCode
-                        | undefined,
-                    })
-                  }
-                  className="mt-1 block min-h-11 w-full border px-2"
-                >
-                  <option value="">Tous</option>
-                  {COUNTIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block py-2">
-                Âge
-                <select
-                  value={draft.varsta ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      varsta: (e.target.value || undefined) as
-                        | AgeGroup
-                        | undefined,
-                    })
-                  }
-                  className="mt-1 block min-h-11 w-full border px-2"
-                >
-                  <option value="">Tous</option>
-                  {AGE_GROUP_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block py-2">
-                Sexe
-                <select
-                  value={draft.sex ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      sex: (e.target.value || undefined) as Sex | undefined,
-                    })
-                  }
-                  className="mt-1 block min-h-11 w-full border px-2"
-                >
-                  <option value="">Tous</option>
-                  {SEX_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block py-2">
-                Taille
-                <select
-                  value={draft.marime ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      marime: (e.target.value || undefined) as
-                        | AnimalSize
-                        | undefined,
-                    })
-                  }
-                  className="mt-1 block min-h-11 w-full border px-2"
-                >
-                  <option value="">Toutes</option>
-                  {SIZE_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <fieldset className="mt-2">
-                <legend className="sr-only">Autres critères</legend>
-                {BOOL_FIELDS.map(({ key, label }) => (
-                  <label
-                    key={key}
-                    className="flex min-h-11 items-center gap-3 py-1"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={Boolean(draft[key])}
-                      onChange={(e) =>
-                        setDraft({ ...draft, [key]: e.target.checked })
-                      }
-                      className="h-5 w-5"
-                    />
-                    {label}
-                  </label>
-                ))}
-              </fieldset>
-            </div>
-
-            {/* Pied collé en bas, toujours visible sans scroller. */}
-            <div className="flex gap-3 border-t p-3">
-              {activeCount > 0 && (
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="min-h-11 flex-1 border px-4 py-2"
-                >
-                  Resetează
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={apply}
-                className="min-h-11 flex-1 border-2 border-current px-4 py-2 font-bold"
-              >
-                Aplică
-              </button>
-            </div>
+            {/* Monté à l'ouverture : le brouillon repart des filtres de l'URL. */}
+            <FilterPanel
+              sheet
+              filters={filters}
+              idScope="sheet"
+              onNavigate={() => setOpen(false)}
+            />
           </div>
         </div>
       )}
-    </>
+    </div>
+  );
+}
+
+/**
+ * Coquille desktop : les mêmes champs en colonne latérale toujours visible,
+ * dans une Card posée à plat. La page la monte avec key={filterKey} pour
+ * resynchroniser le brouillon quand l'URL change.
+ */
+export function FilterAside({ filters }: { filters: PublicFilters }) {
+  return (
+    <aside className="hidden w-64 shrink-0 lg:block">
+      <Card className="p-4">
+        <h2 className="mb-4 text-lg font-semibold text-warm-ink">Filtres</h2>
+        <FilterPanel filters={filters} idScope="aside" />
+      </Card>
+    </aside>
   );
 }

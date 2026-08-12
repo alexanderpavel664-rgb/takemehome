@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ButtonLink } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   PAGE_SIZE,
   countActiveFilters,
@@ -11,7 +12,7 @@ import {
 } from "@/lib/animal-filters";
 import { AnimalGrid } from "../animal-grid";
 import { SkeletonGrid } from "../skeleton-grid";
-import { FilterSheet } from "./filter-sheet";
+import { FilterAside, FilterSheet } from "./filter-sheet";
 import { TypeTabs } from "./type-tabs";
 
 export const metadata: Metadata = {
@@ -19,6 +20,11 @@ export const metadata: Metadata = {
   description:
     "Chiens, chats et autres animaux à adopter en Roumanie, proposés par des refuges et des sauveteurs.",
 };
+
+// La colonne de filtres desktop (w-64 + gap-8) mange ~290px du max-w-5xl :
+// en 4 colonnes les cartes tomberaient à ~166px, plus étroites que sur
+// mobile — la grille de /animale plafonne donc à 3 colonnes en lg.
+const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3";
 
 // La page lit searchParams (filtres + pagination) : rendu dynamique à
 // chaque requête, HTML complet côté serveur, indexable.
@@ -34,42 +40,58 @@ export default async function AnimalePage(props: PageProps<"/animale">) {
 
   return (
     <main className="mx-auto max-w-5xl p-4">
-      <h1 className="mb-4 text-2xl font-bold">Animaux à adopter</h1>
-      <TypeTabs filters={filters} />
-      <div className="my-4">
-        <FilterSheet filters={filters} />
+      <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
+        Animaux à adopter
+      </h1>
+      <div className="flex items-start lg:gap-8">
+        {/* key = filtres : quand l'URL change (onglet, sheet mobile, reset),
+            la colonne est remontée et son brouillon resynchronisé. */}
+        <FilterAside key={filterKey} filters={filters} />
+        <div className="min-w-0 flex-1">
+          <TypeTabs filters={filters} />
+          <div className="my-4 lg:hidden">
+            <FilterSheet filters={filters} />
+          </div>
+          {/* key = filtres hors pagination : changer un filtre remonte les
+              squelettes ; « Vezi mai multe » garde la grille affichée. */}
+          <div className="mt-4">
+            <Suspense
+              key={filterKey || "toate"}
+              fallback={<SkeletonGrid gridClassName={GRID_CLASSES} />}
+            >
+              <AnimalGrid
+                where={publicWhere(filters)}
+                count={count}
+                moreHref={moreHref}
+                empty={hasAnyFilter ? <NoResults /> : <EmptyList />}
+                gridClassName={GRID_CLASSES}
+              />
+            </Suspense>
+          </div>
+        </div>
       </div>
-      {/* key = filtres hors pagination : changer un filtre remonte les
-          squelettes ; « Vezi mai multe » garde la grille affichée. */}
-      <Suspense key={filterKey || "toate"} fallback={<SkeletonGrid />}>
-        <AnimalGrid
-          where={publicWhere(filters)}
-          count={count}
-          moreHref={moreHref}
-          empty={hasAnyFilter ? <NoResults /> : <EmptyList />}
-        />
-      </Suspense>
     </main>
   );
 }
 
 function EmptyList() {
   return (
-    <p className="my-10 text-center">
-      Aucun animal pour l&rsquo;instant. Revenez bientôt !
-    </p>
+    <EmptyState
+      title="Aucun animal pour l’instant"
+      description="Revenez bientôt : de nouveaux animaux arrivent régulièrement."
+    />
   );
 }
 
 function NoResults() {
   return (
-    <div className="my-10 text-center">
-      <p>Aucun animal ne correspond à ces filtres.</p>
-      <p className="mt-3">
-        <Link href="/animale" className="inline-block min-h-11 underline">
+    <EmptyState
+      title="Aucun animal ne correspond à ces filtres"
+      action={
+        <ButtonLink variant="outline" href="/animale">
           Réinitialiser les filtres
-        </Link>
-      </p>
-    </div>
+        </ButtonLink>
+      }
+    />
   );
 }
