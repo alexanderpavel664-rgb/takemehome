@@ -20,7 +20,7 @@ export function EmptyState({
     <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
       <h2 className="text-xl font-semibold text-warm-ink">{title}</h2>
       {description && (
-        <p className="max-w-md text-base text-warm-gray">{description}</p>
+        <p className="max-w-[66ch] text-base text-warm-gray">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

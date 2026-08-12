@@ -11,20 +11,24 @@ import { LoadMore } from "./load-more";
  * éléments pour savoir s'il reste des animaux sans count() séparé. Les
  * 4 premières photos (au-dessus de la ligne de flottaison) chargent en
  * eager, les autres en lazy (défaut de next/image).
+ *
+ * Mise en page : 2 colonnes sur mobile, puis auto-fill dès md — des cartes
+ * d'au moins 260px quelle que soit la largeur disponible (avec ou sans
+ * colonne de filtres), sans variante lg:/xl: à maintenir par page.
  */
+const GRID_CLASSES =
+  "grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] md:gap-4";
+
 export async function AnimalGrid({
   where,
   count,
   moreHref,
   empty,
-  gridClassName = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4",
 }: {
   where: Prisma.AnimalWhereInput;
   count: number;
   moreHref: string;
   empty: ReactNode;
-  /** /animale plafonne à lg:grid-cols-3 : sa colonne de filtres mange ~290px en lg. */
-  gridClassName?: string;
 }) {
   const animals = await prisma.animal.findMany({
     where,
@@ -42,7 +46,7 @@ export async function AnimalGrid({
 
   return (
     <>
-      <ul className={gridClassName}>
+      <ul className={GRID_CLASSES}>
         {shown.map((animal, i) => (
           <li key={animal.id}>
             <AnimalCard

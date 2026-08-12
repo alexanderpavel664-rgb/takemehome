@@ -7,8 +7,8 @@ import { AnimalGrid } from "../animal-grid";
 import { SkeletonGrid } from "../skeleton-grid";
 
 export const metadata: Metadata = {
-  title: "Și-au găsit o familie – TakeMeHome",
-  description: "Les animaux adoptés grâce aux refuges présents sur TakeMeHome.",
+  title: "Ils ont trouvé une famille – TakeMeHome",
+  description: "Les animaux qui ont trouvé une famille grâce à TakeMeHome.",
 };
 
 // Même grille que /animale, sans filtres ni contact — la fiche masque
@@ -18,9 +18,12 @@ export default async function AdoptatiPage(props: PageProps<"/adoptati">) {
   const count = parseCount(sp);
 
   return (
-    <main className="mx-auto max-w-5xl p-4">
+    // Pleine largeur : la grille auto-fill absorbe l'espace, seules les
+    // gouttières (px-4 md:px-6 lg:px-8) cadrent le contenu ; l'EmptyState
+    // centre lui-même son texte.
+    <main className="px-4 py-4 md:px-6 lg:px-8">
       <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
-        Și-au găsit o familie
+        Ils ont trouvé une famille
       </h1>
       <Suspense fallback={<SkeletonGrid />}>
         <AnimalGrid
@@ -29,8 +32,8 @@ export default async function AdoptatiPage(props: PageProps<"/adoptati">) {
           moreHref={`/adoptati?n=${count + PAGE_SIZE}`}
           empty={
             <EmptyState
-              title="Aucun animal adopté pour l'instant"
-              description="Dès qu'un animal aura trouvé sa famille, il apparaîtra ici."
+              title="Aucun animal adopté pour l’instant"
+              description="Dès qu’un animal aura trouvé sa famille, il apparaîtra ici."
               action={
                 <ButtonLink variant="outline" href="/animale">
                   Voir les animaux à adopter

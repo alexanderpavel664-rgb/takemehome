@@ -3,10 +3,10 @@ import type { AnimalType } from "@/generated/prisma/client";
 import { serializeFilters, type PublicFilters } from "@/lib/animal-filters";
 
 const TABS: { tip: AnimalType | null; label: string }[] = [
-  { tip: null, label: "Toate" },
-  { tip: "DOG", label: "Câini" },
-  { tip: "CAT", label: "Pisici" },
-  { tip: "OTHER", label: "Altele" },
+  { tip: null, label: "Tous" },
+  { tip: "DOG", label: "Chiens" },
+  { tip: "CAT", label: "Chats" },
+  { tip: "OTHER", label: "Autres" },
 ];
 
 /**

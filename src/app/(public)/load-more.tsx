@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 
 function Label() {
   const { pending } = useLinkStatus();
-  return <>{pending ? "Chargement…" : "Vezi mai multe"}</>;
+  return <>{pending ? "Chargement…" : "Voir plus"}</>;
 }
 
 /**

@@ -15,8 +15,7 @@ export default async function ProfilPage() {
     <main className="mx-auto max-w-lg p-4">
       <h1 className="text-2xl font-semibold text-warm-ink">Mon profil</h1>
       <p className="mt-2 text-base text-warm-gray">
-        Ces informations serviront de contact sur les fiches des animaux du
-        refuge.
+        Ces informations s’affichent comme contact sur vos annonces.
       </p>
       <div className="mt-6">
         <ProfileForm

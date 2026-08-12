@@ -1,42 +1,60 @@
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+import { getSessionCookie } from "better-auth/cookies";
+import { SiteHeader } from "@/components/site-header";
 
 /**
- * Coquille des pages publiques. La fiche /animal/[id] étant la page
- * d'entrée principale (liens Facebook), ce header garantit partout un
- * chemin évident vers la liste : logo et lien « Tous les animaux ».
- * Encre chaude sur crème, hairline en bas — pas de soulignement permanent,
- * pas de terracotta sur la nav (La Règle Terracotta).
+ * Coquille des pages publiques : l'en-tête commun (logo → /animale) avec
+ * l'accès au compte à droite, et le pied de page discret vers les pages
+ * secondaires. 99 % des visiteurs sont des adoptants qui ne créeront jamais
+ * de compte : l'accès au compte est un lien gris chaud, jamais un bouton —
+ * le bouton plein est réservé à l'appel (La Règle du Bouton Unique).
  */
-export default function PublicLayout({ children }: { children: ReactNode }) {
+export default async function PublicLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Même contrôle optimiste que le proxy : la simple présence du cookie de
+  // session, sans appel en base — il ne s'agit que du libellé du lien, la
+  // vraie vérification reste dans les pages /cont. Un cookie périmé mène à
+  // « Mon compte », qui redirige vers /login : rien ne fuit.
+  const connected = Boolean(getSessionCookie(await headers()));
+
   return (
     <>
-      <header className="border-b border-warm-border">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2">
-          <Link
-            href="/animale"
-            className="flex min-h-11 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-          >
-            <Logo variant="lockup" />
-          </Link>
-          <nav className="flex items-center gap-2 text-sm text-warm-ink">
-            <Link
-              href="/animale"
-              className="flex min-h-11 items-center rounded-md px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-            >
-              Tous les animaux
-            </Link>
-            <Link
-              href="/adoptati"
-              className="flex min-h-11 items-center rounded-md px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-            >
-              Adoptés
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader>
+        <Link
+          href={connected ? "/cont" : "/login"}
+          className="flex min-h-11 items-center rounded-md px-2 text-sm text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+        >
+          {connected ? "Mon compte" : "Connexion"}
+        </Link>
+      </SiteHeader>
       {children}
+      {/* mt-auto : le body est une colonne flex min-h-full — le pied de
+          page reste en bas même quand le contenu est court. */}
+      <footer className="mt-auto border-t border-warm-border">
+        {/* Pleine largeur, mêmes gouttières que l'en-tête et les pages. */}
+        <nav
+          aria-label="Pied de page"
+          className="flex flex-wrap items-center gap-x-6 px-4 py-2 text-sm md:px-6 lg:px-8"
+        >
+          <Link
+            href="/adoptati"
+            className="flex min-h-11 items-center text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+          >
+            Animaux adoptés
+          </Link>
+          <Link
+            href="/despre"
+            className="flex min-h-11 items-center text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+          >
+            À propos
+          </Link>
+        </nav>
+      </footer>
     </>
   );
 }

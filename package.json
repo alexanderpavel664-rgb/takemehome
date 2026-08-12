@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "seed:demo": "tsx scripts/seed-demo.mts",
+    "seed:demo:clean": "tsx scripts/seed-demo.mts clean",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },
@@ -28,6 +30,10 @@
     "eslint-config-next": "16.3.0",
     "prisma": "^7.9.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

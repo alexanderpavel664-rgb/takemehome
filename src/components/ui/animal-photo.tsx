@@ -61,7 +61,7 @@ export function AnimalPhoto({
     <Image
       ref={ref}
       src={src}
-      alt={`Fotografie cu ${name}`}
+      alt={`Photo de ${name}`}
       fill
       sizes={sizes}
       className="object-cover"

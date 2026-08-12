@@ -18,7 +18,7 @@ import {
 import { COUNTIES } from "@/lib/counties";
 import { animalPhotoPathname } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { ChipCheckbox } from "@/components/ui/chip";
 import { Input, Select, Textarea } from "@/components/ui/field";
 import type { AnimalFormState } from "./actions";
@@ -197,6 +197,10 @@ export function AnimalForm({
 
   const busy = pending || preparing || progress !== null;
 
+  // Erreur photo : côté client (sélection, compression, upload) ou côté
+  // serveur (validation) — un seul message affiché, relié au champ #photo.
+  const photoErrorMessage = photoError ?? state?.fieldErrors?.photo ?? null;
+
   return (
     <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
       {animalId && <input type="hidden" name="id" value={animalId} />}
@@ -226,27 +230,36 @@ export function AnimalForm({
           </option>
         ))}
       </Select>
-      <Select label="Sexe" id="sex" name="sex" defaultValue={initial?.sex ?? ""}>
-        <option value="">Non renseigné</option>
-        {SEX_OPTIONS.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </Select>
-      <Select
-        label="Âge"
-        id="ageGroup"
-        name="ageGroup"
-        defaultValue={initial?.ageGroup ?? ""}
-      >
-        <option value="">Non renseigné</option>
-        {AGE_GROUP_OPTIONS.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </Select>
+      {/* À partir de md, les champs courts vont deux par deux ; sur mobile
+          ils restent empilés. */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Select
+          label="Sexe"
+          id="sex"
+          name="sex"
+          defaultValue={initial?.sex ?? ""}
+        >
+          <option value="">Non renseigné</option>
+          {SEX_OPTIONS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          label="Âge"
+          id="ageGroup"
+          name="ageGroup"
+          defaultValue={initial?.ageGroup ?? ""}
+        >
+          <option value="">Non renseigné</option>
+          {AGE_GROUP_OPTIONS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </div>
       <Input
         label="Âge en toutes lettres"
         id="ageText"
@@ -255,43 +268,32 @@ export function AnimalForm({
         defaultValue={initial?.ageText}
         placeholder="ex. 2 ans"
       />
-      <Select
-        label="Taille"
-        id="size"
-        name="size"
-        defaultValue={initial?.size ?? ""}
-      >
-        <option value="">Non renseignée</option>
-        {SIZE_OPTIONS.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Select
+          label="Județ *"
+          id="county"
+          name="county"
+          defaultValue={initial?.county ?? ""}
+          required
+          error={state?.fieldErrors?.county}
+        >
+          <option value="" disabled>
+            — Choisir un județ —
           </option>
-        ))}
-      </Select>
-      <Select
-        label="Județ *"
-        id="county"
-        name="county"
-        defaultValue={initial?.county ?? ""}
-        required
-        error={state?.fieldErrors?.county}
-      >
-        <option value="" disabled>
-          — Choisir un județ —
-        </option>
-        {COUNTIES.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.name}
-          </option>
-        ))}
-      </Select>
-      <Input
-        label="Ville"
-        id="city"
-        name="city"
-        type="text"
-        defaultValue={initial?.city}
-      />
+          {COUNTIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name}
+            </option>
+          ))}
+        </Select>
+        <Input
+          label="Ville"
+          id="city"
+          name="city"
+          type="text"
+          defaultValue={initial?.city}
+        />
+      </div>
       <Textarea
         label="Description"
         id="description"
@@ -313,10 +315,12 @@ export function AnimalForm({
           ref={photoInputRef}
           onChange={handlePhotoChange}
           disabled={busy}
-          className="block w-full text-sm text-warm-gray file:mr-3 file:rounded-md file:border file:border-warm-border file:bg-card-ivory file:px-4 file:py-2 file:text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink disabled:opacity-50"
+          aria-invalid={photoErrorMessage ? true : undefined}
+          aria-describedby={photoErrorMessage ? "photo-error" : undefined}
+          className="flex min-h-11 w-full items-center text-sm text-warm-gray file:mr-3 file:rounded-md file:border file:border-warm-border file:bg-card-ivory file:px-4 file:py-2 file:text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink disabled:opacity-50"
         />
         {preparing && (
-          <p role="status" className="mt-2 text-sm text-warm-gray">
+          <p role="status" className="mt-2 text-sm text-warm-ink">
             Préparation de la photo…
           </p>
         )}
@@ -356,18 +360,17 @@ export function AnimalForm({
           </div>
         )}
         {progress !== null && (
-          <p role="status" className="mt-2 text-sm text-warm-gray">
+          <p role="status" className="mt-2 text-sm text-warm-ink">
             Envoi de la photo… {Math.round(progress)} %
           </p>
         )}
-        {photoError && (
-          <p role="alert" className="mt-2 text-sm font-semibold text-warm-ink">
-            {photoError}
-          </p>
-        )}
-        {state?.fieldErrors?.photo && (
-          <p className="mt-2 text-sm font-semibold text-warm-ink">
-            {state.fieldErrors.photo}
+        {photoErrorMessage && (
+          <p
+            id="photo-error"
+            role="alert"
+            className="mt-2 text-sm font-semibold text-warm-ink"
+          >
+            {photoErrorMessage}
           </p>
         )}
       </div>
@@ -413,32 +416,54 @@ export function AnimalForm({
           />
         </div>
       </fieldset>
-      <Select
-        label="Statut"
-        id="status"
-        name="status"
-        defaultValue={initial?.status ?? "AVAILABLE"}
-      >
-        {STATUS_OPTIONS.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </Select>
+      {/* Taille rejoint Statut pour former la dernière paire de champs courts. */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Select
+          label="Taille"
+          id="size"
+          name="size"
+          defaultValue={initial?.size ?? ""}
+        >
+          <option value="">Non renseignée</option>
+          {SIZE_OPTIONS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          label="Statut"
+          id="status"
+          name="status"
+          defaultValue={initial?.status ?? "AVAILABLE"}
+        >
+          {STATUS_OPTIONS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </div>
       {state?.formError && (
         <p role="alert" className="text-sm font-semibold text-warm-ink">
           {state.formError}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={busy}>
-        {progress !== null
-          ? "Envoi de la photo…"
-          : preparing
-            ? "Préparation de la photo…"
-            : pending
-              ? "Enregistrement…"
-              : submitLabel}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variant="primary" disabled={busy}>
+          {progress !== null
+            ? "Envoi de la photo…"
+            : preparing
+              ? "Préparation de la photo…"
+              : pending
+                ? "Enregistrement…"
+                : submitLabel}
+        </Button>
+        {/* Chemin de retour sans valider le formulaire. */}
+        <ButtonLink variant="ghost" href="/cont">
+          Annuler
+        </ButtonLink>
+      </div>
     </form>
   );
 }

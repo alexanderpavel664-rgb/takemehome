@@ -28,16 +28,16 @@ const BOOL_FIELDS: { key: keyof PublicFilters & string; label: string }[] = [
   { key: "sterilizat", label: "Stérilisé" },
   { key: "vaccinat", label: "Vacciné" },
   { key: "cip", label: "Pucé" },
-  { key: "copii", label: "S'entend avec les enfants" },
-  { key: "caini", label: "S'entend avec les chiens" },
-  { key: "pisici", label: "S'entend avec les chats" },
+  { key: "copii", label: "S’entend avec les enfants" },
+  { key: "caini", label: "S’entend avec les chiens" },
+  { key: "pisici", label: "S’entend avec les chats" },
 ];
 
 /**
  * Champs de filtre partagés par les deux coquilles (sheet mobile, colonne
- * desktop). Édite un brouillon local ; « Aplică » pousse la nouvelle URL
+ * desktop). Édite un brouillon local ; « Appliquer » pousse la nouvelle URL
  * (les filtres vivent dans les searchParams) en repartant à la première
- * page, « Resetează » conserve l'onglet type. Le brouillon se resynchronise
+ * page, « Réinitialiser » conserve l'onglet type. Le brouillon se resynchronise
  * au montage : le sheet monte à chaque ouverture, la colonne desktop est
  * remontée par la page via key={filterKey}.
  *
@@ -52,7 +52,7 @@ function FilterPanel({
 }: {
   filters: PublicFilters;
   idScope: string;
-  /** Coquille sheet : corps scrollable + pied collé, « Aplică » en primary. */
+  /** Coquille sheet : corps scrollable + pied collé, « Appliquer » en primary. */
   sheet?: boolean;
   /** Appelé juste avant router.push — le sheet mobile s'y ferme. */
   onNavigate?: () => void;
@@ -188,11 +188,11 @@ function FilterPanel({
         <div className="flex gap-3 border-t border-warm-border p-3">
           {activeCount > 0 && (
             <Button variant="outline" onClick={reset} className="flex-1">
-              Resetează
+              Réinitialiser
             </Button>
           )}
           <Button variant="primary" onClick={apply} className="flex-1">
-            Aplică
+            Appliquer
           </Button>
         </div>
       </>
@@ -206,11 +206,11 @@ function FilterPanel({
       {fields}
       <div className="mt-4 flex flex-col gap-2">
         <Button variant="outline" onClick={apply}>
-          Aplică
+          Appliquer
         </Button>
         {activeCount > 0 && (
           <Button variant="ghost" onClick={reset}>
-            Resetează
+            Réinitialiser
           </Button>
         )}
       </div>
@@ -219,7 +219,7 @@ function FilterPanel({
 }
 
 /**
- * Coquille mobile : bouton « Filtrează » (avec pastille encre du nombre de
+ * Coquille mobile : bouton « Filtrer » (avec pastille encre du nombre de
  * filtres actifs) + bottom sheet. Le sheet est la seule surface détachée du
  * papier : scrim teinté encre et ombre chaude — l'exception prévue par
  * La Règle du Plat.
@@ -285,7 +285,7 @@ export function FilterSheet({ filters }: { filters: PublicFilters }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
       >
-        Filtrează
+        Filtrer
         {activeCount > 0 && (
           <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-pill bg-warm-ink px-1 text-sm font-semibold text-white">
             {activeCount}

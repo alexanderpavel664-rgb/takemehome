@@ -18,13 +18,8 @@ import { TypeTabs } from "./type-tabs";
 export const metadata: Metadata = {
   title: "Animaux à adopter – TakeMeHome",
   description:
-    "Chiens, chats et autres animaux à adopter en Roumanie, proposés par des refuges et des sauveteurs.",
+    "Chiens, chats et autres animaux à adopter en Roumanie, publiés par les personnes qui les ont recueillis.",
 };
-
-// La colonne de filtres desktop (w-64 + gap-8) mange ~290px du max-w-5xl :
-// en 4 colonnes les cartes tomberaient à ~166px, plus étroites que sur
-// mobile — la grille de /animale plafonne donc à 3 colonnes en lg.
-const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3";
 
 // La page lit searchParams (filtres + pagination) : rendu dynamique à
 // chaque requête, HTML complet côté serveur, indexable.
@@ -38,8 +33,10 @@ export default async function AnimalePage(props: PageProps<"/animale">) {
     n: count + PAGE_SIZE,
   })}`;
 
+  // Pleine largeur : la grille auto-fill absorbe l'espace, seules les
+  // gouttières (px-4 md:px-6 lg:px-8) cadrent le contenu.
   return (
-    <main className="mx-auto max-w-5xl p-4">
+    <main className="px-4 py-4 md:px-6 lg:px-8">
       <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
         Animaux à adopter
       </h1>
@@ -53,18 +50,14 @@ export default async function AnimalePage(props: PageProps<"/animale">) {
             <FilterSheet filters={filters} />
           </div>
           {/* key = filtres hors pagination : changer un filtre remonte les
-              squelettes ; « Vezi mai multe » garde la grille affichée. */}
+              squelettes ; « Voir plus » garde la grille affichée. */}
           <div className="mt-4">
-            <Suspense
-              key={filterKey || "toate"}
-              fallback={<SkeletonGrid gridClassName={GRID_CLASSES} />}
-            >
+            <Suspense key={filterKey || "toate"} fallback={<SkeletonGrid />}>
               <AnimalGrid
                 where={publicWhere(filters)}
                 count={count}
                 moreHref={moreHref}
                 empty={hasAnyFilter ? <NoResults /> : <EmptyList />}
-                gridClassName={GRID_CLASSES}
               />
             </Suspense>
           </div>

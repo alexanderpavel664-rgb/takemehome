@@ -37,7 +37,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     setError(null);
     setSaved(false);
     if (!values.name.trim()) {
-      setNameError("Le nom du refuge est obligatoire.");
+      setNameError("Le nom est obligatoire.");
       return;
     }
     setPending(true);
@@ -51,7 +51,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     });
     setPending(false);
     if (error) {
-      setError("L'enregistrement a échoué. Réessaie.");
+      setError("L’enregistrement a échoué. Réessayez.");
       return;
     }
     setSaved(true);
@@ -62,7 +62,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Input
-        label="Nom du refuge"
+        label="Nom"
         name="name"
         type="text"
         value={values.name}
@@ -105,7 +105,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         onChange={(e) => set("city", e.target.value)}
       />
       <Textarea
-        label="Description du refuge"
+        label="Description"
         name="description"
         value={values.description}
         onChange={(e) => set("description", e.target.value)}

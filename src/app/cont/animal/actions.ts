@@ -189,7 +189,7 @@ export async function createAnimal(
   });
 
   revalidatePath("/cont");
-  redirect("/cont");
+  redirect("/cont?confirmation=creation");
 }
 
 export async function updateAnimal(
@@ -252,7 +252,7 @@ export async function updateAnimal(
   }
 
   revalidatePath("/cont");
-  redirect("/cont");
+  redirect("/cont?confirmation=modification");
 }
 
 export async function setAnimalStatus(formData: FormData): Promise<void> {

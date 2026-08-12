@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ButtonLink } from "@/components/ui/button";
 import { updateAnimal } from "../../actions";
 import { AnimalForm } from "../../animal-form";
 
@@ -30,7 +29,7 @@ export default async function EditareAnimalPage({
   }
 
   return (
-    <main className="mx-auto max-w-lg p-4">
+    <main className="mx-auto max-w-lg p-4 md:max-w-2xl md:px-6 lg:px-8">
       <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
         Modifier {animal.name}
       </h1>
@@ -59,11 +58,6 @@ export default async function EditareAnimalPage({
           status: animal.status,
         }}
       />
-      <div className="mt-4">
-        <ButtonLink href="/cont" variant="ghost">
-          Retour au compte
-        </ButtonLink>
-      </div>
     </main>
   );
 }
