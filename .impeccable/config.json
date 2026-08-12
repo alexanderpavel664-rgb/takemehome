@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "19px",
+        "createdAt": "2026-08-12T10:30:28.084Z",
+        "reason": "DESIGN.md exige 600/>=19px pour les libelles de boutons pleins (contraste 4,49:1) et les noms en carte ; valeur exigee 'obligatoire' par l'utilisateur en C1"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "13px",
+        "createdAt": "2026-08-12T10:30:28.134Z",
+        "reason": "DESIGN.md documente Label (400, 13-14 px) pour metadonnees et chips ; 13px est sur la gamme"
+      }
+    ]
+  }
+}
