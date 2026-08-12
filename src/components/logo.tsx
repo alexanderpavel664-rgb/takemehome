@@ -13,6 +13,9 @@
 
 const TERRACOTTA = "#C4552F";
 const WARM_INK = "#2B2622";
+// Le logo vit toujours sur le papier crème : il porte son propre fond,
+// comme le favicon exporté de la maquette Canva.
+const CREAM = "#F7F3EA";
 
 const PAD_PATH =
   "M37 51.5 C40.1 48.5 45.2 45.9 50 46 C54.8 46.1 61.1 48.2 66 52 C70.9 55.8 79.1 65.9 79.5 69 C79.9 72.1 72.6 75.4 69 76.5 C65.4 77.6 61.4 74.3 58 75.5 C54.6 76.7 49.4 86.9 45 85 C40.6 83.1 32.8 69.6 31.5 64 C30.2 58.4 33.9 54.5 37 51.5Z";
@@ -50,6 +53,7 @@ export function Logo({ variant = "lockup", className }: LogoProps) {
         aria-label="takemehome"
         className={className}
       >
+        <rect x="7.9" y="8.5" width="81.9" height="81.9" fill={CREAM} />
         <g fill={TERRACOTTA}>
           <PawShape />
         </g>
@@ -65,6 +69,7 @@ export function Logo({ variant = "lockup", className }: LogoProps) {
       aria-label="takemehome"
       className={className}
     >
+      <rect x="-890.5" y="-789.5" width="7330" height="849" fill={CREAM} />
       <g transform="translate(-948.96 -682.18) scale(8.3207)" fill={TERRACOTTA}>
         <PawShape />
       </g>
