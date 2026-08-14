@@ -16,7 +16,7 @@ import { LoadMore } from "./load-more";
  * d'au moins 260px quelle que soit la largeur disponible (avec ou sans
  * colonne de filtres), sans variante lg:/xl: à maintenir par page.
  */
-const GRID_CLASSES =
+export const GRID_CLASSES =
   "grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] md:gap-4";
 
 export async function AnimalGrid({

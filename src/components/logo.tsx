@@ -44,10 +44,16 @@ function Paw({ className }: { className: string }) {
 type LogoProps = {
   /** « lockup » : patte + mot (en-tête) ; « paw » : patte seule. */
   variant?: "lockup" | "paw";
+  /** Taille du lockup — un utilitaire text-* ; la patte suit, cotée en em. */
+  size?: string;
   className?: string;
 };
 
-export function Logo({ variant = "lockup", className = "" }: LogoProps) {
+export function Logo({
+  variant = "lockup",
+  size = "text-xl",
+  className = "",
+}: LogoProps) {
   if (variant === "paw") {
     return (
       <span
@@ -63,7 +69,7 @@ export function Logo({ variant = "lockup", className = "" }: LogoProps) {
     <span
       role="img"
       aria-label="takemehome"
-      className={`inline-flex items-baseline text-xl font-semibold text-warm-ink ${className}`}
+      className={`inline-flex items-baseline font-semibold text-warm-ink ${size} ${className}`}
     >
       <Paw className="mr-[0.227em] h-[0.595em] w-auto translate-y-[0.015em]" />
       takemehome

@@ -7,8 +7,7 @@ import { Logo } from "@/components/logo";
  * en haut à gauche, cliquable, partout identique — une navigation qui change
  * de structure entre les pages érode la confiance.
  *
- * La cible est /animale tant que la page d'accueil / n'existe pas (phase 7 —
- * changer ici suffira). Le lien porte aria-label="Acasă" : un lecteur
+ * Le logo mène à la page d'accueil /. Le lien porte aria-label="Acasă" : un lecteur
  * d'écran doit annoncer la destination, pas la marque (le SVG du logo garde
  * son propre libellé, mais c'est l'aria-label du lien qui fait le nom).
  *
@@ -22,7 +21,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
           liens s'alignent avec le contenu à toutes les largeurs. */}
       <div className="flex items-center justify-between gap-4 px-4 py-2 md:px-6 lg:px-8">
         <Link
-          href="/animale"
+          href="/"
           aria-label="Acasă"
           className="flex min-h-11 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
         >
