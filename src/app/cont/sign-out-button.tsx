@@ -22,7 +22,9 @@ export function SignOutButton() {
   }
 
   return (
-    <Button variant="outline" onClick={onSignOut} disabled={pending}>
+    // Ghost : la déconnexion est une sortie discrète en bas de page — la
+    // bordure terracotta de l'outline lui donnerait un poids qu'elle n'a pas.
+    <Button variant="ghost" onClick={onSignOut} disabled={pending}>
       {pending ? "Déconnexion…" : "Se déconnecter"}
     </Button>
   );

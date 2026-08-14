@@ -113,8 +113,9 @@ export function InstallBanner() {
   return (
     <Card
       // Le bandeau n'est pas un dialogue : pas d'aria-modal, pas de piège à
-      // focus — il s'insère dans le flux, sous son titre, et se lit à son tour.
-      className="mt-6 max-w-[66ch] p-4"
+      // focus — il s'insère dans le flux, sous son titre, et se lit à son
+      // tour, à la même largeur que les autres cartes de la page.
+      className="mt-6 p-4"
     >
       <h2 className="text-lg font-semibold text-warm-ink">
         Installer TakeMeHome

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Card } from "@/components/ui/card";
 import { updateAnimal } from "../../actions";
 import { AnimalForm } from "../../animal-form";
 
@@ -29,35 +30,41 @@ export default async function EditareAnimalPage({
   }
 
   return (
-    <main className="mx-auto max-w-lg p-4 md:max-w-2xl md:px-6 lg:px-8">
-      <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
+    // w-full : enfant du body en flex-col, mx-auto seul annulerait
+    // l'étirement — la page se tasserait sur la largeur de ses champs.
+    <main className="mx-auto w-full max-w-2xl px-4 py-4 md:px-6">
+      <h1 className="text-2xl font-semibold text-warm-ink">
         Modifier {animal.name}
       </h1>
-      <AnimalForm
-        action={updateAnimal}
-        animalId={animal.id}
-        userId={session.user.id}
-        initialPhotoUrl={animal.photos[0]?.url}
-        submitLabel="Enregistrer"
-        initial={{
-          name: animal.name,
-          type: animal.type,
-          sex: animal.sex ?? "",
-          ageGroup: animal.ageGroup ?? "",
-          ageText: animal.ageText ?? "",
-          size: animal.size ?? "",
-          county: animal.county,
-          city: animal.city ?? "",
-          description: animal.description ?? "",
-          sterilized: animal.sterilized,
-          vaccinated: animal.vaccinated,
-          microchipped: animal.microchipped,
-          goodWithKids: animal.goodWithKids,
-          goodWithDogs: animal.goodWithDogs,
-          goodWithCats: animal.goodWithCats,
-          status: animal.status,
-        }}
-      />
+      {/* Le formulaire est posé sur l'ivoire : un contenant, pas des champs
+          qui flottent sur le papier. */}
+      <Card className="mt-4 p-4">
+        <AnimalForm
+          action={updateAnimal}
+          animalId={animal.id}
+          userId={session.user.id}
+          initialPhotoUrl={animal.photos[0]?.url}
+          submitLabel="Enregistrer"
+          initial={{
+            name: animal.name,
+            type: animal.type,
+            sex: animal.sex ?? "",
+            ageGroup: animal.ageGroup ?? "",
+            ageText: animal.ageText ?? "",
+            size: animal.size ?? "",
+            county: animal.county,
+            city: animal.city ?? "",
+            description: animal.description ?? "",
+            sterilized: animal.sterilized,
+            vaccinated: animal.vaccinated,
+            microchipped: animal.microchipped,
+            goodWithKids: animal.goodWithKids,
+            goodWithDogs: animal.goodWithDogs,
+            goodWithCats: animal.goodWithCats,
+            status: animal.status,
+          }}
+        />
+      </Card>
     </main>
   );
 }
