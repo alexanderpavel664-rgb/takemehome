@@ -19,14 +19,24 @@ export default function AnimaleLoading() {
         Animaux à adopter
       </h1>
       <div className="flex items-start lg:gap-8">
-        <div aria-hidden className="hidden w-64 shrink-0 lg:block xl:w-72">
-          <Card className="space-y-4 p-4">
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-24 w-full" />
+        {/* Colonne de filtres au gabarit exact de FilterAside : w-64 sans
+            variante xl (une largeur xl inventée décalait toute la grille de
+            32 px, assez pour faire tomber l'auto-fill de 4 à 3 colonnes). */}
+        <div aria-hidden className="hidden w-64 shrink-0 lg:block">
+          <Card className="p-4">
+            {/* Titre « Filtres » : 18px/28, mb-4. */}
+            <Skeleton className="mb-4 h-7 w-1/2" />
+            {/* Quatre champs (label + Select = 72 px) puis le fieldset de
+                chips (252 px à cette largeur fixe), en space-y-4. */}
+            <div className="space-y-4">
+              <Skeleton className="h-[72px]" />
+              <Skeleton className="h-[72px]" />
+              <Skeleton className="h-[72px]" />
+              <Skeleton className="h-[72px]" />
+              <Skeleton className="h-[252px]" />
+            </div>
+            {/* « Appliquer » — seul bouton de la colonne au repos. */}
+            <Skeleton className="mt-4 h-12" />
           </Card>
         </div>
         <div className="min-w-0 flex-1">
