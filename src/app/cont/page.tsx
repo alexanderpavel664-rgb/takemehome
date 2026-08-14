@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { setAnimalStatus } from "./animal/actions";
 import { DeleteAnimalButton } from "./animal/delete-animal-button";
+import { InstallBanner } from "./install-banner";
 import { SignOutButton } from "./sign-out-button";
 
 // La vraie vérification de session se fait ici, dans chaque page protégée :
@@ -64,6 +65,12 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
           Modifier mon profil
         </ButtonLink>
       </div>
+
+      {/* Placé ici, et nulle part ailleurs : c'est l'écran des publiantes
+          connectées. Le bandeau ne se montre qu'une fois, se refuse et se
+          souvient du refus — il ne s'affiche pas du tout si l'application
+          est déjà installée. */}
+      <InstallBanner />
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-warm-ink">Mes animaux</h2>

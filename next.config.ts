@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSerwist } from "@serwist/turbopack";
 import { BLOB_HOST } from "./src/lib/animal-photo";
 
 const nextConfig: NextConfig = {
@@ -27,4 +28,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// withSerwist branche la compilation du service worker sur Turbopack — le
+// build et le dev restent ceux de Next, sans `--webpack`.
+export default withSerwist(nextConfig);
