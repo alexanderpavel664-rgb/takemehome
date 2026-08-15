@@ -119,10 +119,17 @@ export function serializeFilters(
   return params.toString();
 }
 
-/** Clause where publique : uniquement les animaux disponibles + filtres. */
+/**
+ * Clause where publique : uniquement les animaux disponibles, non masqués,
+ * plus les filtres. `hidden: false` est une colonne d'Animal et non un
+ * filtre sur user.suspended : les listes publiques ne joignent aucune table
+ * pour se filtrer, et l'index (status, hidden, updatedAt, id) sert les deux
+ * égalités puis le tri d'un seul parcours.
+ */
 export function publicWhere(f: PublicFilters): Prisma.AnimalWhereInput {
   return {
     status: "AVAILABLE",
+    hidden: false,
     ...(f.tip && { type: f.tip }),
     ...(f.judet && { county: f.judet }),
     ...(f.varsta && { ageGroup: f.varsta }),

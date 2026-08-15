@@ -28,7 +28,9 @@ export default async function AdoptatiPage(props: PageProps<"/adoptati">) {
       </h1>
       <Suspense fallback={<SkeletonGrid />}>
         <AnimalGrid
-          where={{ status: "ADOPTED" }}
+          // hidden: false comme partout ailleurs — une annonce masquée ne
+          // reparaît pas par la petite porte des animaux adoptés.
+          where={{ status: "ADOPTED", hidden: false }}
           count={count}
           moreHref={`/adoptati?n=${count + PAGE_SIZE}`}
           empty={

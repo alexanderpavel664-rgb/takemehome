@@ -28,7 +28,7 @@ export function RegisterForm() {
       password,
     });
     if (error) {
-      setError(authErrorMessage(error.code));
+      setError(authErrorMessage(error));
       setPending(false);
       return;
     }

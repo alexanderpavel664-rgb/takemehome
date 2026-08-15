@@ -1,9 +1,8 @@
-import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
+import { getViewer } from "@/lib/viewer";
 import { Card } from "@/components/ui/card";
 import { updateAnimal } from "../../actions";
 import { AnimalForm } from "../../animal-form";
@@ -17,19 +16,29 @@ export default async function EditareAnimalPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
+  const viewer = await getViewer();
+  if (!viewer) {
     redirect("/login");
+  }
+  // Compte suspendu : plutôt qu'un formulaire qui refusera à la
+  // soumission, le renvoi vers /cont — c'est là que l'explication vit.
+  if (viewer.suspended) {
+    redirect("/cont");
   }
 
   const { id } = await params;
 
   // Isolation : findFirst({ id, userId }) — l'animal d'un autre refuge est
   // indistinguable d'un animal inexistant → 404, jamais 403 (un 403
-  // confirmerait que l'animal existe).
+  // confirmerait que l'animal existe). Un ADMIN n'a pas de passe-droit ici :
+  // la modération masque une annonce, elle ne la réécrit pas.
   const animal = await prisma.animal.findFirst({
-    where: { id, userId: session.user.id },
-    include: { photos: { orderBy: { position: "asc" } } },
+    where: { id, userId: viewer.id },
+    // Le formulaire consomme presque tous les scalaires (valeurs
+    // initiales) ; des photos, seule l'URL de la première sert.
+    include: {
+      photos: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+    },
   });
   if (!animal) {
     notFound();
@@ -48,7 +57,7 @@ export default async function EditareAnimalPage({
         <AnimalForm
           action={updateAnimal}
           animalId={animal.id}
-          userId={session.user.id}
+          userId={viewer.id}
           initialPhotoUrl={animal.photos[0]?.url}
           submitLabel={STR.animalForm.editSubmit}
           initial={{

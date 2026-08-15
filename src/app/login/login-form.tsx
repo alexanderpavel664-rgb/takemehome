@@ -28,7 +28,7 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
       password,
     });
     if (error) {
-      setError(authErrorMessage(error.code));
+      setError(authErrorMessage(error));
       setPending(false);
       return;
     }

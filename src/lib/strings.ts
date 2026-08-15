@@ -3,8 +3,23 @@ import type {
   AnimalSize,
   AnimalStatus,
   AnimalType,
+  ReportReason,
+  ReportStatus,
   Sex,
 } from "@/generated/prisma/client";
+
+/**
+ * Accord roumain du nom après un nombre : « 1 semnalare », « 3 semnalări »,
+ * mais « 20 DE semnalări » — la préposition apparaît dès que les deux
+ * derniers chiffres valent 00 ou 20 et plus.
+ */
+function countRo(n: number, one: string, many: string): string {
+  if (n === 1) {
+    return `1 ${one}`;
+  }
+  const rest = n % 100;
+  return `${n}${rest === 0 || rest >= 20 ? " de" : ""} ${many}`;
+}
 
 /**
  * Toutes les chaînes visibles du site, en roumain, dans un seul fichier :
@@ -59,6 +74,20 @@ export const STR = {
       AVAILABLE: "Disponibil",
       ADOPTED: "Adoptat",
     } satisfies Record<AnimalStatus, string>,
+    // Motifs de signalement — l'ordre du formulaire public suit celui-ci.
+    reportReason: {
+      FALSE_INFO: "Informații false",
+      ALREADY_ADOPTED: "Animalul e deja adoptat",
+      INAPPROPRIATE: "Conținut nepotrivit",
+      SCAM: "Suspiciune de înșelătorie",
+      OTHER: "Altceva",
+    } satisfies Record<ReportReason, string>,
+    // Vus uniquement dans /admin.
+    reportStatus: {
+      PENDING: "În așteptare",
+      REVIEWED: "Tratat",
+      DISMISSED: "Respins",
+    } satisfies Record<ReportStatus, string>,
   },
 
   /* ——— En-tête, pied de page, coquilles. ——— */
@@ -171,6 +200,70 @@ export const STR = {
     photoAlt: (name: string) => `Fotografie cu ${name}`,
     notFoundTitle: "Animalul nu a fost găsit",
     notFoundDescription: "Anunțul nu mai există sau a fost retras.",
+    // Lien discret en bas de fiche : pas un bouton, pas une alerte — juste
+    // une porte, ouverte à qui n'a pas de compte.
+    report: "Semnalează acest anunț",
+    // Annonce masquée par la modération : seul son propriétaire (et un
+    // ADMIN) arrive jusqu'ici, tout le monde d'autre reçoit un 404.
+    hiddenTitle: "Anunțul e ascuns",
+    hiddenDescription:
+      "Echipa TakeMeHome l-a ascuns după o semnalare. Nu mai apare în paginile publice și doar tu îl mai vezi. Poți să-l modifici oricând.",
+  },
+
+  /* ——— Signalement d'une annonce (/animal/[id]/semnaleaza). ——— */
+  report: {
+    metaTitle: "Semnalează un anunț – TakeMeHome",
+    title: (name: string) => `Semnalezi anunțul pentru ${name}`,
+    intro:
+      "Nu ai nevoie de cont. Citim fiecare semnalare și verificăm anunțul.",
+    reason: "Motiv *",
+    reasonPlaceholder: "Alege motivul",
+    message: "Detalii (opțional)",
+    messagePlaceholder: "Ce anume te-a făcut să semnalezi anunțul?",
+    submit: "Trimite semnalarea",
+    submitPending: "Se trimite…",
+    back: "Înapoi la anunț",
+    reasonRequired: "Alege un motiv.",
+    messageTooLong: "Detaliile sunt prea lungi (cel mult 1000 de caractere).",
+    tooManyRequests:
+      "Prea multe semnalări. Așteaptă un minut și încearcă din nou.",
+    saveFailed: "Semnalarea nu s-a putut trimite. Încearcă din nou.",
+    // Confirmation : elle remplace le formulaire, et ne promet pas de
+    // réponse individuelle — on ne tient que ce qu'on peut tenir.
+    sentTitle: "Îți mulțumim",
+    sentDescription:
+      "Am primit semnalarea și ne uităm peste anunț. Nu primești un răspuns, dar fiecare semnalare e citită.",
+  },
+
+  /* ——— Modération /admin (jamais vue par un compte USER). ——— */
+  admin: {
+    metaTitle: "Moderare – TakeMeHome",
+    title: "Moderare",
+    pending: (n: number) =>
+      `${countRo(n, "semnalare", "semnalări")} în așteptare`,
+    emptyTitle: "Nicio semnalare",
+    emptyDescription: "Când cineva semnalează un anunț, apare aici.",
+    truncated: (n: number) =>
+      `Se afișează cele mai recente ${countRo(n, "semnalare", "semnalări")}.`,
+    seeAnimal: "Vezi anunțul",
+    details: "Detalii",
+    ip: "IP",
+    unknownIp: "necunoscut",
+    publishedBy: (name: string) => `Publicat de ${name}`,
+    hiddenBadge: "Anunț ascuns",
+    suspendedBadge: "Cont suspendat",
+    hide: "Ascunde anunțul",
+    unhide: "Arată anunțul",
+    suspend: "Suspendă contul",
+    unsuspend: "Reactivează contul",
+    // La réactivation ne réaffiche rien d'elle-même : une annonce masquée
+    // l'a été après examen, la ressusciter en lot annulerait ce travail.
+    suspendHint:
+      "Suspendarea ascunde toate anunțurile contului. Reactivarea nu le readuce: le arăți unul câte unul.",
+    confirmSuspend: (name: string) =>
+      `Suspenzi contul „${name}”? Toate anunțurile lui se ascund, iar reactivarea nu le readuce.`,
+    markReviewed: "Marchează tratat",
+    dismiss: "Respinge",
   },
 
   /* ——— /adoptati. ——— */
@@ -196,6 +289,20 @@ export const STR = {
     p3Link: "Creează-ți un cont",
     p3AfterLink: " și publică-i anunțul.",
     seeAnimals: "Vezi animalele",
+    // Ton informatif, jamais alarmiste : on décrit des habitudes, on
+    // n'agite pas la peur. La première phrase pose la proportion réelle.
+    safetyTitle: "Cum adopți în siguranță",
+    safetyIntro:
+      "Cele mai multe anunțuri sunt reale. Câteva obiceiuri simple te ajută să le recunoști pe cele care nu sunt.",
+    safetyTips: [
+      "Vezi animalul în persoană înainte să te hotărăști.",
+      "Ia-ți timp: cine te grăbește să decizi pe loc are de obicei un motiv.",
+      "Nu trimite bani în avans, nici pentru transport, nici pentru „rezervare”.",
+      "Cere carnetul de sănătate și istoricul: vaccinuri, sterilizare, tratamente.",
+      "Fotografiile care par prea profesioniste pot veni de oriunde de pe internet. Cere una făcută pe loc.",
+    ],
+    safetyReport:
+      "Dacă un anunț ți se pare suspect, folosește „Semnalează acest anunț” din josul lui.",
   },
 
   /* ——— Authentification. ——— */
@@ -231,6 +338,9 @@ export const STR = {
       USER_ALREADY_EXISTS: "Există deja un cont cu această adresă de email.",
       USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
         "Există deja un cont cu această adresă de email.",
+      // Limita de debit (429) : fereastra e de 15 minute — « câteva minute »
+      // spune adevărul fără să promită un cronometru.
+      rateLimited: "Prea multe încercări. Așteaptă câteva minute și încearcă din nou.",
       fallback: "Ceva n-a mers bine. Încearcă din nou.",
     },
   },
@@ -251,6 +361,13 @@ export const STR = {
     notFilled: "necompletat",
     unreachableWarning:
       "Fără telefon sau email public, nimeni nu te poate contacta pentru adopție. Completează măcar unul în profil.",
+    // Compte suspendu : l'écran dit ce qui a changé, sans détour.
+    suspendedTitle: "Contul e suspendat",
+    suspendedDescription:
+      "Echipa TakeMeHome ți-a suspendat contul. Nu mai poți publica sau modifica anunțuri, iar anunțurile tale nu mai apar în paginile publice.",
+    // Annonce masquée : le propriétaire la voit, marquée comme telle.
+    hiddenBadge: "Ascuns",
+    hiddenHint: "Ascuns din paginile publice după o semnalare.",
     myAnimals: "Animalele mele",
     addAnimal: "Adaugă un animal",
     emptyTitle: "Niciun animal deocamdată",
@@ -356,8 +473,23 @@ export const STR = {
     uploading: (percent: number) => `Se trimite fotografia… ${percent}%`,
     uploadingLabel: "Se trimite fotografia…",
     uploadNetworkError: "Fotografia nu s-a trimis: problemă de rețea. Încearcă din nou.",
-    uploadError: (message: string) => `Fotografia nu s-a trimis: ${message}`,
+    // Jamais le message brut de l'erreur : il arrive en anglais, du client
+    // blob ou du réseau, et ne dit rien d'actionnable à un sauveteur. Le
+    // détail part dans Sentry, l'utilisateur reçoit une phrase utile.
+    uploadFailed: "Fotografia nu s-a trimis. Încearcă din nou.",
+    // Jeton refusé (limite de débit, session expirée) : le client blob ne
+    // transmet pas le motif exact, la phrase couvre les deux cas.
+    uploadRefused:
+      "Fotografia nu s-a trimis. Așteaptă un minut și încearcă din nou.",
     saving: "Se salvează…",
+    tooManyRequests: "Prea multe încercări. Așteaptă un minut și încearcă din nou.",
+    // Compte suspendu : l'écran /cont porte l'explication complète, ici on
+    // rappelle seulement pourquoi l'enregistrement n'a pas eu lieu.
+    accountSuspended:
+      "Contul tău e suspendat: nu mai poți publica sau modifica anunțuri.",
+    // Panne côté serveur pendant l'enregistrement : la saisie reste à
+    // l'écran, l'utilisateur n'a rien à retaper.
+    saveFailed: "Anunțul nu s-a putut salva. Încearcă din nou.",
   },
 
   /* ——— Erreurs de compression photo (côté navigateur). ——— */
@@ -372,10 +504,15 @@ export const STR = {
   /* ——— API d'upload (messages renvoyés au navigateur). ——— */
   upload: {
     signInRequired: "Intră în cont ca să trimiți o fotografie.",
+    accountSuspended: "Contul tău e suspendat.",
     pathNotAllowed: "Cale de fotografie neautorizată.",
     animalNotFound: "Animalul nu a fost găsit.",
-    unknownError: "Eroare necunoscută.",
     invalidStatus: "Status invalid.",
+    tooManyRequests: "Prea multe încercări. Așteaptă un minut și încearcă din nou.",
+    // Réponse par défaut de la route : tout ce qui n'est pas un de nos
+    // propres refus sort sous cette phrase, jamais le message d'origine
+    // (il viendrait de @vercel/blob, en anglais et technique).
+    failed: "Fotografia nu s-a putut trimite. Încearcă din nou.",
   },
 
   /* ——— 404, hors ligne, chargement. ——— */
@@ -383,6 +520,17 @@ export const STR = {
     title: "Pagina nu a fost găsită",
     description: "Linkul e greșit sau pagina nu mai există.",
     cta: "Vezi animalele de adoptat",
+  },
+  // Écran d'erreur (error.tsx et global-error.tsx). Jamais de détail
+  // technique ici : le message d'origine, la pile et la requête restent
+  // côté serveur. Seul le digest s'affiche, c'est une empreinte opaque qui
+  // permet de retrouver la ligne de log correspondante.
+  error: {
+    title: "Ceva n-a mers bine",
+    description: "Pagina nu s-a putut afișa. E o problemă de partea noastră, nu a ta.",
+    retry: "Încearcă din nou",
+    toAnimals: "Vezi animalele de adoptat",
+    code: (digest: string) => `Cod: ${digest}`,
   },
   offline: {
     metaTitle: "Fără internet – TakeMeHome",

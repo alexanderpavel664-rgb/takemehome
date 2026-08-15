@@ -17,7 +17,14 @@ const MESSAGES: Record<string, string> = {
     STR.auth.errors.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL,
 };
 
-export function authErrorMessage(code: string | undefined): string {
+export function authErrorMessage(error: {
+  code?: string;
+  status?: number;
+}): string {
+  // La réponse 429 du rate limiting n'a pas de code d'erreur : le statut
+  // HTTP est le seul signal (le corps est un message anglais figé).
+  if (error.status === 429) return STR.auth.errors.rateLimited;
+  const { code } = error;
   if (code && code in MESSAGES) return MESSAGES[code];
   return STR.auth.errors.fallback;
 }

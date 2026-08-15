@@ -47,12 +47,36 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
         ? STR.cont.confirmationUpdated
         : null;
 
-  // Isolation : uniquement les animaux du compte connecté.
-  const animals = await prisma.animal.findMany({
-    where: { userId: session.user.id },
-    orderBy: { updatedAt: "desc" },
-    include: { photos: { orderBy: { position: "asc" }, take: 1 } },
-  });
+  // La suspension ne vit pas dans la session (elle n'est pas déclarée dans
+  // les additionalFields de better-auth, pour qu'aucune requête du navigateur
+  // ne puisse l'écrire) : elle se relit en base, en parallèle des animaux.
+  //
+  // Isolation : uniquement les animaux du compte connecté. Select minimal :
+  // la rangée n'affiche que nom, type, statut, masquage, date et photo.
+  const [account, animals] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { suspended: true },
+    }),
+    prisma.animal.findMany({
+      where: { userId: session.user.id },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        status: true,
+        hidden: true,
+        updatedAt: true,
+        photos: {
+          orderBy: { position: "asc" },
+          take: 1,
+          select: { url: true },
+        },
+      },
+    }),
+  ]);
+  const suspended = account?.suspended ?? false;
 
   const phone = user.phone?.trim();
   const publicEmail = user.publicEmail?.trim();
@@ -89,6 +113,24 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
       <h1 className="text-2xl font-semibold text-warm-ink">
         {STR.cont.title}
       </h1>
+
+      {suspended && (
+        // La nouvelle qui commande tout le reste de l'écran : elle passe
+        // avant le profil. Même langage que les autres avertissements du
+        // site — bordure encre épaissie, message en toutes lettres, jamais
+        // la couleur seule (la palette n'a pas de rouge, et n'en veut pas).
+        // Ivoire et non crème : la carte est posée sur le papier crème de la
+        // page, à l'inverse de l'avertissement du profil, qui vit DANS une
+        // carte ivoire et passe donc au crème pour s'en détacher.
+        <Card role="status" className="mt-4 border-[1.5px] border-warm-ink p-4">
+          <h2 className="text-lg font-semibold text-warm-ink">
+            {STR.cont.suspendedTitle}
+          </h2>
+          <p className="mt-1 max-w-[66ch] text-base text-warm-ink">
+            {STR.cont.suspendedDescription}
+          </p>
+        </Card>
+      )}
 
       {/* ——— Profil : ce que les adoptantes voient sur les fiches. ——— */}
       <Card className="mt-4 p-4">
@@ -132,10 +174,14 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
           <h2 className="text-lg font-semibold text-warm-ink">
             {STR.cont.myAnimals}
           </h2>
-          {/* Le seul bouton plein de l'écran (La Règle du Bouton Unique). */}
-          <ButtonLink variant="primary" href="/cont/animal/nou">
-            {STR.cont.addAnimal}
-          </ButtonLink>
+          {/* Le seul bouton plein de l'écran (La Règle du Bouton Unique).
+              Compte suspendu : pas de bouton du tout — proposer une action
+              qui sera refusée à la soumission serait une promesse en l'air. */}
+          {!suspended && (
+            <ButtonLink variant="primary" href="/cont/animal/nou">
+              {STR.cont.addAnimal}
+            </ButtonLink>
+          )}
         </div>
         {animals.length === 0 ? (
           // L'état vide vit dans le contenant des animaux, pas sur le fond.
@@ -186,38 +232,59 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                           {STATUS_LABELS[animal.status]}
                         </span>
                       )}
+                      {animal.hidden && (
+                        // Masquée par la modération : la pastille encre
+                        // pleine, celle des états qui comptent — la
+                        // publiante doit le voir sans lire la ligne d'à côté.
+                        <span className="inline-flex items-center rounded-pill bg-warm-ink px-3 py-1 text-[13px] font-semibold text-white">
+                          {STR.cont.hiddenBadge}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-warm-gray">
                       {STR.cont.updated(relativeTimeRo(animal.updatedAt))}
                     </p>
+                    {animal.hidden && (
+                      <p className="mt-1 text-sm font-semibold text-warm-ink">
+                        {STR.cont.hiddenHint}
+                      </p>
+                    )}
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {/* La publiante voit son annonce comme un adoptant. */}
                       <ButtonLink variant="ghost" href={`/animal/${animal.id}`}>
                         {STR.cont.seePublicListing}
                       </ButtonLink>
-                      <ButtonLink
-                        variant="ghost"
-                        href={`/cont/animal/${animal.id}/editare`}
-                      >
-                        {STR.cont.edit}
-                      </ButtonLink>
-                      <form action={setAnimalStatus}>
-                        <input type="hidden" name="id" value={animal.id} />
-                        <input
-                          type="hidden"
-                          name="status"
-                          value={
-                            animal.status === "AVAILABLE"
-                              ? "ADOPTED"
-                              : "AVAILABLE"
-                          }
-                        />
-                        <Button variant="ghost" type="submit">
-                          {animal.status === "AVAILABLE"
-                            ? STR.cont.markAdopted
-                            : STR.cont.markAvailable}
-                        </Button>
-                      </form>
+                      {/* Compte suspendu : modifier et changer le statut
+                          disparaissent (les actions les refusent de toute
+                          façon). Voir et supprimer restent — retirer son
+                          propre contenu n'a jamais rien publié. */}
+                      {!suspended && (
+                        <>
+                          <ButtonLink
+                            variant="ghost"
+                            href={`/cont/animal/${animal.id}/editare`}
+                          >
+                            {STR.cont.edit}
+                          </ButtonLink>
+                          <form action={setAnimalStatus}>
+                            <input type="hidden" name="id" value={animal.id} />
+                            <input
+                              type="hidden"
+                              name="status"
+                              value={
+                                animal.status === "AVAILABLE"
+                                  ? "ADOPTED"
+                                  : "AVAILABLE"
+                              }
+                            />
+                            <Button variant="ghost" type="submit">
+                              {animal.status === "AVAILABLE"
+                                ? STR.cont.markAdopted
+                                : STR.cont.markAvailable}
+                            </Button>
+                          </form>
+                        </>
+                      )}
                       <DeleteAnimalButton id={animal.id} name={animal.name} />
                     </div>
                   </div>

@@ -35,7 +35,24 @@ export async function AnimalGrid({
     // Tri stable : updatedAt décroissant, id en départage des ex æquo.
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     take: count + 1,
-    include: { photos: { orderBy: { position: "asc" }, take: 1 } },
+    // La requête la plus chaude du site : uniquement ce que la carte
+    // consomme — sans select, les 21 colonnes partiraient de Neon,
+    // description comprise.
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      sex: true,
+      ageGroup: true,
+      ageText: true,
+      county: true,
+      status: true,
+      photos: {
+        orderBy: { position: "asc" },
+        take: 1,
+        select: { url: true },
+      },
+    },
   });
   const hasMore = animals.length > count;
   const shown = hasMore ? animals.slice(0, count) : animals;

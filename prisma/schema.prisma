@@ -42,6 +42,26 @@ enum AnimalPurpose {
   FOSTER
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// Motifs de signalement — l'ordre est celui du formulaire public.
+enum ReportReason {
+  FALSE_INFO
+  ALREADY_ADOPTED
+  INAPPROPRIATE
+  SCAM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
 model User {
   id          String   @id @default(cuid())
   name          String
@@ -53,6 +73,14 @@ model User {
   county        String?
   city          String?
   description   String?
+  // role et suspended ne sont volontairement PAS déclarés dans les
+  // additionalFields de better-auth (auth.ts) : ce qui n'y est pas déclaré
+  // est purement et simplement ignoré par /update-user et /sign-up
+  // (parseInputData n'itère que sur les champs déclarés). Aucune requête
+  // venue du navigateur ne peut donc les écrire — le rôle ADMIN se pose à
+  // la main en base, jamais par l'interface.
+  role          UserRole @default(USER)
+  suspended     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -87,19 +115,50 @@ model Animal {
   // Non affiché en V1 — on prépare seulement le modèle.
   purpose      AnimalPurpose @default(ADOPTION)
   status       AnimalStatus  @default(AVAILABLE)
+  // Masquage par la modération : l'annonce sort de toutes les pages
+  // publiques mais reste lisible par son propriétaire (et par un ADMIN).
+  // Colonne scalaire sur Animal, et non un filtre sur user.suspended : les
+  // listes publiques ne doivent joindre aucune table pour se filtrer.
+  hidden       Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  photos AnimalPhoto[]
+  photos  AnimalPhoto[]
+  reports Report[]
 
   @@index([userId])
   @@index([type])
   @@index([county])
   @@index([ageGroup])
   @@index([sex])
-  @@index([status])
+  // Les listes publiques font toutes WHERE status AND hidden = false
+  // ORDER BY updatedAt DESC, id DESC LIMIT n : deux égalités en tête du
+  // composite, puis un parcours d'index déjà trié qui s'arrête au LIMIT.
+  // (purpose n'a pas d'index : aucune requête V1 ne filtre dessus.)
+  @@index([status, hidden, updatedAt, id])
   @@index([size])
-  @@index([purpose])
+}
+
+// Signalement d'une annonce par un visiteur — sans compte : un adoptant qui
+// repère une arnaque n'en a pas. La table n'est jamais lue par une page
+// publique : aucune jointure ne s'ajoute aux listes ni à la fiche.
+model Report {
+  id        String       @id @default(cuid())
+  animalId  String
+  animal    Animal       @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  reason    ReportReason
+  message   String?
+  // Adresse du signalant : sert à repérer le harcèlement par signalements
+  // répétés (et à écarter un doublon avant même l'écriture). Jamais affichée
+  // hors de /admin, jamais journalisée.
+  ip        String?
+  status    ReportStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  // /admin liste par date décroissante ; le filtre (animalId, ip) sert au
+  // contrôle de doublon et à la cascade de suppression d'un animal.
+  @@index([createdAt])
+  @@index([animalId, ip])
 }
 
 model AnimalPhoto {
@@ -110,7 +169,9 @@ model AnimalPhoto {
   position  Int      @default(0)
   createdAt DateTime @default(now())
 
-  @@index([animalId])
+  // Chaque include photos fait WHERE animalId IN (…) ORDER BY position :
+  // le composite rend la lecture pré-triée.
+  @@index([animalId, position])
 }
 
 model Session {
@@ -147,6 +208,20 @@ model Account {
 
   @@index([userId])
   @@map("account")
+}
+
+// Compteurs de la limite de débit better-auth (rateLimit.storage:
+// "database") — champs exigés par better-auth : key unique (ip|chemin),
+// count, lastRequest en millisecondes epoch (BigInt : Date.now() dépasse
+// Int4). Les lignes expirées sont purgées par better-auth lui-même à
+// chaque réinitialisation de fenêtre.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
 }
 
 model Verification {

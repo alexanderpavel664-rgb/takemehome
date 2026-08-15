@@ -3,6 +3,8 @@ import type {
   AnimalSize,
   AnimalStatus,
   AnimalType,
+  ReportReason,
+  ReportStatus,
   Sex,
 } from "@/generated/prisma/client";
 import { STR } from "@/lib/strings";
@@ -21,6 +23,12 @@ export const SIZE_LABELS: Record<AnimalSize, string> = STR.enums.size;
 
 export const STATUS_LABELS: Record<AnimalStatus, string> = STR.enums.status;
 
+export const REPORT_REASON_LABELS: Record<ReportReason, string> =
+  STR.enums.reportReason;
+
+export const REPORT_STATUS_LABELS: Record<ReportStatus, string> =
+  STR.enums.reportStatus;
+
 export const TYPE_OPTIONS = Object.entries(TYPE_LABELS) as [
   AnimalType,
   string,
@@ -36,5 +44,9 @@ export const SIZE_OPTIONS = Object.entries(SIZE_LABELS) as [
 ][];
 export const STATUS_OPTIONS = Object.entries(STATUS_LABELS) as [
   AnimalStatus,
+  string,
+][];
+export const REPORT_REASON_OPTIONS = Object.entries(REPORT_REASON_LABELS) as [
+  ReportReason,
   string,
 ][];

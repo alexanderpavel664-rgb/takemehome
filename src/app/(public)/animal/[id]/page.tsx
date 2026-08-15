@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { relativeTimeRo } from "@/lib/relative-time";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
+import { getViewer } from "@/lib/viewer";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
@@ -22,8 +23,10 @@ export const dynamic = "force-dynamic";
 const getAnimal = cache(async (id: string) =>
   prisma.animal.findUnique({
     where: { id },
+    // La fiche consomme presque tous les scalaires d'Animal ; des photos,
+    // seule l'URL de la première sert (page + Open Graph).
     include: {
-      photos: { orderBy: { position: "asc" }, take: 1 },
+      photos: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
       user: { select: { name: true, phone: true, publicEmail: true } },
     },
   }),
@@ -37,7 +40,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { id } = await props.params;
   const animal = await getAnimal(id);
-  if (!animal) {
+  // Une annonce masquée ne sort RIEN : ni titre, ni description, ni image
+  // Open Graph. Un partage Facebook déjà en circulation ne doit pas
+  // continuer à afficher un aperçu de ce qu'on a retiré des pages publiques.
+  if (!animal || animal.hidden) {
     return { title: STR.animal.notFoundMetaTitle };
   }
 
@@ -148,6 +154,18 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
     notFound();
   }
 
+  // Annonce masquée : son propriétaire continue de la voir (avec la mention
+  // qui explique pourquoi) et un ADMIN aussi ; pour tout le monde d'autre
+  // elle est indistinguable d'une annonce inexistante → 404, jamais 403.
+  // getViewer n'interroge la base que s'il y a un cookie de session : la
+  // fiche publique ordinaire ne paie rien de tout ceci.
+  if (animal.hidden) {
+    const viewer = await getViewer();
+    if (!viewer || (viewer.role !== "ADMIN" && viewer.id !== animal.userId)) {
+      notFound();
+    }
+  }
+
   const adopted = animal.status === "ADOPTED";
   const phone = animal.user.phone?.trim();
   const email = animal.user.publicEmail?.trim();
@@ -182,6 +200,20 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
           {STR.animal.backToList}
         </Link>
       </p>
+
+      {animal.hidden && (
+        // Le propriétaire (ou un ADMIN) est le seul à lire ceci. Même
+        // langage que les autres avertissements du site : bordure encre
+        // épaissie et message en toutes lettres, jamais la couleur seule.
+        <Card role="status" className="mt-2 border-[1.5px] border-warm-ink p-4">
+          <h2 className="text-lg font-semibold text-warm-ink">
+            {STR.animal.hiddenTitle}
+          </h2>
+          <p className="mt-1 max-w-[66ch] text-base text-warm-ink">
+            {STR.animal.hiddenDescription}
+          </p>
+        </Card>
+      )}
 
       {/* Empilée sur mobile ; deux colonnes à partir de lg (DESIGN.md) :
           photo + description à gauche, identité + contact à droite. */}
@@ -282,6 +314,22 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             <p>{STR.animal.publishedBy(animal.user.name)}</p>
             <p>{STR.animal.updated(relativeTimeRo(animal.updatedAt))}</p>
           </section>
+
+          {!animal.hidden && (
+            // Le signalement en bas de fiche, derrière une hairline : une
+            // porte, pas une accusation — discrète au point qu'elle ne pèse
+            // sur aucune annonce honnête, visible au point qu'on la trouve
+            // quand on cherche à signaler. Aucun compte n'est demandé
+            // derrière : celui qui repère une arnaque n'en a pas.
+            <p className="mt-6 border-t border-warm-border pt-4">
+              <Link
+                href={`/animal/${animal.id}/semnaleaza`}
+                className="inline-flex min-h-11 items-center text-sm text-warm-gray underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+              >
+                {STR.animal.report}
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

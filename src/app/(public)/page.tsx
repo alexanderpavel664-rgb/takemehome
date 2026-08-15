@@ -119,12 +119,29 @@ function RecentSection({ children }: { children: ReactNode }) {
  */
 async function RecentAnimals() {
   const animals = await prisma.animal.findMany({
-    where: { status: "AVAILABLE" },
+    // Même clause que les listes publiques : masquée veut dire masquée,
+    // y compris sur la vitrine de la page d'accueil.
+    where: { status: "AVAILABLE", hidden: false },
     // Même tri stable que la grille publique : updatedAt décroissant,
     // id en départage des ex æquo.
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     take: RECENT_COUNT,
-    include: { photos: { orderBy: { position: "asc" }, take: 1 } },
+    // Uniquement ce que la carte consomme — la page d'accueil est rendue
+    // à chaque visite, chaque colonne en trop se paie en compute Neon.
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      sex: true,
+      ageGroup: true,
+      ageText: true,
+      county: true,
+      photos: {
+        orderBy: { position: "asc" },
+        take: 1,
+        select: { url: true },
+      },
+    },
   });
 
   if (animals.length === 0) {

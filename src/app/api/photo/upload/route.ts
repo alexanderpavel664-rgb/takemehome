@@ -2,13 +2,42 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isRateLimited } from "@/lib/rate-limit";
+import { reportError } from "@/lib/report";
 import { STR } from "@/lib/strings";
+
+// Refus que cette route prononce elle-même : leur message est écrit en
+// roumain dans strings.ts et peut ressortir tel quel. Tout le reste vient
+// de @vercel/blob ou du réseau — anglais, technique, parfois bavard sur
+// l'infrastructure — et ne doit jamais atteindre le navigateur.
+const OWN_REFUSALS: readonly string[] = [
+  STR.upload.signInRequired,
+  STR.upload.accountSuspended,
+  STR.upload.pathNotAllowed,
+  STR.upload.animalNotFound,
+];
 
 // Génération du jeton d'upload client Vercel Blob. Le fichier ne transite
 // jamais par cette fonction : le navigateur l'envoie directement au store
 // (c'est ce qui évite la limite de 4,5 Mo des fonctions Vercel).
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
+  // Avant request.json(), getSession et tout Prisma : une rafale rejetée
+  // ne coûte aucune requête Neon.
+  if (await isRateLimited("upload", request.headers)) {
+    return NextResponse.json(
+      { error: STR.upload.tooManyRequests },
+      { status: 429 },
+    );
+  }
+
+  // Corps illisible : requête forgée ou robot, pas une panne. On refuse sans
+  // alerter — sinon le premier scanner venu remplirait la boîte mail.
+  let body: HandleUploadBody;
+  try {
+    body = (await request.json()) as HandleUploadBody;
+  } catch {
+    return NextResponse.json({ error: STR.upload.failed }, { status: 400 });
+  }
 
   try {
     const jsonResponse = await handleUpload({
@@ -25,6 +54,17 @@ export async function POST(request: Request): Promise<NextResponse> {
         // Chaque refuge n'écrit que dans son espace animale/<userId>/.
         if (!pathname.startsWith(`animale/${userId}/`)) {
           throw new Error(STR.upload.pathNotAllowed);
+        }
+
+        // Un compte suspendu ne publie plus : le refuser dès le jeton évite
+        // qu'il remplisse le store de photos que createAnimal refusera de
+        // rattacher — des blobs orphelins que personne ne viendrait purger.
+        const account = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { suspended: true },
+        });
+        if (account?.suspended) {
+          throw new Error(STR.upload.accountSuspended);
         }
 
         // clientPayload vient du navigateur : on revérifie l'isolation ici.
@@ -60,9 +100,19 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : STR.upload.unknownError },
-      { status: 400 },
-    );
+    const message = error instanceof Error ? error.message : "";
+
+    // Un refus prévu (pas de session, chemin hors de son espace, animal
+    // inconnu) : c'est une saisie invalide, pas une panne. On répond, on
+    // n'alerte pas.
+    if (OWN_REFUSALS.includes(message)) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    // Tout le reste est un échec d'upload — le moment précis où un sauveteur
+    // abandonne. Le détail part dans Sentry et les logs, le navigateur ne
+    // reçoit qu'une phrase en roumain.
+    await reportError("photo.upload_token_failed", error);
+    return NextResponse.json({ error: STR.upload.failed }, { status: 500 });
   }
 }

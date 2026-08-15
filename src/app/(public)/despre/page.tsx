@@ -34,7 +34,31 @@ export default function DesprePage() {
           {STR.despre.p3AfterLink}
         </p>
       </div>
-      <ButtonLink variant="outline" href="/animale" className="mt-6">
+      {/* ——— Adopter en sécurité : des habitudes, pas une mise en garde.
+          Les fausses annonces existent (photos de banque d'images, frais
+          demandés d'avance, informations médicales tues) ; la section les
+          rend reconnaissables sans faire peser le soupçon sur les annonces
+          honnêtes, qui sont l'immense majorité — d'où la première phrase. ——— */}
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold text-warm-ink">
+          {STR.despre.safetyTitle}
+        </h2>
+        <p className="mt-2 max-w-[66ch] text-base text-warm-ink">
+          {STR.despre.safetyIntro}
+        </p>
+        {/* Liste à puces : chaque conseil est une ligne qu'on retient, pas
+            un paragraphe qu'on saute. */}
+        <ul className="mt-3 max-w-[66ch] list-disc space-y-2 pl-5 text-base text-warm-ink">
+          {STR.despre.safetyTips.map((tip) => (
+            <li key={tip}>{tip}</li>
+          ))}
+        </ul>
+        <p className="mt-3 max-w-[66ch] text-base text-warm-gray">
+          {STR.despre.safetyReport}
+        </p>
+      </section>
+
+      <ButtonLink variant="outline" href="/animale" className="mt-8">
         {STR.despre.seeAnimals}
       </ButtonLink>
     </main>

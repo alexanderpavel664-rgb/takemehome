@@ -1,8 +1,7 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
 import { STR } from "@/lib/strings";
+import { getViewer } from "@/lib/viewer";
 import { Card } from "@/components/ui/card";
 import { createAnimal } from "../actions";
 import { AnimalForm } from "../animal-form";
@@ -12,9 +11,14 @@ export const metadata: Metadata = {
 };
 
 export default async function NouAnimalPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
+  const viewer = await getViewer();
+  if (!viewer) {
     redirect("/login");
+  }
+  // Compte suspendu : plutôt qu'un formulaire qui refusera à la
+  // soumission, le renvoi vers /cont — c'est là que l'explication vit.
+  if (viewer.suspended) {
+    redirect("/cont");
   }
 
   return (
@@ -30,7 +34,7 @@ export default async function NouAnimalPage() {
       <Card className="mt-4 p-4">
         <AnimalForm
           action={createAnimal}
-          userId={session.user.id}
+          userId={viewer.id}
           submitLabel={STR.animalForm.newSubmit}
         />
       </Card>

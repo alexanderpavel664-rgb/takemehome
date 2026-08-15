@@ -19,6 +19,7 @@ import { COUNTIES } from "@/lib/counties";
 import { STR } from "@/lib/strings";
 import { animalPhotoPathname } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
+import { reportClientError } from "@/lib/client-report";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ChipCheckbox } from "@/components/ui/chip";
 import { Input, Select, Textarea } from "@/components/ui/field";
@@ -60,9 +61,23 @@ function uploadErrorMessage(error: unknown): string {
   if (error instanceof TypeError) {
     return STR.animalForm.uploadNetworkError;
   }
-  const message = error instanceof Error ? error.message : String(error);
-  return STR.animalForm.uploadError(message);
+  // Le client blob ne lit pas le corps des réponses non-2xx de
+  // /api/photo/upload : tout refus de jeton (limite de débit, session
+  // expirée…) arrive comme « Failed to retrieve the client token ».
+  // On le couvre d'une phrase actionnable plutôt que de l'anglais interne.
+  if (error instanceof Error && error.message.includes("client token")) {
+    return STR.animalForm.uploadRefused;
+  }
+  // Le message d'origine n'est jamais affiché : il vient du client blob ou
+  // du réseau, en anglais, et ne dit rien d'actionnable. Il part dans le
+  // rapport d'erreur, pas à l'écran.
+  return STR.animalForm.uploadFailed;
 }
+
+// Les seuls messages que compressPhoto a le droit de faire remonter à
+// l'écran. Une exception inattendue (DOMException, SecurityError…) sortirait
+// en anglais avec du détail technique.
+const COMPRESS_MESSAGES: readonly string[] = Object.values(STR.compress);
 
 // Formulaire partagé création/édition. Seuls name, type et county sont
 // obligatoires — tout le reste peut rester vide pour une saisie rapide
@@ -138,9 +153,15 @@ export function AnimalForm({
       setOriginalSize(file.size);
       setPreviewUrl(URL.createObjectURL(compressed.blob));
     } catch (error) {
-      setPhotoError(
-        error instanceof Error ? error.message : STR.animalForm.preparingFailed,
-      );
+      const message = error instanceof Error ? error.message : "";
+      const known = COMPRESS_MESSAGES.includes(message);
+      // Un format refusé n'a rien d'anormal ; une exception qu'on n'a pas
+      // prévue, si — et elle est souvent propre à un appareil, donc
+      // impossible à reproduire sans qu'elle remonte.
+      if (!known) {
+        reportClientError("photo_prepare_failed", error);
+      }
+      setPhotoError(known ? message : STR.animalForm.preparingFailed);
       if (photoInputRef.current) photoInputRef.current.value = "";
     } finally {
       setPreparing(false);
@@ -187,6 +208,14 @@ export function AnimalForm({
         formAction(formData);
       });
     } catch (error) {
+      // L'upload part du navigateur droit vers Vercel Blob : sans cette
+      // balise, l'échec ne laisse aucune trace côté serveur. C'est le moment
+      // où un sauveteur referme l'onglet.
+      reportClientError("photo_upload_failed", error, {
+        bytes: photo?.blob.size ?? 0,
+        format: photo?.extension ?? "aucun",
+        editing: animalId ? "oui" : "non",
+      });
       setPhotoError(uploadErrorMessage(error));
     } finally {
       setProgress(null);
