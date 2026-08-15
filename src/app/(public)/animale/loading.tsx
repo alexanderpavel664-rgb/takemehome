@@ -1,3 +1,4 @@
+import { STR } from "@/lib/strings";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonGrid } from "../skeleton-grid";
@@ -16,7 +17,7 @@ export default function AnimaleLoading() {
   return (
     <main className="px-4 py-4 md:px-6 lg:px-8">
       <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
-        Animaux à adopter
+        {STR.animale.title}
       </h1>
       <div className="flex items-start lg:gap-8">
         {/* Colonne de filtres au gabarit exact de FilterAside : w-64 sans

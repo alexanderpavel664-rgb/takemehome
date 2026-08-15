@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PAGE_SIZE, parseCount } from "@/lib/animal-filters";
+import { STR } from "@/lib/strings";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AnimalGrid } from "../animal-grid";
 import { SkeletonGrid } from "../skeleton-grid";
 
 export const metadata: Metadata = {
-  title: "Ils ont trouvé une famille – TakeMeHome",
-  description: "Les animaux qui ont trouvé une famille grâce à TakeMeHome.",
+  title: STR.adoptati.metaTitle,
+  description: STR.adoptati.metaDescription,
 };
 
 // Même grille que /animale, sans filtres ni contact — la fiche masque
@@ -23,7 +24,7 @@ export default async function AdoptatiPage(props: PageProps<"/adoptati">) {
     // centre lui-même son texte.
     <main className="px-4 py-4 md:px-6 lg:px-8">
       <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
-        Ils ont trouvé une famille
+        {STR.adoptati.title}
       </h1>
       <Suspense fallback={<SkeletonGrid />}>
         <AnimalGrid
@@ -32,11 +33,11 @@ export default async function AdoptatiPage(props: PageProps<"/adoptati">) {
           moreHref={`/adoptati?n=${count + PAGE_SIZE}`}
           empty={
             <EmptyState
-              title="Aucun animal adopté pour l’instant"
-              description="Dès qu’un animal aura trouvé sa famille, il apparaîtra ici."
+              title={STR.adoptati.emptyTitle}
+              description={STR.adoptati.emptyDescription}
               action={
                 <ButtonLink variant="outline" href="/animale">
-                  Voir les animaux à adopter
+                  {STR.animal.seeAvailable}
                 </ButtonLink>
               }
             />

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { STR } from "@/lib/strings";
 
 /**
  * Aplat crème + nom en Display 600 — photo absente ou en échec. L'échec
@@ -61,7 +62,7 @@ export function AnimalPhoto({
     <Image
       ref={ref}
       src={src}
-      alt={`Photo de ${name}`}
+      alt={STR.animal.photoAlt(name)}
       fill
       sizes={sizes}
       className="object-cover"

@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { COUNTY_CODES } from "@/lib/counties";
 import { isOwnedAnimalPhotoUrl } from "@/lib/animal-photo";
+import { STR } from "@/lib/strings";
 import {
   AgeGroup,
   AnimalSize,
@@ -99,9 +100,9 @@ function parseAnimalForm(
     return {
       ok: false,
       fieldErrors: {
-        ...(name ? {} : { name: "Le nom est obligatoire." }),
-        ...(type ? {} : { type: "Le type d’animal est obligatoire." }),
-        ...(countyValid ? {} : { county: "Le județ est obligatoire." }),
+        ...(name ? {} : { name: STR.animalForm.nameRequired }),
+        ...(type ? {} : { type: STR.animalForm.typeRequired }),
+        ...(countyValid ? {} : { county: STR.animalForm.countyRequired }),
       },
     };
   }
@@ -141,7 +142,7 @@ function parsePhotoUrl(
     return { ok: true, url: null };
   }
   if (!isOwnedAnimalPhotoUrl(url, userId)) {
-    return { ok: false, error: "Adresse de photo invalide." };
+    return { ok: false, error: STR.animalForm.photoUrlInvalid };
   }
   return { ok: true, url };
 }
@@ -261,7 +262,7 @@ export async function setAnimalStatus(formData: FormData): Promise<void> {
 
   const status = optionalEnum(formData, "status", AnimalStatus);
   if (!status) {
-    throw new Error("Statut invalide.");
+    throw new Error(STR.upload.invalidStatus);
   }
 
   const { count } = await prisma.animal.updateMany({

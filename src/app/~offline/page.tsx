@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { STR } from "@/lib/strings";
 
 export const metadata: Metadata = {
-  title: "Hors ligne – TakeMeHome",
+  title: STR.offline.metaTitle,
 };
 
 /**
@@ -15,12 +16,10 @@ export default function OfflinePage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
       <h1 className="text-2xl font-semibold text-warm-ink">
-        Pas de connexion
+        {STR.offline.title}
       </h1>
       <p className="max-w-md text-base text-warm-gray">
-        Les annonces changent tout le temps : elles ne sont pas gardées hors
-        ligne, pour ne jamais vous montrer un animal déjà adopté. Revenez dès
-        que le réseau est là.
+        {STR.offline.description}
       </p>
     </main>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { COUNTIES } from "@/lib/counties";
+import { STR } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/field";
 
@@ -37,7 +38,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     setError(null);
     setSaved(false);
     if (!values.name.trim()) {
-      setNameError("Le nom est obligatoire.");
+      setNameError(STR.profil.nameRequired);
       return;
     }
     setPending(true);
@@ -51,7 +52,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
     });
     setPending(false);
     if (error) {
-      setError("L’enregistrement a échoué. Réessayez.");
+      setError(STR.profil.saveFailed);
       return;
     }
     setSaved(true);
@@ -62,7 +63,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Input
-        label="Nom"
+        label={STR.profil.name}
         name="name"
         type="text"
         value={values.name}
@@ -71,26 +72,26 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         error={nameError ?? undefined}
       />
       <Input
-        label="Téléphone"
+        label={STR.profil.phone}
         name="phone"
         type="tel"
         value={values.phone}
         onChange={(e) => set("phone", e.target.value)}
       />
       <Input
-        label="Email public de contact"
+        label={STR.profil.publicEmail}
         name="publicEmail"
         type="email"
         value={values.publicEmail}
         onChange={(e) => set("publicEmail", e.target.value)}
       />
       <Select
-        label="Județ"
+        label={STR.profil.county}
         name="county"
         value={values.county}
         onChange={(e) => set("county", e.target.value)}
       >
-        <option value="">— Choisir un județ —</option>
+        <option value="">{STR.profil.countyPlaceholder}</option>
         {COUNTIES.map((c) => (
           <option key={c.code} value={c.code}>
             {c.name}
@@ -98,14 +99,14 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         ))}
       </Select>
       <Input
-        label="Ville"
+        label={STR.profil.city}
         name="city"
         type="text"
         value={values.city}
         onChange={(e) => set("city", e.target.value)}
       />
       <Textarea
-        label="Description"
+        label={STR.profil.description}
         name="description"
         value={values.description}
         onChange={(e) => set("description", e.target.value)}
@@ -118,11 +119,11 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
       )}
       {saved && (
         <p role="status" className="text-sm text-warm-ink">
-          Profil mis à jour.
+          {STR.profil.saved}
         </p>
       )}
       <Button type="submit" variant="primary" disabled={pending}>
-        {pending ? "Enregistrement…" : "Enregistrer"}
+        {pending ? STR.profil.savePending : STR.profil.save}
       </Button>
     </form>
   );

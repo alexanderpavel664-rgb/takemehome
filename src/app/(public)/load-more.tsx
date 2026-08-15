@@ -2,10 +2,11 @@
 
 import { useLinkStatus } from "next/link";
 import { ButtonLink } from "@/components/ui/button";
+import { STR } from "@/lib/strings";
 
 function Label() {
   const { pending } = useLinkStatus();
-  return <>{pending ? "Chargement…" : "Voir plus"}</>;
+  return <>{pending ? STR.common.loading : STR.common.seeMore}</>;
 }
 
 /**

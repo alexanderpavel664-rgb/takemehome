@@ -10,20 +10,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/field";
 
-export function LoginForm({ oauthError }: { oauthError?: string }) {
+export function RegisterForm() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(
-    oauthError ? STR.auth.login.googleFailed : null,
-  );
+  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const { error } = await authClient.signIn.email({
+    const { error } = await authClient.signUp.email({
+      name: name.trim(),
       email: email.trim(),
       password,
     });
@@ -32,14 +32,15 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
       setPending(false);
       return;
     }
-    router.push("/cont");
+    // Vers le profil, pas /cont : le contact du profil est ce qui s'affiche
+    // sur les fiches — il doit être rempli dès l'inscription.
+    router.push("/cont/profil");
   }
 
   async function onGoogle() {
     setError(null);
     // signIn.social ne lance jamais d'exception : l'échec arrive dans { error }.
-    // Un compte Google inconnu = première inscription : direction le profil,
-    // dont le contact s'affiche sur les fiches — il doit être rempli d'emblée.
+    // Compte Google inconnu = première inscription : même destination /cont/profil.
     const { error } = await authClient.signIn.social({
       provider: "google",
       callbackURL: "/cont",
@@ -57,11 +58,19 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
     <main className="px-4 pt-10 pb-10 md:px-6 md:pt-16 lg:px-8">
       <Card className="mx-auto w-full max-w-md p-6">
         <h1 className="text-2xl font-semibold text-warm-ink">
-          {STR.auth.login.title}
+          {STR.auth.register.title}
         </h1>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <Input
-            label={STR.auth.login.email}
+            label={STR.auth.register.name}
+            name="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <Input
+            label={STR.auth.register.email}
             name="email"
             type="email"
             value={email}
@@ -69,14 +78,15 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
             required
           />
           <Input
-            label={STR.auth.login.password}
+            label={STR.auth.register.password}
             name="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={8}
           />
-          {/* Erreur globale par nature (mauvais identifiants, échec Google) :
+          {/* Erreur globale par nature (compte existant, échec Google) :
               en toutes lettres sous les champs — la palette n'a pas de rouge. */}
           {error && (
             <p role="alert" className="text-sm font-semibold text-warm-ink">
@@ -89,7 +99,9 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
             className="w-full"
             disabled={pending}
           >
-            {pending ? STR.auth.login.submitPending : STR.auth.login.submit}
+            {pending
+              ? STR.auth.register.submitPending
+              : STR.auth.register.submit}
           </Button>
         </form>
         {/* Google, séparé du formulaire email par une hairline douce. */}
@@ -99,12 +111,12 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
           </Button>
         </div>
         <p className="mt-4 text-sm text-warm-gray">
-          {STR.auth.login.noAccount}{" "}
+          {STR.auth.register.hasAccount}{" "}
           <Link
-            href="/inregistrare"
+            href="/login"
             className="inline-flex min-h-11 items-center text-warm-ink underline underline-offset-4"
           >
-            {STR.auth.login.createAccount}
+            {STR.auth.register.signIn}
           </Link>
         </p>
       </Card>

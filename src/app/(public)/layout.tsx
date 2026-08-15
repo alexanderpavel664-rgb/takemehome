@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { getSessionCookie } from "better-auth/cookies";
 import { SiteHeader } from "@/components/site-header";
+import { STR } from "@/lib/strings";
 
 /**
  * Coquille des pages publiques : l'en-tête commun (logo → /animale) avec
@@ -29,7 +30,7 @@ export default async function PublicLayout({
           href={connected ? "/cont" : "/login"}
           className="flex min-h-11 items-center rounded-md px-2 text-sm text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
         >
-          {connected ? "Mon compte" : "Connexion"}
+          {connected ? STR.header.myAccount : STR.header.signIn}
         </Link>
       </SiteHeader>
       {children}
@@ -38,20 +39,20 @@ export default async function PublicLayout({
       <footer className="mt-auto border-t border-warm-border">
         {/* Pleine largeur, mêmes gouttières que l'en-tête et les pages. */}
         <nav
-          aria-label="Pied de page"
+          aria-label={STR.footer.ariaLabel}
           className="flex flex-wrap items-center gap-x-6 px-4 py-2 text-sm md:px-6 lg:px-8"
         >
           <Link
             href="/adoptati"
             className="flex min-h-11 items-center text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
           >
-            Animaux adoptés
+            {STR.footer.adopted}
           </Link>
           <Link
             href="/despre"
             className="flex min-h-11 items-center text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
           >
-            À propos
+            {STR.footer.about}
           </Link>
         </nav>
       </footer>

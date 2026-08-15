@@ -2,6 +2,7 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { STR } from "@/lib/strings";
 
 // Génération du jeton d'upload client Vercel Blob. Le fichier ne transite
 // jamais par cette fonction : le navigateur l'envoie directement au store
@@ -17,13 +18,13 @@ export async function POST(request: Request): Promise<NextResponse> {
         // Sans cette vérification, n'importe qui pourrait écrire dans le store.
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session) {
-          throw new Error("Connectez-vous pour envoyer une photo.");
+          throw new Error(STR.upload.signInRequired);
         }
         const userId = session.user.id;
 
         // Chaque refuge n'écrit que dans son espace animale/<userId>/.
         if (!pathname.startsWith(`animale/${userId}/`)) {
-          throw new Error("Chemin de photo non autorisé.");
+          throw new Error(STR.upload.pathNotAllowed);
         }
 
         // clientPayload vient du navigateur : on revérifie l'isolation ici.
@@ -38,7 +39,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             select: { id: true },
           });
           if (!animal) {
-            throw new Error("Animal introuvable.");
+            throw new Error(STR.upload.animalNotFound);
           }
         }
 
@@ -60,7 +61,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(jsonResponse);
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Erreur inconnue." },
+      { error: error instanceof Error ? error.message : STR.upload.unknownError },
       { status: 400 },
     );
   }

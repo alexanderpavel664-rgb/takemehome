@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { animalMetaLine } from "@/lib/animal-display";
 import { countyName } from "@/lib/counties";
 import { SITE_URL } from "@/lib/site";
+import { STR } from "@/lib/strings";
 import { Logo } from "@/components/logo";
 import { AnimalCard } from "@/components/ui/animal-card";
 import { ButtonLink } from "@/components/ui/button";
@@ -12,18 +13,17 @@ import { GRID_CLASSES } from "./animal-grid";
 import { SkeletonGrid } from "./skeleton-grid";
 
 /** La phrase qui dit ce que c'est — descriptive, pas un slogan. */
-const TAGLINE =
-  "Animaux de refuges et de sauveteurs de Roumanie, prêts à être adoptés.";
+const TAGLINE = STR.home.tagline;
 
 export const metadata: Metadata = {
-  title: "TakeMeHome — animaux à adopter en Roumanie",
-  description: `${TAGLINE} Cherche, trouve, appelle directement la personne qui s’en occupe.`,
+  title: STR.home.metaTitle,
+  description: `${TAGLINE} ${STR.home.metaDescriptionSuffix}`,
   openGraph: {
-    title: "TakeMeHome",
+    title: STR.site.name,
     description: TAGLINE,
     type: "website",
     url: SITE_URL,
-    siteName: "TakeMeHome",
+    siteName: STR.site.name,
   },
 };
 
@@ -33,11 +33,7 @@ export const dynamic = "force-dynamic";
 
 const RECENT_COUNT = 6;
 
-const STEPS = [
-  "Cherche parmi les animaux près de chez toi.",
-  "Trouve celui qui te correspond.",
-  "Appelle directement la personne qui s’en occupe.",
-];
+const STEPS = STR.home.steps;
 
 export default function Home() {
   return (
@@ -56,10 +52,10 @@ export default function Home() {
         </p>
         <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
           <ButtonLink href="/animale" variant="primary">
-            Adopte un animal
+            {STR.home.adoptCta}
           </ButtonLink>
           <ButtonLink href="/inregistrare" variant="outline">
-            Donne en adoption
+            {STR.home.giveCta}
           </ButtonLink>
         </div>
       </section>
@@ -68,7 +64,7 @@ export default function Home() {
           paragraphe. En ligne dès md : cherches → trouves → appelles. */}
       <section className="pb-10 text-center md:pb-14">
         <h2 className="text-xl font-semibold text-warm-ink">
-          Comment ça marche
+          {STR.home.howItWorks}
         </h2>
         <ol className="mt-3 flex flex-col items-center gap-2 md:flex-row md:justify-center md:gap-8">
           {STEPS.map((step, i) => (
@@ -100,7 +96,7 @@ function RecentSection({ children }: { children: ReactNode }) {
   return (
     <section className="pb-12 md:pb-16">
       <h2 className="mb-4 text-xl font-semibold text-warm-ink">
-        Ils attendent une famille
+        {STR.home.theyWait}
       </h2>
       {children}
       <p className="mt-4 text-center">
@@ -108,7 +104,7 @@ function RecentSection({ children }: { children: ReactNode }) {
           href="/animale"
           className="inline-flex min-h-11 items-center text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
         >
-          Voir tous les animaux →
+          {STR.home.seeAll}
         </Link>
       </p>
     </section>

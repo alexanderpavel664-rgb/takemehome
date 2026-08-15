@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { STR } from "@/lib/strings";
 
 /**
  * Manifeste de l'application installée, servi sur /manifest.webmanifest.
@@ -13,10 +14,9 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "TakeMeHome",
-    short_name: "TakeMeHome",
-    description:
-      "Anunțuri de adopție pentru animale salvate în România: fișe clare, filtre utile și contact direct cu persoana care le are în grijă.",
+    name: STR.site.name,
+    short_name: STR.site.name,
+    description: STR.meta.rootDescription,
     lang: "ro",
     dir: "ltr",
     start_url: "/animale",

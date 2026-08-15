@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { SerwistProvider } from "@serwist/turbopack/react";
+import { STR } from "@/lib/strings";
 import "./globals.css";
 
 // Une seule famille variable, un seul import (La Règle de la Police Unique) :
@@ -14,16 +15,15 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "TakeMeHome — animale din România care își caută o familie",
-  description:
-    "Anunțuri de adopție pentru animale salvate în România: fișe clare, filtre utile și contact direct cu persoana care le are în grijă.",
+  title: STR.meta.rootTitle,
+  description: STR.meta.rootDescription,
   manifest: "/manifest.webmanifest",
   // Lancement iOS en plein écran, barre d'état sur le papier crème. Le titre
   // est celui qui s'écrit sous l'icône de l'écran d'accueil.
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "TakeMeHome",
+    title: STR.site.name,
   },
   // `icons` n'est volontairement pas déclaré ici : icon.png, apple-icon.png
   // et favicon.ico sont pris par la convention de fichiers, qui reste la voie

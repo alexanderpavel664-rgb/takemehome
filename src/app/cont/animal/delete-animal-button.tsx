@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteAnimal } from "./actions";
+import { STR } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
 
 export function DeleteAnimalButton({
@@ -14,14 +15,14 @@ export function DeleteAnimalButton({
     <form
       action={deleteAnimal}
       onSubmit={(e) => {
-        if (!window.confirm(`Supprimer ${name} ? Cette action est définitive.`)) {
+        if (!window.confirm(STR.cont.deleteConfirm(name))) {
           e.preventDefault();
         }
       }}
     >
       <input type="hidden" name="id" value={id} />
       <Button variant="ghost" type="submit">
-        Supprimer
+        {STR.cont.delete}
       </Button>
     </form>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
+import { STR } from "@/lib/strings";
 import { Badge } from "./badge";
 import { AnimalPhoto, PhotoFallback } from "./animal-photo";
 
@@ -57,8 +58,10 @@ export function AnimalCard({
           <PhotoFallback name={name} />
         )}
         {adopted && (
-          // Seule la pastille « Adopté » a le droit de recouvrir une photo.
-          <Badge className="absolute top-2 left-2">Adopté</Badge>
+          // Seule la pastille « Adoptat » a le droit de recouvrir une photo.
+          <Badge className="absolute top-2 left-2">
+            {STR.animal.adoptedBadge}
+          </Badge>
         )}
       </span>
       <span className="block p-3 @sm:p-4">

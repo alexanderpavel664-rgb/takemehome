@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { STR } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -118,33 +119,29 @@ export function InstallBanner() {
       className="mt-6 p-4"
     >
       <h2 className="text-lg font-semibold text-warm-ink">
-        Installer TakeMeHome
+        {STR.cont.install.title}
       </h2>
       {ios ? (
         <p className="mt-1 text-base text-warm-gray">
-          Dans Safari, ouvrez le menu de partage puis choisissez{" "}
+          {STR.cont.install.ios.before}
           {/* Libellés du menu iOS tels qu'ils s'affichent sur un téléphone
-              réglé en roumain — ce sont les mots à chercher à l'écran, pas
-              du texte d'interface à traduire. */}
-          <span className="text-warm-ink">
-            « Partajează » → « Adaugă pe ecranul principal »
-          </span>
-          .
+              réglé en roumain — ce sont les mots à chercher à l'écran. */}
+          <span className="text-warm-ink">{STR.cont.install.ios.highlight}</span>
+          {STR.cont.install.ios.after}
         </p>
       ) : (
         <p className="mt-1 text-base text-warm-gray">
-          Gardez vos annonces à portée de main : l’application s’ouvre depuis
-          l’écran d’accueil, sans passer par le navigateur.
+          {STR.cont.install.description}
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         {!ios && (
           <Button variant="outline" onClick={install}>
-            Installer
+            {STR.cont.install.install}
           </Button>
         )}
         <Button variant="ghost" onClick={refuse}>
-          Non merci
+          {STR.cont.install.dismiss}
         </Button>
       </div>
     </Card>

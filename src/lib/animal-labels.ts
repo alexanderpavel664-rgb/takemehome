@@ -5,35 +5,21 @@ import type {
   AnimalType,
   Sex,
 } from "@/generated/prisma/client";
+import { STR } from "@/lib/strings";
 
-export const TYPE_LABELS: Record<AnimalType, string> = {
-  DOG: "Chien",
-  CAT: "Chat",
-  OTHER: "Autre",
-};
+// Les libellés eux-mêmes vivent dans strings.ts (le fichier unique de toutes
+// les chaînes) ; ce module ne fait qu'exposer les Records typés et les paires
+// [valeur, libellé] prêtes pour les <option>.
 
-export const SEX_LABELS: Record<Sex, string> = {
-  MALE: "Mâle",
-  FEMALE: "Femelle",
-};
+export const TYPE_LABELS: Record<AnimalType, string> = STR.enums.type;
 
-export const AGE_GROUP_LABELS: Record<AgeGroup, string> = {
-  BABY: "Bébé",
-  YOUNG: "Jeune",
-  ADULT: "Adulte",
-  SENIOR: "Senior",
-};
+export const SEX_LABELS: Record<Sex, string> = STR.enums.sex;
 
-export const SIZE_LABELS: Record<AnimalSize, string> = {
-  SMALL: "Petit",
-  MEDIUM: "Moyen",
-  LARGE: "Grand",
-};
+export const AGE_GROUP_LABELS: Record<AgeGroup, string> = STR.enums.ageGroup;
 
-export const STATUS_LABELS: Record<AnimalStatus, string> = {
-  AVAILABLE: "Disponible",
-  ADOPTED: "Adopté",
-};
+export const SIZE_LABELS: Record<AnimalSize, string> = STR.enums.size;
+
+export const STATUS_LABELS: Record<AnimalStatus, string> = STR.enums.status;
 
 export const TYPE_OPTIONS = Object.entries(TYPE_LABELS) as [
   AnimalType,

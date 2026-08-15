@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
 import { countyName } from "@/lib/counties";
-import { relativeTimeFr } from "@/lib/relative-time";
+import { relativeTimeRo } from "@/lib/relative-time";
+import { STR } from "@/lib/strings";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -14,6 +16,10 @@ import { setAnimalStatus } from "./animal/actions";
 import { DeleteAnimalButton } from "./animal/delete-animal-button";
 import { InstallBanner } from "./install-banner";
 import { SignOutButton } from "./sign-out-button";
+
+export const metadata: Metadata = {
+  title: STR.cont.metaTitle,
+};
 
 /**
  * L'écran hebdomadaire des publiantes. Deux contenants et une sortie :
@@ -36,9 +42,9 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
   const { confirmation } = await searchParams;
   const confirmationMessage =
     confirmation === "creation"
-      ? "L’animal a été publié."
+      ? STR.cont.confirmationCreated
       : confirmation === "modification"
-        ? "Les modifications ont été enregistrées."
+        ? STR.cont.confirmationUpdated
         : null;
 
   // Isolation : uniquement les animaux du compte connecté.
@@ -58,11 +64,14 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
   // Ce que la carte Profil énumère : exactement ce qui habille les fiches
   // publiques — le nom (« Publié par… ») et les coordonnées de contact.
   const profileRows: { label: string; value?: string }[] = [
-    { label: "Nom", value: user.name },
-    { label: "Email du compte", value: user.email },
-    { label: "Téléphone", value: phone },
-    { label: "Email public", value: publicEmail },
-    { label: "Județ", value: user.county ? countyName(user.county) : undefined },
+    { label: STR.cont.profileName, value: user.name },
+    { label: STR.cont.profileAccountEmail, value: user.email },
+    { label: STR.cont.profilePhone, value: phone },
+    { label: STR.cont.profilePublicEmail, value: publicEmail },
+    {
+      label: STR.cont.profileCounty,
+      value: user.county ? countyName(user.county) : undefined,
+    },
   ];
 
   return (
@@ -77,14 +86,18 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
           {confirmationMessage}
         </p>
       )}
-      <h1 className="text-2xl font-semibold text-warm-ink">Mon compte</h1>
+      <h1 className="text-2xl font-semibold text-warm-ink">
+        {STR.cont.title}
+      </h1>
 
       {/* ——— Profil : ce que les adoptantes voient sur les fiches. ——— */}
       <Card className="mt-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-warm-ink">Mon profil</h2>
+          <h2 className="text-lg font-semibold text-warm-ink">
+            {STR.cont.profileTitle}
+          </h2>
           <ButtonLink variant="outline" href="/cont/profil">
-            Modifier
+            {STR.cont.edit}
           </ButtonLink>
         </div>
         <dl className="mt-3 space-y-1 text-base">
@@ -92,7 +105,7 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
             <div key={label} className="flex flex-wrap gap-x-2">
               <dt className="text-warm-gray">{label} :</dt>
               <dd className={value ? "text-warm-ink" : "text-warm-gray"}>
-                {value || "non renseigné"}
+                {value || STR.cont.notFilled}
               </dd>
             </div>
           ))}
@@ -106,9 +119,7 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
             role="status"
             className="mt-4 rounded-md border-[1.5px] border-warm-ink bg-cream-ground px-4 py-3 text-sm font-semibold text-warm-ink"
           >
-            Sans téléphone ni email public, vos annonces ne proposent aucun
-            moyen de contact : personne ne peut vous joindre pour adopter.
-            Renseignez au moins l’un des deux dans votre profil.
+            {STR.cont.unreachableWarning}
           </p>
         )}
       </Card>
@@ -118,10 +129,12 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
       {/* ——— Mes animaux : le titre et l'action forment l'en-tête. ——— */}
       <section className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-warm-ink">Mes animaux</h2>
+          <h2 className="text-lg font-semibold text-warm-ink">
+            {STR.cont.myAnimals}
+          </h2>
           {/* Le seul bouton plein de l'écran (La Règle du Bouton Unique). */}
           <ButtonLink variant="primary" href="/cont/animal/nou">
-            Ajouter un animal
+            {STR.cont.addAnimal}
           </ButtonLink>
         </div>
         {animals.length === 0 ? (
@@ -129,8 +142,8 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
           // Sans action : le primary « Ajouter un animal » est juste au-dessus.
           <Card className="mt-4">
             <EmptyState
-              title="Aucun animal pour l’instant"
-              description="Ajoutez votre premier animal avec « Ajouter un animal » ci-dessus : sa fiche apparaîtra ici et sur le site public."
+              title={STR.cont.emptyTitle}
+              description={STR.cont.emptyDescription}
             />
           </Card>
         ) : (
@@ -167,7 +180,7 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                         {TYPE_LABELS[animal.type]}
                       </span>
                       {animal.status === "ADOPTED" ? (
-                        <Badge>Adopté</Badge>
+                        <Badge>{STR.animal.adoptedBadge}</Badge>
                       ) : (
                         <span className="inline-flex items-center rounded-pill border border-warm-border bg-card-ivory px-3 py-1 text-[13px] text-warm-ink">
                           {STATUS_LABELS[animal.status]}
@@ -175,18 +188,18 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-warm-gray">
-                      Mis à jour {relativeTimeFr(animal.updatedAt)}
+                      {STR.cont.updated(relativeTimeRo(animal.updatedAt))}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {/* La publiante voit son annonce comme un adoptant. */}
                       <ButtonLink variant="ghost" href={`/animal/${animal.id}`}>
-                        Voir l’annonce publique
+                        {STR.cont.seePublicListing}
                       </ButtonLink>
                       <ButtonLink
                         variant="ghost"
                         href={`/cont/animal/${animal.id}/editare`}
                       >
-                        Modifier
+                        {STR.cont.edit}
                       </ButtonLink>
                       <form action={setAnimalStatus}>
                         <input type="hidden" name="id" value={animal.id} />
@@ -201,8 +214,8 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                         />
                         <Button variant="ghost" type="submit">
                           {animal.status === "AVAILABLE"
-                            ? "Marquer comme adopté"
-                            : "Marquer comme disponible"}
+                            ? STR.cont.markAdopted
+                            : STR.cont.markAvailable}
                         </Button>
                       </form>
                       <DeleteAnimalButton id={animal.id} name={animal.name} />

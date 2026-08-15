@@ -1,3 +1,5 @@
+import { STR } from "@/lib/strings";
+
 const DIVISIONS: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
   { amount: 60, unit: "second" },
   { amount: 60, unit: "minute" },
@@ -8,13 +10,13 @@ const DIVISIONS: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
   { amount: Number.POSITIVE_INFINITY, unit: "year" },
 ];
 
-const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
+const rtf = new Intl.RelativeTimeFormat("ro", { numeric: "auto" });
 
-/** « il y a 3 jours », « hier », « à l’instant »… pour une date passée. */
-export function relativeTimeFr(date: Date, now: Date = new Date()): string {
+/** « acum 3 zile », « ieri », « chiar acum »… pour une date passée. */
+export function relativeTimeRo(date: Date, now: Date = new Date()): string {
   let duration = (date.getTime() - now.getTime()) / 1000;
   if (Math.abs(duration) < 60) {
-    return "à l’instant";
+    return STR.common.justNow;
   }
   for (const division of DIVISIONS) {
     if (Math.abs(duration) < division.amount) {

@@ -23,14 +23,15 @@ import {
 } from "@/lib/animal-labels";
 import { COUNTIES } from "@/lib/counties";
 import type { CountyCode } from "@/lib/counties";
+import { STR } from "@/lib/strings";
 
 const BOOL_FIELDS: { key: keyof PublicFilters & string; label: string }[] = [
-  { key: "sterilizat", label: "Stérilisé" },
-  { key: "vaccinat", label: "Vacciné" },
-  { key: "cip", label: "Pucé" },
-  { key: "copii", label: "S’entend avec les enfants" },
-  { key: "caini", label: "S’entend avec les chiens" },
-  { key: "pisici", label: "S’entend avec les chats" },
+  { key: "sterilizat", label: STR.filters.sterilized },
+  { key: "vaccinat", label: STR.filters.vaccinated },
+  { key: "cip", label: STR.filters.microchipped },
+  { key: "copii", label: STR.filters.goodWithKids },
+  { key: "caini", label: STR.filters.goodWithDogs },
+  { key: "pisici", label: STR.filters.goodWithCats },
 ];
 
 /**
@@ -87,7 +88,7 @@ function FilterPanel({
   const fields = (
     <div className="space-y-4">
       <Select
-        label="Județ"
+        label={STR.filters.county}
         id={`${idScope}-judet`}
         value={draft.judet ?? ""}
         onChange={(e) =>
@@ -97,7 +98,7 @@ function FilterPanel({
           })
         }
       >
-        <option value="">Tous</option>
+        <option value="">{STR.filters.countyAll}</option>
         {COUNTIES.map((c) => (
           <option key={c.code} value={c.code}>
             {c.name}
@@ -106,7 +107,7 @@ function FilterPanel({
       </Select>
 
       <Select
-        label="Âge"
+        label={STR.filters.age}
         id={`${idScope}-varsta`}
         value={draft.varsta ?? ""}
         onChange={(e) =>
@@ -116,7 +117,7 @@ function FilterPanel({
           })
         }
       >
-        <option value="">Tous</option>
+        <option value="">{STR.filters.any}</option>
         {AGE_GROUP_OPTIONS.map(([value, label]) => (
           <option key={value} value={value}>
             {label}
@@ -125,7 +126,7 @@ function FilterPanel({
       </Select>
 
       <Select
-        label="Sexe"
+        label={STR.filters.sex}
         id={`${idScope}-sex`}
         value={draft.sex ?? ""}
         onChange={(e) =>
@@ -135,7 +136,7 @@ function FilterPanel({
           })
         }
       >
-        <option value="">Tous</option>
+        <option value="">{STR.filters.any}</option>
         {SEX_OPTIONS.map(([value, label]) => (
           <option key={value} value={value}>
             {label}
@@ -144,7 +145,7 @@ function FilterPanel({
       </Select>
 
       <Select
-        label="Taille"
+        label={STR.filters.size}
         id={`${idScope}-marime`}
         value={draft.marime ?? ""}
         onChange={(e) =>
@@ -154,7 +155,7 @@ function FilterPanel({
           })
         }
       >
-        <option value="">Toutes</option>
+        <option value="">{STR.filters.any}</option>
         {SIZE_OPTIONS.map(([value, label]) => (
           <option key={value} value={value}>
             {label}
@@ -163,7 +164,7 @@ function FilterPanel({
       </Select>
 
       <fieldset>
-        <legend className="sr-only">Autres critères</legend>
+        <legend className="sr-only">{STR.filters.otherCriteria}</legend>
         <div className="flex flex-wrap gap-2">
           {BOOL_FIELDS.map(({ key, label }) => (
             <Chip
@@ -188,11 +189,11 @@ function FilterPanel({
         <div className="flex gap-3 border-t border-warm-border p-3">
           {activeCount > 0 && (
             <Button variant="outline" onClick={reset} className="flex-1">
-              Réinitialiser
+              {STR.filters.reset}
             </Button>
           )}
           <Button variant="primary" onClick={apply} className="flex-1">
-            Appliquer
+            {STR.filters.apply}
           </Button>
         </div>
       </>
@@ -206,11 +207,11 @@ function FilterPanel({
       {fields}
       <div className="mt-4 flex flex-col gap-2">
         <Button variant="outline" onClick={apply}>
-          Appliquer
+          {STR.filters.apply}
         </Button>
         {activeCount > 0 && (
           <Button variant="ghost" onClick={reset}>
-            Réinitialiser
+            {STR.filters.reset}
           </Button>
         )}
       </div>
@@ -285,7 +286,7 @@ export function FilterSheet({ filters }: { filters: PublicFilters }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
       >
-        Filtrer
+        {STR.filters.open}
         {activeCount > 0 && (
           <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-pill bg-warm-ink px-1 text-sm font-semibold text-white">
             {activeCount}
@@ -309,16 +310,18 @@ export function FilterSheet({ filters }: { filters: PublicFilters }) {
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Filtres"
+            aria-label={STR.filters.title}
             className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-[20px] border-t border-warm-border bg-card-ivory text-warm-ink shadow-[0_-8px_30px_color-mix(in_oklab,var(--color-warm-ink)_20%,transparent)]"
           >
             <div className="flex items-center justify-between border-b border-warm-border px-4 py-2">
-              <h2 className="text-lg font-semibold text-warm-ink">Filtres</h2>
+              <h2 className="text-lg font-semibold text-warm-ink">
+                {STR.filters.title}
+              </h2>
               <button
                 ref={closeRef}
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Fermer"
+                aria-label={STR.filters.close}
                 className="flex h-11 w-11 items-center justify-center text-2xl text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
               >
                 ×
@@ -347,7 +350,9 @@ export function FilterAside({ filters }: { filters: PublicFilters }) {
   return (
     <aside className="hidden w-64 shrink-0 lg:block">
       <Card className="p-4">
-        <h2 className="mb-4 text-lg font-semibold text-warm-ink">Filtres</h2>
+        <h2 className="mb-4 text-lg font-semibold text-warm-ink">
+          {STR.filters.title}
+        </h2>
         <FilterPanel filters={filters} idScope="aside" />
       </Card>
     </aside>

@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/ui/button";
+import { STR } from "@/lib/strings";
 
 /**
  * 404 racine — URL qui ne correspond à aucune route. Un lien mort est un
@@ -11,13 +12,13 @@ export default function NotFound() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
       <h1 className="text-2xl font-semibold text-warm-ink">
-        Page introuvable
+        {STR.notFound.title}
       </h1>
       <p className="max-w-md text-base text-warm-gray">
-        Cette page n&rsquo;existe pas ou n&rsquo;existe plus.
+        {STR.notFound.description}
       </p>
       <ButtonLink variant="primary" href="/animale" className="mt-4">
-        Voir les animaux à adopter
+        {STR.notFound.cta}
       </ButtonLink>
     </main>
   );

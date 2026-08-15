@@ -5,8 +5,9 @@ import { notFound } from "next/navigation";
 import { animalMetaLine } from "@/lib/animal-display";
 import { countyName } from "@/lib/counties";
 import { prisma } from "@/lib/prisma";
-import { relativeTimeFr } from "@/lib/relative-time";
+import { relativeTimeRo } from "@/lib/relative-time";
 import { SITE_URL } from "@/lib/site";
+import { STR } from "@/lib/strings";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
@@ -37,27 +38,27 @@ export async function generateMetadata(
   const { id } = await props.params;
   const animal = await getAnimal(id);
   if (!animal) {
-    return { title: "Animal introuvable – TakeMeHome" };
+    return { title: STR.animal.notFoundMetaTitle };
   }
 
   const place = animal.city?.trim() || countyName(animal.county);
   const title = `${animal.name} – ${place}`;
   const description =
     animal.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
-    `${animal.name} attend une famille. ${animalMetaLine(animal)}.`;
+    `${STR.animal.metaDescription(animal.name)} ${animalMetaLine(animal)}.`;
   const photo = animal.photos[0];
 
   return {
-    title: `${title} – TakeMeHome`,
+    title: `${title} – ${STR.site.name}`,
     description,
     openGraph: {
       title,
       description,
       type: "website",
       url: `${SITE_URL}/animal/${animal.id}`,
-      siteName: "TakeMeHome",
+      siteName: STR.site.name,
       ...(photo && {
-        images: [{ url: photo.url, alt: `Photo de ${animal.name}` }],
+        images: [{ url: photo.url, alt: STR.animal.photoAlt(animal.name) }],
       }),
     },
   };
@@ -96,7 +97,7 @@ function ContactActions({
           >
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Appeler
+          {STR.animal.call}
         </a>
       )}
       {email && (
@@ -104,7 +105,7 @@ function ContactActions({
           href={`mailto:${email}`}
           className={buttonClasses("outline", "flex-1")}
         >
-          Envoyer un email
+          {STR.animal.email}
         </a>
       )}
     </div>
@@ -128,7 +129,9 @@ function DescriptionSection({
 }) {
   return (
     <section className={`mt-6 ${className}`}>
-      <h2 className="text-lg font-semibold text-warm-ink">Description</h2>
+      <h2 className="text-lg font-semibold text-warm-ink">
+        {STR.animal.description}
+      </h2>
       <p
         className={`mt-1 text-base whitespace-pre-line text-warm-ink ${textClassName}`.trim()}
       >
@@ -152,14 +155,14 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const photo = animal.photos[0];
 
   const health = [
-    animal.sterilized && "Stérilisé",
-    animal.vaccinated && "Vacciné",
-    animal.microchipped && "Pucé",
+    animal.sterilized && STR.animal.sterilized,
+    animal.vaccinated && STR.animal.vaccinated,
+    animal.microchipped && STR.animal.microchipped,
   ].filter(Boolean) as string[];
   const goodWith = [
-    animal.goodWithKids && "les enfants",
-    animal.goodWithDogs && "les chiens",
-    animal.goodWithCats && "les chats",
+    animal.goodWithKids && STR.animal.goodWithKids,
+    animal.goodWithDogs && STR.animal.goodWithDogs,
+    animal.goodWithCats && STR.animal.goodWithCats,
   ].filter(Boolean) as string[];
 
   return (
@@ -176,7 +179,7 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
           href="/animale"
           className="inline-flex min-h-11 items-center text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
         >
-          ← Tous les animaux
+          {STR.animal.backToList}
         </Link>
       </p>
 
@@ -211,7 +214,7 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
         <div className="lg:sticky lg:top-4 lg:self-start">
           <h1 className="mt-3 flex flex-wrap items-center gap-3 text-[32px]/[1.05] font-semibold text-warm-ink lg:mt-0">
             {animal.name}
-            {adopted && <Badge>Adopté</Badge>}
+            {adopted && <Badge>{STR.animal.adoptedBadge}</Badge>}
           </h1>
           <p className="mt-1 text-base text-warm-ink">
             {animalMetaLine(animal)}
@@ -226,10 +229,10 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             // Fiche adoptée : ce bloc prend la place de la carte de contact.
             <div className="mt-4">
               <p className="text-base text-warm-ink">
-                Cet animal a déjà trouvé sa famille.
+                {STR.animal.alreadyAdopted}
               </p>
               <ButtonLink href="/animale" variant="outline" className="mt-3">
-                Voir les animaux à adopter
+                {STR.animal.seeAvailable}
               </ButtonLink>
             </div>
           )}
@@ -251,29 +254,33 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
           )}
 
           <section className="mt-6">
-            <h2 className="text-lg font-semibold text-warm-ink">Santé</h2>
+            <h2 className="text-lg font-semibold text-warm-ink">
+              {STR.animal.health}
+            </h2>
             {/* false en base = non renseigné : on n'affiche que les certitudes. */}
             <p
               className={`mt-1 text-base ${health.length > 0 ? "text-warm-ink" : "text-warm-gray"}`}
             >
-              {health.length > 0 ? health.join(" · ") : "Non renseigné"}
+              {health.length > 0 ? health.join(" · ") : STR.animal.notSpecified}
             </p>
           </section>
 
           <section className="mt-6">
             <h2 className="text-lg font-semibold text-warm-ink">
-              S&rsquo;entend bien avec
+              {STR.animal.goodWith}
             </h2>
             <p
               className={`mt-1 text-base ${goodWith.length > 0 ? "text-warm-ink" : "text-warm-gray"}`}
             >
-              {goodWith.length > 0 ? goodWith.join(" · ") : "Non renseigné"}
+              {goodWith.length > 0
+                ? goodWith.join(" · ")
+                : STR.animal.notSpecified}
             </p>
           </section>
 
           <section className="mt-6 text-sm text-warm-gray">
-            <p>Publié par {animal.user.name}</p>
-            <p>Mise à jour {relativeTimeFr(animal.updatedAt)}</p>
+            <p>{STR.animal.publishedBy(animal.user.name)}</p>
+            <p>{STR.animal.updated(relativeTimeRo(animal.updatedAt))}</p>
           </section>
         </div>
       </div>

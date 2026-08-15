@@ -16,6 +16,7 @@ import {
   TYPE_OPTIONS,
 } from "@/lib/animal-labels";
 import { COUNTIES } from "@/lib/counties";
+import { STR } from "@/lib/strings";
 import { animalPhotoPathname } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -47,19 +48,20 @@ export type AnimalFormValues = {
 const MAX_SOURCE_SIZE = 25 * 1024 * 1024;
 
 function formatSize(bytes: number): string {
+  // Unités roumaines : MB/KB (jamais Mo/Ko), virgule décimale.
   if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
+    return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
   }
-  return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 function uploadErrorMessage(error: unknown): string {
   // fetch échoue en TypeError quand le réseau est coupé.
   if (error instanceof TypeError) {
-    return "L’envoi de la photo a échoué : problème de réseau. Vérifiez votre connexion et réessayez.";
+    return STR.animalForm.uploadNetworkError;
   }
   const message = error instanceof Error ? error.message : String(error);
-  return `L’envoi de la photo a échoué : ${message}`;
+  return STR.animalForm.uploadError(message);
 }
 
 // Formulaire partagé création/édition. Seuls name, type et county sont
@@ -119,14 +121,12 @@ export function AnimalForm({
     // file.type est parfois vide (HEIC sur certains systèmes) : dans ce cas
     // on laisse le décodage trancher plutôt que de refuser d'office.
     if (file.type && !file.type.startsWith("image/")) {
-      setPhotoError("Ce fichier n’est pas une image. Choisissez une photo.");
+      setPhotoError(STR.animalForm.notAnImage);
       if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
     if (file.size > MAX_SOURCE_SIZE) {
-      setPhotoError(
-        `Fichier trop lourd (${formatSize(file.size)}, maximum 25 Mo). Choisissez une autre photo.`,
-      );
+      setPhotoError(STR.animalForm.fileTooLarge(formatSize(file.size)));
       if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
@@ -139,9 +139,7 @@ export function AnimalForm({
       setPreviewUrl(URL.createObjectURL(compressed.blob));
     } catch (error) {
       setPhotoError(
-        error instanceof Error
-          ? error.message
-          : "La préparation de la photo a échoué.",
+        error instanceof Error ? error.message : STR.animalForm.preparingFailed,
       );
       if (photoInputRef.current) photoInputRef.current.value = "";
     } finally {
@@ -205,7 +203,7 @@ export function AnimalForm({
     <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
       {animalId && <input type="hidden" name="id" value={animalId} />}
       <Input
-        label="Nom *"
+        label={STR.animalForm.name}
         id="name"
         name="name"
         type="text"
@@ -214,7 +212,7 @@ export function AnimalForm({
         error={state?.fieldErrors?.name}
       />
       <Select
-        label="Type *"
+        label={STR.animalForm.type}
         id="type"
         name="type"
         defaultValue={initial?.type ?? ""}
@@ -222,7 +220,7 @@ export function AnimalForm({
         error={state?.fieldErrors?.type}
       >
         <option value="" disabled>
-          — Choisir —
+          {STR.animalForm.typePlaceholder}
         </option>
         {TYPE_OPTIONS.map(([value, label]) => (
           <option key={value} value={value}>
@@ -234,12 +232,12 @@ export function AnimalForm({
           ils restent empilés. */}
       <div className="grid gap-4 md:grid-cols-2">
         <Select
-          label="Sexe"
+          label={STR.animalForm.sex}
           id="sex"
           name="sex"
           defaultValue={initial?.sex ?? ""}
         >
-          <option value="">Non renseigné</option>
+          <option value="">{STR.animalForm.notSpecified}</option>
           {SEX_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -247,12 +245,12 @@ export function AnimalForm({
           ))}
         </Select>
         <Select
-          label="Âge"
+          label={STR.animalForm.age}
           id="ageGroup"
           name="ageGroup"
           defaultValue={initial?.ageGroup ?? ""}
         >
-          <option value="">Non renseigné</option>
+          <option value="">{STR.animalForm.notSpecified}</option>
           {AGE_GROUP_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -261,16 +259,16 @@ export function AnimalForm({
         </Select>
       </div>
       <Input
-        label="Âge en toutes lettres"
+        label={STR.animalForm.ageText}
         id="ageText"
         name="ageText"
         type="text"
         defaultValue={initial?.ageText}
-        placeholder="ex. 2 ans"
+        placeholder={STR.animalForm.ageTextPlaceholder}
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Select
-          label="Județ *"
+          label={STR.animalForm.county}
           id="county"
           name="county"
           defaultValue={initial?.county ?? ""}
@@ -278,7 +276,7 @@ export function AnimalForm({
           error={state?.fieldErrors?.county}
         >
           <option value="" disabled>
-            — Choisir un județ —
+            {STR.animalForm.countyPlaceholder}
           </option>
           {COUNTIES.map((c) => (
             <option key={c.code} value={c.code}>
@@ -287,7 +285,7 @@ export function AnimalForm({
           ))}
         </Select>
         <Input
-          label="Ville"
+          label={STR.animalForm.city}
           id="city"
           name="city"
           type="text"
@@ -295,7 +293,7 @@ export function AnimalForm({
         />
       </div>
       <Textarea
-        label="Description"
+        label={STR.animalForm.description}
         id="description"
         name="description"
         defaultValue={initial?.description}
@@ -303,7 +301,7 @@ export function AnimalForm({
       />
       <div>
         <label htmlFor="photo" className="mb-1 block text-sm text-warm-ink">
-          Photo
+          {STR.animalForm.photo}
         </label>
         {/* Pas d'attribut name : le fichier ne doit jamais partir dans la
             server action (limite de 1 Mo par défaut, 4,5 Mo sur Vercel) —
@@ -321,7 +319,7 @@ export function AnimalForm({
         />
         {preparing && (
           <p role="status" className="mt-2 text-sm text-warm-ink">
-            Préparation de la photo…
+            {STR.animalForm.preparing}
           </p>
         )}
         {photo && previewUrl && (
@@ -330,18 +328,19 @@ export function AnimalForm({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={previewUrl}
-              alt="Aperçu de la photo sélectionnée"
+              alt={STR.animalForm.previewAlt}
               width={240}
               className="rounded-md border border-warm-border"
             />
             <p className="mt-1 text-sm text-warm-gray">
               {/* Le format affiché dit si la bascule Safari (pas d'encodage WebP)
                   s'est déclenchée : WebP = voie normale, JPEG = bascule. */}
-              Photo prête ({photo.extension === "webp" ? "WebP" : "JPEG"}
-              {originalSize !== null && photo.blob.size < originalSize
-                ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
-                : `, ${formatSize(photo.blob.size)}`}
-              ). Elle sera envoyée à l’enregistrement.
+              {STR.animalForm.photoReady(
+                photo.extension === "webp" ? "WebP" : "JPEG",
+                originalSize !== null && photo.blob.size < originalSize
+                  ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
+                  : `, ${formatSize(photo.blob.size)}`,
+              )}
             </p>
           </div>
         )}
@@ -350,18 +349,18 @@ export function AnimalForm({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={initialPhotoUrl}
-              alt="Photo actuelle"
+              alt={STR.animalForm.currentPhotoAlt}
               width={240}
               className="rounded-md border border-warm-border"
             />
             <p className="mt-1 text-sm text-warm-gray">
-              Photo actuelle. Choisir un fichier la remplacera.
+              {STR.animalForm.currentPhotoHint}
             </p>
           </div>
         )}
         {progress !== null && (
           <p role="status" className="mt-2 text-sm text-warm-ink">
-            Envoi de la photo… {Math.round(progress)} %
+            {STR.animalForm.uploading(Math.round(progress))}
           </p>
         )}
         {photoErrorMessage && (
@@ -375,20 +374,22 @@ export function AnimalForm({
         )}
       </div>
       <fieldset>
-        <legend className="mb-2 text-sm text-warm-ink">Santé</legend>
+        <legend className="mb-2 text-sm text-warm-ink">
+          {STR.animalForm.health}
+        </legend>
         <div className="flex flex-wrap gap-2">
           <ChipCheckbox
-            label="Stérilisé"
+            label={STR.animalForm.sterilized}
             name="sterilized"
             defaultChecked={initial?.sterilized}
           />
           <ChipCheckbox
-            label="Vacciné"
+            label={STR.animalForm.vaccinated}
             name="vaccinated"
             defaultChecked={initial?.vaccinated}
           />
           <ChipCheckbox
-            label="Pucé"
+            label={STR.animalForm.microchipped}
             name="microchipped"
             defaultChecked={initial?.microchipped}
           />
@@ -396,21 +397,21 @@ export function AnimalForm({
       </fieldset>
       <fieldset>
         <legend className="mb-2 text-sm text-warm-ink">
-          S’entend bien avec
+          {STR.animalForm.goodWith}
         </legend>
         <div className="flex flex-wrap gap-2">
           <ChipCheckbox
-            label="Enfants"
+            label={STR.animalForm.goodWithKids}
             name="goodWithKids"
             defaultChecked={initial?.goodWithKids}
           />
           <ChipCheckbox
-            label="Chiens"
+            label={STR.animalForm.goodWithDogs}
             name="goodWithDogs"
             defaultChecked={initial?.goodWithDogs}
           />
           <ChipCheckbox
-            label="Chats"
+            label={STR.animalForm.goodWithCats}
             name="goodWithCats"
             defaultChecked={initial?.goodWithCats}
           />
@@ -419,12 +420,12 @@ export function AnimalForm({
       {/* Taille rejoint Statut pour former la dernière paire de champs courts. */}
       <div className="grid gap-4 md:grid-cols-2">
         <Select
-          label="Taille"
+          label={STR.animalForm.size}
           id="size"
           name="size"
           defaultValue={initial?.size ?? ""}
         >
-          <option value="">Non renseignée</option>
+          <option value="">{STR.animalForm.notSpecifiedFeminine}</option>
           {SIZE_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -432,7 +433,7 @@ export function AnimalForm({
           ))}
         </Select>
         <Select
-          label="Statut"
+          label={STR.animalForm.status}
           id="status"
           name="status"
           defaultValue={initial?.status ?? "AVAILABLE"}
@@ -452,16 +453,16 @@ export function AnimalForm({
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="primary" disabled={busy}>
           {progress !== null
-            ? "Envoi de la photo…"
+            ? STR.animalForm.uploadingLabel
             : preparing
-              ? "Préparation de la photo…"
+              ? STR.animalForm.preparing
               : pending
-                ? "Enregistrement…"
+                ? STR.animalForm.saving
                 : submitLabel}
         </Button>
         {/* Chemin de retour sans valider le formulaire. */}
         <ButtonLink variant="ghost" href="/cont">
-          Annuler
+          {STR.animalForm.cancel}
         </ButtonLink>
       </div>
     </form>

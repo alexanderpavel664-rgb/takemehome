@@ -11,6 +11,8 @@
 // canvas supprime au passage toutes les métadonnées EXIF, y compris les
 // coordonnées GPS du domicile des bénévoles.
 
+import { STR } from "@/lib/strings";
+
 const MAX_WIDTH = 1600;
 // Qualité dégressive : 0.72 au départ, puis -0.05 par tentative tant que le
 // résultat dépasse 300 Ko. Cible ~200 Ko : les bénévoles sont en 4G roumaine.
@@ -97,9 +99,7 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
   try {
     source = await decode(file);
   } catch {
-    throw new Error(
-      "Format d’image non pris en charge. Choisissez une photo JPEG, PNG ou WebP.",
-    );
+    throw new Error(STR.compress.unsupportedFormat);
   }
 
   const sourceWidth =
@@ -107,7 +107,7 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
   const sourceHeight =
     source instanceof HTMLImageElement ? source.naturalHeight : source.height;
   if (!sourceWidth || !sourceHeight) {
-    throw new Error("Cette image est vide ou illisible.");
+    throw new Error(STR.compress.unreadable);
   }
 
   // Jamais d'agrandissement : en dessous de 1600 px, on garde les dimensions.
@@ -120,7 +120,7 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
   canvas.height = height;
   const context = canvas.getContext("2d");
   if (!context) {
-    throw new Error("Impossible de préparer la photo sur cet appareil.");
+    throw new Error(STR.compress.cannotPrepare);
   }
   context.imageSmoothingQuality = "high";
   context.drawImage(source, 0, 0, width, height);
@@ -139,5 +139,5 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
   if (jpeg) {
     return { blob: jpeg, extension: "jpg" };
   }
-  throw new Error("La compression de la photo a échoué sur cet appareil.");
+  throw new Error(STR.compress.compressionFailed);
 }

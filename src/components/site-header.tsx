@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { STR } from "@/lib/strings";
 
 /**
  * En-tête commun à toutes les coquilles (publique, compte, auth) : le logo
@@ -22,7 +23,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
       <div className="flex items-center justify-between gap-4 px-4 py-2 md:px-6 lg:px-8">
         <Link
           href="/"
-          aria-label="Acasă"
+          aria-label={STR.header.homeAriaLabel}
           className="flex min-h-11 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
         >
           <Logo variant="lockup" />

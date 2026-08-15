@@ -10,15 +10,15 @@ import {
   publicWhere,
   serializeFilters,
 } from "@/lib/animal-filters";
+import { STR } from "@/lib/strings";
 import { AnimalGrid } from "../animal-grid";
 import { SkeletonGrid } from "../skeleton-grid";
 import { FilterAside, FilterSheet } from "./filter-sheet";
 import { TypeTabs } from "./type-tabs";
 
 export const metadata: Metadata = {
-  title: "Animaux à adopter – TakeMeHome",
-  description:
-    "Chiens, chats et autres animaux à adopter en Roumanie, publiés par les personnes qui les ont recueillis.",
+  title: STR.animale.metaTitle,
+  description: STR.animale.metaDescription,
 };
 
 // La page lit searchParams (filtres + pagination) : rendu dynamique à
@@ -38,7 +38,7 @@ export default async function AnimalePage(props: PageProps<"/animale">) {
   return (
     <main className="px-4 py-4 md:px-6 lg:px-8">
       <h1 className="mb-4 text-2xl font-semibold text-warm-ink">
-        Animaux à adopter
+        {STR.animale.title}
       </h1>
       <div className="flex items-start lg:gap-8">
         {/* key = filtres : quand l'URL change (onglet, sheet mobile, reset),
@@ -70,8 +70,8 @@ export default async function AnimalePage(props: PageProps<"/animale">) {
 function EmptyList() {
   return (
     <EmptyState
-      title="Aucun animal pour l’instant"
-      description="Revenez bientôt : de nouveaux animaux arrivent régulièrement."
+      title={STR.animale.emptyTitle}
+      description={STR.animale.emptyDescription}
     />
   );
 }
@@ -79,10 +79,10 @@ function EmptyList() {
 function NoResults() {
   return (
     <EmptyState
-      title="Aucun animal ne correspond à ces filtres"
+      title={STR.animale.noResultsTitle}
       action={
         <ButtonLink variant="outline" href="/animale">
-          Réinitialiser les filtres
+          {STR.animale.clearFilters}
         </ButtonLink>
       }
     />
