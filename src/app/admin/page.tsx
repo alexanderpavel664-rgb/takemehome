@@ -9,6 +9,7 @@ import { relativeTimeRo } from "@/lib/relative-time";
 import { STR } from "@/lib/strings";
 import { getViewer, requireAdmin } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -205,6 +206,7 @@ export default async function AdminPage() {
           {STR.admin.suspendHint}
         </p>
       </main>
+      <SiteFooter />
     </>
   );
 }

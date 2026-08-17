@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/ui/button";
+import { SiteFooter } from "@/components/site-footer";
 import { STR } from "@/lib/strings";
 
 /**
@@ -10,6 +11,7 @@ import { STR } from "@/lib/strings";
  */
 export default function NotFound() {
   return (
+    <>
     <main className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
       <h1 className="text-2xl font-semibold text-warm-ink">
         {STR.notFound.title}
@@ -21,5 +23,7 @@ export default function NotFound() {
         {STR.notFound.cta}
       </ButtonLink>
     </main>
+    <SiteFooter />
+    </>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { COUNTIES } from "@/lib/counties";
 import { STR } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
-import { Input, Select, Textarea } from "@/components/ui/field";
+import { Checkbox, Input, Select, Textarea } from "@/components/ui/field";
 
 type ProfileValues = {
   name: string;
@@ -15,6 +16,8 @@ type ProfileValues = {
   county: string;
   city: string;
   description: string;
+  /** Consentement à l'affichage public du téléphone et de l'email public. */
+  contactConsent: boolean;
 };
 
 export function ProfileForm({ initial }: { initial: ProfileValues }) {
@@ -27,7 +30,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
-  function set<K extends keyof ProfileValues>(key: K, value: string) {
+  function set<K extends keyof ProfileValues>(key: K, value: ProfileValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
     setSaved(false);
   }
@@ -49,6 +52,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
       county: values.county,
       city: values.city.trim(),
       description: values.description.trim(),
+      contactConsent: values.contactConsent,
     });
     setPending(false);
     if (error) {
@@ -112,6 +116,35 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         onChange={(e) => set("description", e.target.value)}
         rows={5}
       />
+
+      {/* Le consentement se pose SOUS les champs qu'il concerne : on lit
+          d'abord ce qui sera montré, on décide ensuite. Séparé par une
+          hairline — ce n'est pas un champ de plus, c'est une décision.
+
+          `checked` vient de la base et vaut false par défaut (colonne
+          contactConsent, DEFAULT false) : la case n'est jamais pré-cochée.
+          Ne pas la remplacer par un defaultChecked à true « pour aider » —
+          ce serait exactement ce que Planet49 et Orange România sanctionnent. */}
+      <div className="border-t border-warm-border pt-4">
+        <Checkbox
+          name="contactConsent"
+          label={STR.profil.contactConsentLabel}
+          checked={values.contactConsent}
+          onChange={(e) => set("contactConsent", e.target.checked)}
+          description={
+            <>
+              {STR.profil.contactConsentDescription}{" "}
+              <Link
+                href="/confidentialitate"
+                className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+              >
+                {STR.profil.contactConsentPrivacyLink}
+              </Link>
+            </>
+          }
+        />
+      </div>
+
       {error && (
         <p role="alert" className="mt-4 text-sm font-semibold text-warm-ink">
           {error}

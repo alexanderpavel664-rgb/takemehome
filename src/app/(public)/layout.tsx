@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { getSessionCookie } from "better-auth/cookies";
 import { SiteHeader } from "@/components/site-header";
+import { FooterLink, SiteFooter } from "@/components/site-footer";
 import { STR } from "@/lib/strings";
 
 /**
@@ -34,28 +35,12 @@ export default async function PublicLayout({
         </Link>
       </SiteHeader>
       {children}
-      {/* mt-auto : le body est une colonne flex min-h-full — le pied de
-          page reste en bas même quand le contenu est court. */}
-      <footer className="mt-auto border-t border-warm-border">
-        {/* Pleine largeur, mêmes gouttières que l'en-tête et les pages. */}
-        <nav
-          aria-label={STR.footer.ariaLabel}
-          className="flex flex-wrap items-center gap-x-6 px-4 py-2 text-sm md:px-6 lg:px-8"
-        >
-          <Link
-            href="/adoptati"
-            className="flex min-h-11 items-center text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-          >
-            {STR.footer.adopted}
-          </Link>
-          <Link
-            href="/despre"
-            className="flex min-h-11 items-center text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-          >
-            {STR.footer.about}
-          </Link>
-        </nav>
-      </footer>
+      {/* Les deux liens propres aux pages publiques passent avant les liens
+          juridiques, que SiteFooter ajoute partout. */}
+      <SiteFooter>
+        <FooterLink href="/adoptati">{STR.footer.adopted}</FooterLink>
+        <FooterLink href="/despre">{STR.footer.about}</FooterLink>
+      </SiteFooter>
     </>
   );
 }

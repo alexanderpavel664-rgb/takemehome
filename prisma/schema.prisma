@@ -81,6 +81,17 @@ model User {
   // la main en base, jamais par l'interface.
   role          UserRole @default(USER)
   suspended     Boolean  @default(false)
+  // Consentement à l'affichage public du téléphone et de l'email public
+  // (RGPD art. 6(1)(a)). Le défaut est FAUX et doit le rester : une case
+  // pré-cochée ne vaut pas consentement — CJUE Planet49 (C-673/17) et,
+  // plus près d'ici, Orange România (C-61/19), où la Cour juge qu'il
+  // revient à l'opérateur de prouver un comportement ACTIF. Tant qu'il
+  // est faux, aucune fiche publique n'affiche de bouton de contact.
+  //
+  // Contrairement à role et suspended, ce champ EST déclaré dans les
+  // additionalFields de better-auth : c'est la personne concernée
+  // elle-même qui le pose et le retire, depuis /cont/profil.
+  contactConsent Boolean @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

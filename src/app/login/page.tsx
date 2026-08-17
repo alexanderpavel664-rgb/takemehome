@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { STR } from "@/lib/strings";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default async function LoginPage({
     <>
       <SiteHeader />
       <LoginForm oauthError={error} />
+      <SiteFooter />
     </>
   );
 }

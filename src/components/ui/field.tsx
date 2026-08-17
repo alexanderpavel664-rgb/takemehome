@@ -125,6 +125,72 @@ export function Select({
   );
 }
 
+/**
+ * Case à cocher avec sa phrase d'explication — pour les décisions, pas pour
+ * les attributs. Les traits d'un animal se cochent en ChipCheckbox (des
+ * pilules qu'on balaie du regard) ; ici on demande à quelqu'un de consentir,
+ * et il doit d'abord lire. D'où la forme : une vraie case carrée, le libellé
+ * à côté, et le détail dessous en gris chaud.
+ *
+ * JAMAIS de defaultChecked à true sur un consentement : une case pré-cochée
+ * ne vaut pas consentement (CJUE Planet49 C-673/17 ; Orange România C-61/19,
+ * qui met la preuve du comportement actif à la charge de l'opérateur). Le
+ * composant ne force rien — c'est l'appelant qui doit tenir cette règle.
+ *
+ * Pattern peer, comme ChipCheckbox : l'input reste dans le flux en sr-only,
+ * le <span> voisin porte le rendu. La zone cliquable est tout le bloc.
+ */
+export function Checkbox({
+  label,
+  description,
+  className = "",
+  ...props
+}: ComponentProps<"input"> & { label: string; description?: ReactNode }) {
+  return (
+    <label className={`flex cursor-pointer gap-3 ${className}`}>
+      <input {...props} type="checkbox" className="peer sr-only" />
+      {/* mt-0.5 : la case s'aligne sur la hauteur d'x de la première ligne
+          du libellé, pas sur le haut de la boîte de texte. Le rayon de 6 px
+          est une exception assumée au token de 20 px : à 24 px de côté,
+          20 px de rayon dessinerait un galet, plus une case. */}
+      <span
+        aria-hidden
+        className={
+          "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[6px] border " +
+          "border-warm-border bg-card-ivory text-white transition-colors " +
+          "peer-checked:border-warm-ink peer-checked:bg-warm-ink " +
+          // Le variant vise le <svg> DEPUIS le span : peer-checked ne
+          // s'applique qu'aux frères de l'input, or la coche est un neveu.
+          "peer-checked:[&>svg]:opacity-100 " +
+          "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-warm-ink"
+        }
+      >
+        {/* La coche n'apparaît qu'une fois cochée : opacity, jamais display —
+            un changement de display ferait sauter la case d'un pixel. */}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="size-4 opacity-0"
+        >
+          <path d="m5 13 4 4L19 7" />
+        </svg>
+      </span>
+      <span className="min-w-0">
+        <span className="block text-base text-warm-ink">{label}</span>
+        {description && (
+          <span className="mt-1 block max-w-[60ch] text-sm text-warm-gray">
+            {description}
+          </span>
+        )}
+      </span>
+    </label>
+  );
+}
+
 export function Textarea({
   label,
   error,

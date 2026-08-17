@@ -3,13 +3,12 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { getViewer, type Viewer } from "@/lib/viewer";
 import { COUNTY_CODES } from "@/lib/counties";
 import { isOwnedAnimalPhotoUrl } from "@/lib/animal-photo";
+import { deleteBlobs } from "@/lib/blob";
 import { isRateLimited } from "@/lib/rate-limit";
-import { logError } from "@/lib/log";
 import { reportError } from "@/lib/report";
 import { STR } from "@/lib/strings";
 import {
@@ -150,22 +149,6 @@ function parsePhotoUrl(
     return { ok: false, error: STR.animalForm.photoUrlInvalid };
   }
   return { ok: true, url };
-}
-
-// La suppression côté store est un nettoyage best-effort : la base fait foi,
-// et un échec réseau ici ne doit pas faire échouer l'action (le blob orphelin
-// n'est plus référencé nulle part). del() est idempotent côté Vercel.
-async function deleteBlobs(urls: string[]): Promise<void> {
-  if (urls.length === 0) {
-    return;
-  }
-  try {
-    await del(urls);
-  } catch (error) {
-    // Log seul, sans alerte : un blob orphelin ne coûte que du stockage et
-    // n'empêche personne de publier. Alerter ici ne ferait que du bruit.
-    logError("blob.delete_failed", error, { count: urls.length });
-  }
 }
 
 export async function createAnimal(

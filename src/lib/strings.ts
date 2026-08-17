@@ -100,6 +100,11 @@ export const STR = {
     ariaLabel: "Subsolul paginii",
     adopted: "Animale adoptate",
     about: "Despre",
+    // Sur toutes les coquilles, y compris le compte et la modération.
+    // Le contenu des deux pages vit dans lib/legal.ts, pas ici : voir
+    // l'en-tête de ce fichier-là.
+    privacy: "Confidențialitate",
+    terms: "Termeni",
   },
 
   /* ——— Page d'accueil. ——— */
@@ -361,6 +366,15 @@ export const STR = {
     notFilled: "necompletat",
     unreachableWarning:
       "Fără telefon sau email public, nimeni nu te poate contacta pentru adopție. Completează măcar unul în profil.",
+    // Coordonnées renseignées mais consentement absent : le compte est
+    // injoignable pour une raison différente, et le remède aussi. Ne jamais
+    // fusionner les deux messages — « complète tes coordonnées » quand elles
+    // sont déjà là enverrait la personne chercher un problème qui n'existe pas.
+    consentMissingWarning:
+      "Ai completat datele de contact, dar nu ai bifat afișarea lor publică. Până când o bifezi, anunțurile tale nu au buton de contact.",
+    profileContactConsent: "Afișarea publică a datelor de contact",
+    contactConsentOn: "bifată",
+    contactConsentOff: "nebifată",
     // Compte suspendu : l'écran dit ce qui a changé, sans détour.
     suspendedTitle: "Contul e suspendat",
     suspendedDescription:
@@ -415,6 +429,43 @@ export const STR = {
     save: "Salvează",
     savePending: "Se salvează…",
     backToAccount: "Înapoi la cont",
+
+    /* ——— Consentement à l'affichage public des coordonnées. ——— */
+    // Le libellé dit ce qui sera montré et à qui — « sunt de acord » sans
+    // objet ne serait pas un consentement « spécifique » (RGPD art. 4(11)).
+    contactConsentLabel:
+      "Sunt de acord ca telefonul și emailul public de mai sus să fie afișate pe anunțurile mele, vizibile pentru oricine intră pe site.",
+    contactConsentDescription:
+      "Fără această bifă, anunțurile tale nu afișează butoane de contact și nimeni nu te poate contacta pentru adopție. Poți retrage acordul oricând, debifând căsuța: butoanele dispar imediat.",
+    contactConsentPrivacyLink: "Cum tratăm datele tale",
+
+    /* ——— Drepturile tale : export et suppression. ——— */
+    rightsTitle: "Datele mele",
+    // Factuel : ce sont des droits du RGPD, la page le dit et s'arrête là.
+    // Pas d'antithèse « nu X, ci Y » — c'est un tic d'écriture, et sur un
+    // écran qui touche au droit il sonne comme une plaidoirie.
+    rightsIntro:
+      "Drepturi prevăzute de GDPR. Exercitarea lor nu trebuie motivată.",
+    exportTitle: "Descarcă-ți datele",
+    exportDescription:
+      "Un fișier JSON cu tot ce avem despre tine: contul, profilul, animalele tale și adresele fotografiilor.",
+    exportAction: "Descarcă (JSON)",
+    exportPending: "Se pregătește…",
+    exportFailed: "Descărcarea nu a reușit. Încearcă din nou.",
+    deleteTitle: "Șterge contul",
+    deleteDescription:
+      "Îți șterge contul, toate animalele tale și fotografiile lor. Anunțurile dispar imediat de pe site. Nu se mai poate recupera nimic.",
+    deleteAction: "Șterge contul",
+    deletePending: "Se șterge…",
+    deleteFailed: "Ștergerea nu a reușit. Încearcă din nou.",
+    // Double confirmation : la boîte du navigateur d'abord, puis la frappe
+    // du mot. Un compte effacé emporte les animaux et leurs photos — c'est
+    // le seul geste du site que rien ne rattrape.
+    deleteConfirmWord: "STERGE",
+    deleteConfirmPrompt:
+      "Ștergi definitiv contul, animalele tale și fotografiile lor? Nu se mai poate recupera.",
+    deleteConfirmLabel: "Scrie STERGE ca să confirmi",
+    deleteConfirmMismatch: "Scrie STERGE cu majuscule ca să confirmi.",
   },
 
   /* ——— Formulaire animal (création + édition). ——— */
@@ -527,7 +578,11 @@ export const STR = {
   // permet de retrouver la ligne de log correspondante.
   error: {
     title: "Ceva n-a mers bine",
-    description: "Pagina nu s-a putut afișa. E o problemă de partea noastră, nu a ta.",
+    // « nu a ta » retiré : c'est l'antithèse « nu X, ci Y », et la moitié
+    // utile de la phrase tient sans elle. Ce qui compte pour la personne,
+    // c'est de savoir qu'elle n'a rien à corriger de son côté — « de partea
+    // noastră » le dit déjà.
+    description: "Pagina nu s-a putut afișa. E o problemă de partea noastră.",
     retry: "Încearcă din nou",
     toAnimals: "Vezi animalele de adoptat",
     code: (digest: string) => `Cod: ${digest}`,

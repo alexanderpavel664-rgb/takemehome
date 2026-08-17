@@ -80,10 +80,14 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
 
   const phone = user.phone?.trim();
   const publicEmail = user.publicEmail?.trim();
-  // Le piège silencieux : sans téléphone NI email public, la fiche publique
-  // n'affiche aucun bouton de contact — l'animal est injoignable. Un seul
-  // des deux suffit à rendre les annonces joignables.
+  const contactConsent = user.contactConsent ?? false;
+  // Deux pièges silencieux, deux messages distincts — dans les deux cas la
+  // fiche publique n'affiche aucun bouton de contact et l'animal est
+  // injoignable, mais le remède n'est pas le même. Dire « complète tes
+  // coordonnées » à quelqu'un qui les a déjà remplies l'enverrait chercher
+  // un problème qui n'existe pas.
   const unreachable = !phone && !publicEmail;
+  const consentMissing = !unreachable && !contactConsent;
 
   // Ce que la carte Profil énumère : exactement ce qui habille les fiches
   // publiques — le nom (« Publié par… ») et les coordonnées de contact.
@@ -95,6 +99,14 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
     {
       label: STR.cont.profileCounty,
       value: user.county ? countyName(user.county) : undefined,
+    },
+    // Toujours affiché, dans les deux états : « nebifată » n'est pas un
+    // champ vide qu'on aurait oublié de remplir, c'est une réponse.
+    {
+      label: STR.cont.profileContactConsent,
+      value: contactConsent
+        ? STR.cont.contactConsentOn
+        : STR.cont.contactConsentOff,
     },
   ];
 
@@ -162,6 +174,16 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
             className="mt-4 rounded-md border-[1.5px] border-warm-ink bg-cream-ground px-4 py-3 text-sm font-semibold text-warm-ink"
           >
             {STR.cont.unreachableWarning}
+          </p>
+        )}
+        {consentMissing && (
+          // Même langage que l'avertissement ci-dessus, et jamais les deux à
+          // la fois : `consentMissing` exclut déjà `unreachable`.
+          <p
+            role="status"
+            className="mt-4 rounded-md border-[1.5px] border-warm-ink bg-cream-ground px-4 py-3 text-sm font-semibold text-warm-ink"
+          >
+            {STR.cont.consentMissingWarning}
           </p>
         )}
       </Card>

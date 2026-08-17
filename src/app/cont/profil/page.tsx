@@ -6,6 +6,7 @@ import { STR } from "@/lib/strings";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
+import { AccountData } from "./account-data";
 
 export const metadata: Metadata = {
   title: STR.profil.metaTitle,
@@ -37,10 +38,17 @@ export default async function ProfilPage() {
             county: user.county ?? "",
             city: user.city ?? "",
             description: user.description ?? "",
+            // Le champ n'existe pas encore sur les sessions ouvertes avant
+            // la migration : `?? false` garde la case décochée plutôt que
+            // de la laisser dans un état indéfini.
+            contactConsent: user.contactConsent ?? false,
           }}
         />
       </Card>
-      <div className="mt-4">
+
+      <AccountData />
+
+      <div className="mt-8">
         <ButtonLink variant="ghost" href="/cont">
           {STR.profil.backToAccount}
         </ButtonLink>

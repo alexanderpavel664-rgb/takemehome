@@ -27,7 +27,15 @@ const getAnimal = cache(async (id: string) =>
     // seule l'URL de la première sert (page + Open Graph).
     include: {
       photos: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-      user: { select: { name: true, phone: true, publicEmail: true } },
+      user: {
+        select: {
+          name: true,
+          phone: true,
+          publicEmail: true,
+          // Sans lui, phone et publicEmail ne sortent pas de cette page.
+          contactConsent: true,
+        },
+      },
     },
   }),
 );
@@ -167,8 +175,15 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   }
 
   const adopted = animal.status === "ADOPTED";
-  const phone = animal.user.phone?.trim();
-  const email = animal.user.publicEmail?.trim();
+  // Le consentement conditionne la LECTURE des coordonnées, pas seulement
+  // l'affichage des boutons : sans lui, phone et email valent undefined dès
+  // ici, et aucun rendu en aval — barre fixe, carte de droite, métadonnées —
+  // ne peut plus les faire apparaître par mégarde. C'est une donnée
+  // personnelle, et beaucoup de publiants sont des bénévoles, pas des
+  // structures : leur numéro n'est pas déjà public ailleurs.
+  const consented = animal.user.contactConsent;
+  const phone = consented ? animal.user.phone?.trim() : undefined;
+  const email = consented ? animal.user.publicEmail?.trim() : undefined;
   const hasContact = !adopted && Boolean(phone || email);
   const photo = animal.photos[0];
 

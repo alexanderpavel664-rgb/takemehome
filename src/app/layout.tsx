@@ -25,9 +25,20 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: STR.site.name,
   },
-  // `icons` n'est volontairement pas déclaré ici : icon.png, apple-icon.png
-  // et favicon.ico sont pris par la convention de fichiers, qui reste la voie
-  // recommandée — les déclarer en double risquerait de les écraser.
+  // `icons` reste volontairement absent, et ce n'est PAS un oubli : dans
+  // Next 16.3, la fusion des icônes de fichiers est imbriquée dans un
+  // `if (!resolvedMetadata.icons)` (resolve-metadata.js). Déclarer ne
+  // serait-ce qu'une icône ici fait donc disparaître icon.png ET le
+  // <link rel="apple-touch-icon"> d'apple-icon.png — c'est-à-dire l'icône de
+  // l'écran d'accueil iOS. Vérifié : avec un bloc `icons`, le <head> ne sort
+  // plus que favicon.ico ; sans lui, les trois balises sont là.
+  //
+  // La convention de fichiers suffit et se maintient toute seule :
+  //   favicon.ico    -> <link rel="icon" sizes="48x48" type="image/x-icon">
+  //   icon.png       -> <link rel="icon" sizes="512x512">
+  //   apple-icon.png -> <link rel="apple-touch-icon" sizes="180x180">
+  // Elle ajoute en prime un hachage de contenu dans l'URL : quand le fichier
+  // change, l'URL change, et les navigateurs vont rechercher l'icône.
 };
 
 // Couleur de la barre système : le même crème que le papier, jamais de blanc

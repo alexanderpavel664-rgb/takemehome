@@ -71,6 +71,17 @@ export const auth = betterAuth({
       county: { type: "string", required: false },
       city: { type: "string", required: false },
       description: { type: "string", required: false },
+      // Consentement à l'affichage public des coordonnées. Déclaré ici —
+      // donc écrivable par /update-user — parce que c'est justement la
+      // personne concernée qui doit pouvoir le donner ET le retirer, aussi
+      // facilement l'un que l'autre (RGPD art. 7(3)). defaultValue: false
+      // vaut pour les comptes créés après cette migration ; les comptes
+      // existants héritent du DEFAULT false de la colonne.
+      contactConsent: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
     },
   },
   // nextCookies doit rester le dernier plugin de la liste.

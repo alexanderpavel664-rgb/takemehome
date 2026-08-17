@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { STR } from "@/lib/strings";
 import { RegisterForm } from "./register-form";
 
@@ -14,6 +15,7 @@ export default function InregistrarePage() {
     <>
       <SiteHeader />
       <RegisterForm />
+      <SiteFooter />
     </>
   );
 }

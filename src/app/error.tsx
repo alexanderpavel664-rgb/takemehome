@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { SiteFooter } from "@/components/site-footer";
 import { reportClientError } from "@/lib/client-report";
 import { STR } from "@/lib/strings";
 
@@ -35,6 +36,7 @@ export default function ErrorScreen({
   }, [error]);
 
   return (
+    <>
     <main className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
       <h1 className="text-2xl font-semibold text-warm-ink">{STR.error.title}</h1>
       <p className="max-w-md text-base text-warm-gray">{STR.error.description}</p>
@@ -50,5 +52,7 @@ export default function ErrorScreen({
         <p className="mt-6 text-sm text-warm-gray">{STR.error.code(error.digest)}</p>
       )}
     </main>
+    <SiteFooter />
+    </>
   );
 }
