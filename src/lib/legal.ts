@@ -10,10 +10,13 @@
  * boutons rendrait les deux relectures plus difficiles. Les libellés de
  * navigation qui pointent vers ces pages, eux, restent dans strings.ts.
  *
- * CE QUI EST VOLONTAIREMENT VIDE — chaque `{}` est un champ à compléter,
+ * LES CHAMPS « DE COMPLETAT » — chaque `{}` est un champ à compléter,
  * rendu à l'écran par une case « de completat » impossible à manquer (voir
  * LegalDocument). Il vaut mieux un trou qui saute aux yeux qu'une adresse
  * inventée : ces documents engagent juridiquement une personne réelle.
+ * Tous les champs sont remplis aujourd'hui ; le mécanisme reste, et un
+ * bandeau hors production (voir fillCount et LegalDocument) signale tout
+ * `{}` qui réapparaîtrait, avant qu'il ne parte en ligne.
  *
  * TON — le tutoiement du reste du site, pour la raison que donne l'art. 12
  * RGPD : une information « concisă, transparentă, inteligibilă și ușor
@@ -61,26 +64,6 @@ export type LegalDocumentContent = {
   sections: LegalSection[];
 };
 
-/* ——— L'avertissement de relecture, en haut des deux pages. ——— */
-
-/**
- * Bloc temporaire, à retirer une fois la relecture faite. Il est en roumain
- * comme le reste du site : la personne qui doit vérifier ces textes les lira
- * en roumain, et un visiteur qui tombe dessus mérite de comprendre ce qu'il
- * lit plutôt que de voir une note dans une langue qui n'est pas la sienne.
- */
-export const REVIEW_NOTICE = {
-  title: "De verificat de către un adult înainte de publicare",
-  description:
-    "Textul de mai jos e o primă versiune. Nu a fost verificat de un avocat și nu e încă asumat de nicio persoană. Câmpurile marcate „de completat” trebuie completate înainte de publicarea paginii.",
-  pointsTitle: "Trei aspecte de lămurit:",
-  points: [
-    "Vârsta de la care cineva își poate da singur consimțământul pentru servicii online este 16 ani în România: Legea nr. 190/2018 nu folosește derogarea din art. 8(2) GDPR, deci se aplică pragul implicit din regulament.",
-    "Dacă un minor poate fi el însuși operator de date nu e lămurit nici de ANSPDCP, nici de instanțe. De aceea operatorul trecut mai jos e un adult. E o măsură de prudență, nu o regulă scrisă undeva.",
-    "În aprilie 2026 era în procedură legislativă un proiect de modificare a Legii nr. 506/2004 privind cookie-urile. Nu am putut confirma dacă a fost adoptat între timp: de verificat înainte de publicare.",
-  ],
-} as const;
-
 /* ——— /confidentialitate ——— */
 
 export const PRIVACY: LegalDocumentContent = {
@@ -100,9 +83,12 @@ export const PRIVACY: LegalDocumentContent = {
         },
         {
           rows: [
-            { term: "Nume", value: FILL },
-            { term: "Adresă", value: FILL },
-            { term: "Email de contact", value: FILL },
+            { term: "Nume", value: "Sebastian Pavel" },
+            {
+              term: "Adresă",
+              value: "15 rue du Breuil Marais, 79000 Bessines, France",
+            },
+            { term: "Email de contact", value: "contact.takemehome@gmail.com" },
           ],
         },
         {
@@ -192,7 +178,8 @@ export const PRIVACY: LegalDocumentContent = {
             },
             {
               term: "Conturi nefolosite",
-              value: FILL,
+              value:
+                "nu se șterg automat. Contul rămâne deschis, cu datele lui, până când îl ștergi tu. Poți face asta oricând, din pagina profilului.",
             },
             {
               term: "Sesiunile",
@@ -206,7 +193,7 @@ export const PRIVACY: LegalDocumentContent = {
             },
             {
               term: "Semnalările",
-              value: FILL,
+              value: "6 luni de la trimitere, apoi sunt șterse automat.",
             },
             {
               term: "Rapoartele de eroare",
@@ -281,7 +268,7 @@ export const PRIVACY: LegalDocumentContent = {
           ],
         },
         {
-          p: "Ștergerea contului și descărcarea datelor se fac direct din pagina profilului tău. Pentru celelalte drepturi, scrie la adresa de email de contact de la punctul 1.",
+          p: "Ștergerea contului și descărcarea datelor se fac direct din pagina profilului tău. Pentru celelalte drepturi, scrie la contact.takemehome@gmail.com, adresa de email de contact de la punctul 1.",
         },
       ],
     },
@@ -289,7 +276,7 @@ export const PRIVACY: LegalDocumentContent = {
       title: "8. Dacă ai o plângere",
       blocks: [
         {
-          p: "Dacă apreciezi că datele tale nu sunt prelucrate corect, ne poți scrie mai întâi nouă. Ai însă dreptul să te adresezi direct autorității de supraveghere, fără o solicitare prealabilă către noi:",
+          p: "Dacă apreciezi că datele tale nu sunt prelucrate corect, ne poți scrie mai întâi nouă, la contact.takemehome@gmail.com. Ai însă dreptul să te adresezi direct unei autorități de supraveghere, fără o solicitare prealabilă către noi. Autoritatea din România:",
         },
         {
           rows: [
@@ -306,6 +293,28 @@ export const PRIVACY: LegalDocumentContent = {
             { term: "Telefon", value: "+40.318.059.211 / +40.318.059.212" },
             { term: "Email", value: "anspdcp@dataprotection.ro" },
             { term: "Site", value: "www.dataprotection.ro" },
+          ],
+        },
+        {
+          p: "Operatorul de date are reședința în Franța, iar site-ul se adresează persoanelor din România. Pentru o astfel de prelucrare transfrontalieră, autoritatea franceză CNIL poate fi autoritatea principală, conform mecanismului „ghișeului unic” din art. 56 GDPR. Poți depune plângerea la oricare dintre cele două autorități: dacă o depui la ANSPDCP, cele două colaborează potrivit regulamentului.",
+        },
+        {
+          rows: [
+            {
+              term: "Autoritatea franceză",
+              value:
+                "Commission Nationale de l'Informatique et des Libertés (CNIL)",
+            },
+            {
+              term: "Adresă",
+              value:
+                "3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, Franța",
+            },
+            { term: "Telefon", value: "+33 1 53 73 22 22" },
+            {
+              term: "Site",
+              value: "www.cnil.fr, unde plângerea se poate depune online",
+            },
           ],
         },
         {
@@ -507,12 +516,40 @@ export const TERMS: LegalDocumentContent = {
         },
         {
           rows: [
-            { term: "Nume", value: FILL },
-            { term: "Adresă", value: FILL },
-            { term: "Email de contact", value: FILL },
+            { term: "Nume", value: "Sebastian Pavel" },
+            {
+              term: "Adresă",
+              value: "15 rue du Breuil Marais, 79000 Bessines, France",
+            },
+            { term: "Email de contact", value: "contact.takemehome@gmail.com" },
           ],
         },
       ],
     },
   ],
 };
+
+/**
+ * Compte les textes d'un document qui contiennent encore le marqueur FILL.
+ * Sert au garde-fou hors production de LegalDocument : un « de completat »
+ * ne doit jamais être mis en ligne. Le balayage couvre tous les textes, pas
+ * seulement les valeurs des paires terme/valeur : un `{}` égaré dans un
+ * paragraphe s'afficherait tel quel aux visiteurs.
+ */
+export function fillCount(content: LegalDocumentContent): number {
+  const texts: string[] = [content.intro];
+  for (const section of content.sections) {
+    for (const block of section.blocks) {
+      if ("p" in block) {
+        texts.push(block.p);
+      } else if ("list" in block) {
+        texts.push(...block.list);
+      } else {
+        for (const row of block.rows) {
+          texts.push(row.term, row.value);
+        }
+      }
+    }
+  }
+  return texts.filter((text) => text.includes(FILL)).length;
+}

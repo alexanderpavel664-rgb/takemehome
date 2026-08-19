@@ -1,7 +1,9 @@
 import { Card } from "@/components/ui/card";
 import {
   FILL,
-  REVIEW_NOTICE,
+  fillCount,
+  PRIVACY,
+  TERMS,
   type LegalBlock,
   type LegalDocumentContent,
 } from "@/lib/legal";
@@ -17,6 +19,47 @@ import {
  * pèse. Seuls les blocs qui SONT des encadrés (l'avertissement de
  * relecture, les paires terme/valeur) prennent l'ivoire.
  */
+
+/**
+ * Garde-fou de développement : si un champ « de completat » subsiste dans
+ * L'UN OU L'AUTRE des deux documents, pas seulement celui affiché, un
+ * bandeau le dit sur les deux pages légales. Jamais rendu en production —
+ * les visiteurs ne doivent pas voir ces marqueurs — mais rendu sur les
+ * déploiements de prévisualisation Vercel, qui tournent aussi avec
+ * NODE_ENV=production. En français : seul un développeur (ou le relecteur
+ * d'une prévisualisation) peut le voir.
+ */
+function FillWarning() {
+  const isProduction =
+    process.env.NODE_ENV === "production" &&
+    process.env.VERCEL_ENV !== "preview";
+  if (isProduction) {
+    return null;
+  }
+
+  const remaining = [
+    { title: PRIVACY.title, count: fillCount(PRIVACY) },
+    { title: TERMS.title, count: fillCount(TERMS) },
+  ].filter(({ count }) => count > 0);
+  if (remaining.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card role="alert" className="mt-4 border-[1.5px] border-warm-ink p-4">
+      <p className="text-base font-semibold text-warm-ink">
+        Avertissement de développement, invisible en production
+      </p>
+      <p className="mt-1 max-w-[66ch] text-base text-warm-ink">
+        Des champs « de completat » subsistent :{" "}
+        {remaining
+          .map(({ title, count }) => `${title} (${count})`)
+          .join(", ")}
+        . À compléter dans src/lib/legal.ts avant la mise en ligne.
+      </p>
+    </Card>
+  );
+}
 
 /** La case vide, impossible à manquer. Voir l'en-tête de lib/legal.ts. */
 function Placeholder() {
@@ -63,33 +106,6 @@ function Block({ block }: { block: LegalBlock }) {
   );
 }
 
-/**
- * Avertissement temporaire, à retirer une fois la relecture faite (avec la
- * constante REVIEW_NOTICE et son rendu ici). Même langage que les autres
- * avertissements du site : bordure encre épaissie et message en toutes
- * lettres, jamais la couleur seule — la palette n'a pas de rouge.
- */
-function ReviewNotice() {
-  return (
-    <Card role="note" className="mt-4 border-[1.5px] border-warm-ink p-4">
-      <h2 className="text-lg font-semibold text-warm-ink">
-        {REVIEW_NOTICE.title}
-      </h2>
-      <p className="mt-1 max-w-[66ch] text-base text-warm-ink">
-        {REVIEW_NOTICE.description}
-      </p>
-      <p className="mt-3 text-base font-semibold text-warm-ink">
-        {REVIEW_NOTICE.pointsTitle}
-      </p>
-      <ul className="mt-1 max-w-[66ch] list-outside list-disc space-y-1 pl-5 text-base text-warm-ink">
-        {REVIEW_NOTICE.points.map((point) => (
-          <li key={point}>{point}</li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
-
 export function LegalDocument({
   content,
 }: {
@@ -102,7 +118,7 @@ export function LegalDocument({
       <h1 className="text-2xl font-semibold text-warm-ink">{content.title}</h1>
       <p className="mt-1 text-sm text-warm-gray">{content.updatedLabel}</p>
 
-      <ReviewNotice />
+      <FillWarning />
 
       <p className="mt-4 max-w-[66ch] text-base text-warm-ink">
         {content.intro}

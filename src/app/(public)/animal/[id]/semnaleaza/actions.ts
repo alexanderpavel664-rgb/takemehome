@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { clientIp } from "@/lib/client-ip";
 import { logInfo } from "@/lib/log";
 import { prisma } from "@/lib/prisma";
+import { purgeExpiredReports } from "@/lib/purge-reports";
 import { isRateLimited } from "@/lib/rate-limit";
 import { reportError } from "@/lib/report";
 import { STR } from "@/lib/strings";
@@ -95,6 +96,11 @@ export async function createReport(
   // Trace ops : un pic de signalements se voit ici avant de se voir en base.
   // Ni l'IP ni le texte libre n'y entrent — seul le motif, qui est un enum.
   logInfo("report.created", { animalId: animal.id, reason });
+
+  // Deuxième point d'appel de la purge opportuniste, après l'écriture
+  // réussie : le chemin est déjà passé par la limite de débit et n'est donc
+  // pas un levier pour marteler la base. Voir purgeExpiredReports.
+  await purgeExpiredReports();
 
   return { sent: true };
 }

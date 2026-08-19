@@ -5,6 +5,7 @@ import {
   REPORT_STATUS_LABELS,
 } from "@/lib/animal-labels";
 import { prisma } from "@/lib/prisma";
+import { purgeExpiredReports } from "@/lib/purge-reports";
 import { relativeTimeRo } from "@/lib/relative-time";
 import { STR } from "@/lib/strings";
 import { getViewer, requireAdmin } from "@/lib/viewer";
@@ -44,6 +45,11 @@ const MAX_REPORTS = 100;
 export default async function AdminPage() {
   // Porte unique : anonyme comme USER reçoivent notFound(), jamais un 403.
   await requireAdmin();
+
+  // Avant la lecture : les signalements expirés disparaissent de la liste
+  // au moment même où ils sont supprimés. Voir purgeExpiredReports pour le
+  // choix de ce point d'appel (pas de cron, quota Neon).
+  await purgeExpiredReports();
 
   const [reports, pending] = await Promise.all([
     prisma.report.findMany({
