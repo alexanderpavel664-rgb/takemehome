@@ -51,21 +51,27 @@ export const FILL = "{}";
  * ou de PRIVACY, en même temps que leur `updatedLabel` : c'est ce qui
  * permet de dire, pour un compte donné, QUEL texte il a accepté. Une
  * nouvelle version ne redemande pas l'acceptation aux comptes existants —
- * l'article 11 des conditions règle ce cas (l'usage après modification
+ * le point 10 des conditions règle ce cas (l'usage après modification
  * vaut acceptation) ; /cont ne redirige que si termsAcceptedAt est NULL.
  *
- * Historique : « 2026-08 » = première version, opérateur personne physique ;
+ * Historique (les numéros de points sont ceux de la version citée) :
+ * « 2026-08 » = première version, opérateur personne physique ;
  * « 2026-08-22 » = l'opérateur devient Kotech Engineering (SAS), nouvelle
  * adresse de contact, point 8 (autorités) et point 13 des conditions
  * (mentions légales LCEN) ; « 2026-08-23 » = téléphone de la société,
- * Neon devenu Neon, LLC (groupe Databricks) au point 3.
+ * Neon devenu Neon, LLC (groupe Databricks) au point 3 ;
+ * « 2026-08-23.2 » = retrait du point 3 des conditions (« Înainte să
+ * adopți », des conseils sans valeur contractuelle, désormais dans /despre
+ * seulement), les points 4 à 13 deviennent 3 à 12 ; « 2026-08-23.3 » =
+ * au point 12 des conditions, « Stocarea datelor » ne nomme plus Neon ni
+ * Sentry et renvoie au point 3 de la politique, seul l'hébergeur reste.
  */
-export const TERMS_VERSION = "2026-08-23";
+export const TERMS_VERSION = "2026-08-23.3";
 
 /**
  * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
  * source pour /confidentialitate (point 1, l'opérateur de données au sens de
- * l'art. 13 RGPD) et /termeni (point 12, l'éditeur ; point 13, les mentions
+ * l'art. 13 RGPD) et /termeni (point 11, l'éditeur ; point 12, les mentions
  * légales) : SIREN, capital et numéro de TVA ne doivent jamais diverger
  * d'une page à l'autre. Données vérifiées le 22 août 2026 sur
  * recherche-entreprises.api.gouv.fr (SIREN, SIRET, forme, siège, dirigeant).
@@ -96,7 +102,7 @@ export const OPERATOR = {
 
 /**
  * Le bloc d'identification de l'opérateur, tel qu'il apparaît au point 1 de
- * /confidentialitate et au point 12 de /termeni. Une fonction plutôt qu'une
+ * /confidentialitate et au point 11 de /termeni. Une fonction plutôt qu'une
  * constante partagée : chaque document reçoit son propre tableau de lignes,
  * aucun objet n'est partagé entre les deux.
  */
@@ -453,25 +459,14 @@ export const TERMS: LegalDocumentContent = {
         },
       ],
     },
+    // Les conseils aux adoptants (voir l'animal en personne, ne pas payer
+    // d'avance…) vivent dans /despre (STR.despre.safetyTips), pas ici : un
+    // contrat définit des obligations et des exclusions, il ne conseille
+    // pas. Ce que ces conseils avaient de juridique est déjà au point 2
+    // (rien n'est vérifié), au point 5 (argent d'avance interdit) et au
+    // point 6 (signalement).
     {
-      title: "3. Înainte să adopți",
-      blocks: [
-        {
-          p: "Recomandări, fără valoare contractuală:",
-        },
-        {
-          list: [
-            "Vezi animalul în persoană înainte să te hotărăști.",
-            "Cere carnetul de sănătate și consultă un medic veterinar.",
-            "Nu trimite bani în avans. Un anunț care cere plata unui „transport” înainte ca animalul să fie văzut indică, în cele mai multe cazuri, o tentativă de înșelăciune.",
-            "Stabilește întâlnirea într-un loc public sau la adăpost, nu la o adresă necunoscută.",
-            "Dacă ceva ți se pare în neregulă, semnalează anunțul. Butonul se află pe fiecare pagină de animal.",
-          ],
-        },
-      ],
-    },
-    {
-      title: "4. Contul tău",
+      title: "3. Contul tău",
       blocks: [
         {
           list: [
@@ -486,7 +481,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "5. Regulile de publicare",
+      title: "4. Regulile de publicare",
       blocks: [
         {
           p: "Poți publica un anunț numai dacă:",
@@ -506,7 +501,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "6. Ce nu e permis",
+      title: "5. Ce nu e permis",
       blocks: [
         {
           list: [
@@ -523,7 +518,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "7. Semnalarea unui anunț",
+      title: "6. Semnalarea unui anunț",
       blocks: [
         {
           p: "Poți semnala un anunț din contul tău. Semnalările sunt examinate și, dacă e cazul, anunțul e ascuns din paginile publice. Persoana care l-a publicat continuă să îl vadă în contul ei și e informată că a fost ascuns.",
@@ -534,7 +529,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "8. Când suspendăm un cont",
+      title: "7. Când suspendăm un cont",
       blocks: [
         {
           p: "Un cont poate fi suspendat dacă:",
@@ -554,12 +549,12 @@ export const TERMS: LegalDocumentContent = {
           p: "Un cont suspendat nu mai poate publica sau modifica anunțuri, iar anunțurile lui pot fi ascunse. Accesul la cont rămâne posibil, la fel și vizualizarea animalelor, ștergerea lor și ștergerea contului.",
         },
         {
-          p: "Dacă apreciezi că suspendarea contului tău e o eroare, scrie la adresa de contact din politica de confidențialitate.",
+          p: "Dacă apreciezi că suspendarea contului tău e o eroare, scrie la adresa de email de contact de la punctul 11.",
         },
       ],
     },
     {
-      title: "9. Conținutul pe care îl publici",
+      title: "8. Conținutul pe care îl publici",
       blocks: [
         {
           p: "Textele și fotografiile pe care le publici rămân proprietatea ta. Ne acorzi dreptul de a le afișa pe site cât timp anunțul e publicat, în scopul funcționării platformei. La ștergerea anunțului sau a contului, acest drept încetează și fotografiile sunt șterse.",
@@ -567,7 +562,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "10. Disponibilitatea site-ului",
+      title: "9. Disponibilitatea site-ului",
       blocks: [
         {
           p: "Site-ul e pus la dispoziție în forma în care se află. Nu garantăm disponibilitatea neîntreruptă a serviciului și nu răspundem pentru pierderile cauzate de o întrerupere.",
@@ -575,7 +570,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "11. Modificări ale acestor termeni",
+      title: "10. Modificări ale acestor termeni",
       blocks: [
         {
           p: "Termenii pot fi modificați. La o modificare importantă, data de sus e actualizată. Folosirea site-ului după modificare constituie acceptarea noii versiuni.",
@@ -583,7 +578,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "12. Legea aplicabilă și contact",
+      title: "11. Legea aplicabilă și contact",
       blocks: [
         {
           p: "Acestor termeni li se aplică legea română. Litigiile se soluționează de instanțele competente din România.",
@@ -595,7 +590,7 @@ export const TERMS: LegalDocumentContent = {
       ],
     },
     {
-      title: "13. Informații legale",
+      title: "12. Informații legale",
       blocks: [
         {
           p: "Informațiile de mai jos sunt cerute de legea franceză aplicabilă editorului site-ului: Legea nr. 2004-575 pentru încrederea în economia digitală, art. 1-1 și art. 19.",
@@ -604,7 +599,7 @@ export const TERMS: LegalDocumentContent = {
           rows: [
             {
               term: "Editor",
-              value: `${OPERATOR.name}, societatea identificată la punctul 12.`,
+              value: `${OPERATOR.name}, societatea identificată la punctul 11.`,
             },
             {
               term: "Director de publicare",
@@ -615,10 +610,15 @@ export const TERMS: LegalDocumentContent = {
               value:
                 "Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, Statele Unite. Telefon: +1 559 288 7060. vercel.com",
             },
+            // Seul l'hébergeur (Vercel) est exigé ici par la LCEN. Les
+            // autres sous-traitants (base de données, rapports d'erreur)
+            // relèvent du RGPD et ne sont nommés qu'au point 3 de
+            // /confidentialitate : les nommer deux fois, c'est les voir
+            // diverger (le renommage de Neon a dû être fait aux deux endroits).
             {
               term: "Stocarea datelor",
               value:
-                "Baza de date: Neon, LLC, societate din grupul Databricks, Inc., 160 Spear Street, Suite 1300, San Francisco, CA 94105, Statele Unite, cu servere în Uniunea Europeană. Fotografiile: Vercel Blob, la Vercel Inc., adresa de mai sus. Rapoartele de eroare: Functional Software, Inc. (Sentry), 45 Fremont Street, 8th Floor, San Francisco, CA 94105, Statele Unite, cu servere în Uniunea Europeană.",
+                "Societățile care prelucrează date în numele nostru, inclusiv baza de date și rapoartele de eroare, sunt enumerate în politica de confidențialitate, punctul 3.",
             },
           ],
         },

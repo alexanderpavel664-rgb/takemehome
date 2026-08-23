@@ -319,14 +319,19 @@ export const STR = {
     seeAnimals: "Vezi animalele",
     // Ton informatif, jamais alarmiste : on décrit des habitudes, on
     // n'agite pas la peur. La première phrase pose la proportion réelle.
+    //
+    // Seul endroit du site où ces conseils existent : /termeni n'en donne
+    // pas (un contrat définit des obligations, il ne conseille pas), il se
+    // contente d'interdire ce que ces conseils apprennent à reconnaître.
     safetyTitle: "Cum adopți în siguranță",
     safetyIntro:
       "Cele mai multe anunțuri sunt reale. Câteva obiceiuri simple te ajută să le recunoști pe cele care nu sunt.",
     safetyTips: [
       "Vezi animalul în persoană înainte să te hotărăști.",
+      "Întâlnește-te într-un loc public sau la adăpost, nu la o adresă pe care nu o cunoști.",
       "Ia-ți timp: cine te grăbește să decizi pe loc are de obicei un motiv.",
       "Nu trimite bani în avans, nici pentru transport, nici pentru „rezervare”.",
-      "Cere carnetul de sănătate și istoricul: vaccinuri, sterilizare, tratamente.",
+      "Cere carnetul de sănătate și istoricul: vaccinuri, sterilizare, tratamente. Un medic veterinar ți le poate confirma.",
       "Fotografiile care par prea profesioniste pot veni de oriunde de pe internet. Cere una făcută pe loc.",
     ],
     safetyReport:
