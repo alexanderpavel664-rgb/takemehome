@@ -57,9 +57,10 @@ export const FILL = "{}";
  * Historique : « 2026-08 » = première version, opérateur personne physique ;
  * « 2026-08-22 » = l'opérateur devient Kotech Engineering (SAS), nouvelle
  * adresse de contact, point 8 (autorités) et point 13 des conditions
- * (mentions légales LCEN).
+ * (mentions légales LCEN) ; « 2026-08-23 » = téléphone de la société,
+ * Neon devenu Neon, LLC (groupe Databricks) au point 3.
  */
-export const TERMS_VERSION = "2026-08-22";
+export const TERMS_VERSION = "2026-08-23";
 
 /**
  * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
@@ -74,16 +75,17 @@ export const TERMS_VERSION = "2026-08-22";
  * personne morale, c'est le représentant légal de plein droit (loi du
  * 29 juillet 1982, art. 93-2), une mention contraire serait sans effet.
  *
- * Pas de numéro de téléphone : l'art. 1-1 I 2° de la LCEN (loi 2004-575,
- * rédaction de la loi SREN du 21 mai 2024) et l'art. 19 2° en exigent un.
- * Aucun numéro n'a été fourni ; la ligne est à ajouter dès qu'il existe,
- * plutôt qu'inventer un champ vide (voir l'en-tête du fichier).
+ * Le téléphone est exigé par l'art. 1-1 I 2° de la LCEN (loi 2004-575,
+ * rédaction de la loi SREN du 21 mai 2024) et par l'art. 19 2° (un numéro
+ * « permettant d'entrer effectivement en contact »). Il est écrit au
+ * format international : la page se lit depuis la Roumanie.
  */
 export const OPERATOR = {
   name: "Kotech Engineering",
   legalForm:
     "Société par actions simplifiée (SAS), societate de drept francez",
   address: "15 rue du Breuil Marais, 79000 Bessines, Franța",
+  phone: "+33 6 37 86 43 48",
   capital: "1 000 €",
   siren: "901 107 920",
   siret: "901 107 920 00018",
@@ -113,6 +115,7 @@ function operatorRows(): LegalBlock {
       },
       { term: "Cod de TVA intracomunitar", value: OPERATOR.vat },
       { term: "Reprezentant legal", value: OPERATOR.representative },
+      { term: "Telefon", value: OPERATOR.phone },
       { term: "Email de contact", value: CONTACT_EMAIL },
     ],
   };
@@ -147,7 +150,7 @@ export const PRIVACY: LegalDocumentContent = {
   metaTitle: "Politica de confidențialitate",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
-  updatedLabel: "Ultima actualizare: 22 august 2026",
+  updatedLabel: "Ultima actualizare: 23 august 2026",
   intro:
     "TakeMeHome pune în legătură persoanele care au animale de dat spre adopție cu persoanele care vor să adopte. Pentru asta prelucrează câteva date despre tine. Pagina de față arată care sunt aceste date, în ce scop sunt prelucrate, cine le mai primește și ce drepturi ai asupra lor.",
   sections: [
@@ -204,9 +207,9 @@ export const PRIVACY: LegalDocumentContent = {
         {
           rows: [
             {
-              term: "Neon",
+              term: "Neon, LLC (grupul Databricks, Inc.)",
               value:
-                "baza de date în care stau conturile, anunțurile și semnalările. Servere în Uniunea Europeană. neon.tech/privacy-policy",
+                "baza de date în care stau conturile, anunțurile și semnalările. Servere în Uniunea Europeană. Neon e o societate din Statele Unite, din grupul Databricks: transferul se face în baza clauzelor contractuale standard aprobate de Comisia Europeană. databricks.com/legal/privacynotice",
             },
             {
               term: "Vercel",
@@ -421,7 +424,7 @@ export const TERMS: LegalDocumentContent = {
   metaTitle: "Termeni și condiții",
   metaDescription:
     "Ce face și ce nu face TakeMeHome, regulile de publicare și răspunderea fiecăruia.",
-  updatedLabel: "Ultima actualizare: 22 august 2026",
+  updatedLabel: "Ultima actualizare: 23 august 2026",
   intro:
     "Prin folosirea TakeMeHome ești de acord cu termenii de mai jos.",
   sections: [
