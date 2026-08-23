@@ -7,6 +7,22 @@ import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@/generated/prisma/client";
 
 /**
+ * La session du rendu en cours, lue une seule fois par requête.
+ *
+ * `cache` : le layout de /cont (porte des conditions), la page et une
+ * éventuelle action partagent le même aller-retour Neon. Sans cookie de
+ * session, on rend la main AVANT d'interroger la base — c'est le cas de
+ * 99 % des visiteurs des pages publiques, et il doit rester à coût nul.
+ */
+export const getSession = cache(async () => {
+  const requestHeaders = await headers();
+  if (!getSessionCookie(requestHeaders)) {
+    return null;
+  }
+  return auth.api.getSession({ headers: requestHeaders });
+});
+
+/**
  * Qui regarde — avec les deux champs que la session ne porte pas : le rôle
  * et la suspension.
  *
@@ -23,18 +39,9 @@ export type Viewer = {
   suspended: boolean;
 };
 
-/**
- * `cache` : plusieurs appels dans le même rendu (page + action) ne coûtent
- * qu'un aller-retour. Sans cookie de session, on rend la main AVANT
- * d'interroger Neon — c'est le cas de 99 % des visiteurs des pages
- * publiques, et il doit rester à coût nul.
- */
+/** `cache` : plusieurs appels dans le même rendu ne coûtent qu'une requête. */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
-  const requestHeaders = await headers();
-  if (!getSessionCookie(requestHeaders)) {
-    return null;
-  }
-  const session = await auth.api.getSession({ headers: requestHeaders });
+  const session = await getSession();
   if (!session) {
     return null;
   }

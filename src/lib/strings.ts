@@ -7,6 +7,7 @@ import type {
   ReportStatus,
   Sex,
 } from "@/generated/prisma/client";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 /**
  * Accord roumain du nom après un nombre : « 1 semnalare », « 3 semnalări »,
@@ -206,21 +207,41 @@ export const STR = {
     notFoundTitle: "Animalul nu a fost găsit",
     notFoundDescription: "Anunțul nu mai există sau a fost retras.",
     // Lien discret en bas de fiche : pas un bouton, pas une alerte — juste
-    // une porte, ouverte à qui n'a pas de compte.
+    // une porte, visible pour tous ; sans compte, elle passe par /login.
     report: "Semnalează acest anunț",
     // Annonce masquée par la modération : seul son propriétaire (et un
-    // ADMIN) arrive jusqu'ici, tout le monde d'autre reçoit un 404.
+    // ADMIN) arrive jusqu'ici, tout le monde d'autre reçoit un 404. Deux
+    // causes, deux phrases : une suspension masque toutes les annonces du
+    // compte d'un coup — dire « după o semnalare » à quelqu'un dont le
+    // compte vient d'être suspendu l'enverrait chercher une semnalare qui
+    // n'existe pas. « Modificările nu îl readuc » : sans cette phrase, la
+    // publiante modifie, resauvegarde, et attend un retour qui ne vient pas.
     hiddenTitle: "Anunțul e ascuns",
     hiddenDescription:
-      "Echipa TakeMeHome l-a ascuns după o semnalare. Nu mai apare în paginile publice și doar tu îl mai vezi. Poți să-l modifici oricând.",
+      "Echipa TakeMeHome l-a ascuns după o semnalare. Nu mai apare în paginile publice și doar tu îl mai vezi. Modificările pe care le faci nu îl readuc.",
+    hiddenDescriptionSuspended:
+      "E ascuns cât timp contul tău e suspendat. Nu apare în paginile publice și doar tu îl mai vezi.",
+    // Partage Facebook d'une fiche adoptée : l'aperçu le dit avant le clic.
+    adoptedMetaDescription: (name: string) =>
+      `${name} și-a găsit deja familia. Vezi celelalte animale de adoptat.`,
+    /* ——— Coordonnées en toutes lettres. Sur un ordinateur, tel: ne fait
+       rien d'utile : le numéro doit se lire et se copier. ——— */
+    contactTitle: "Contact",
+    phoneLabel: "Telefon",
+    emailLabel: "Email",
+    copy: "Copiază",
+    copied: "Copiat",
+    copyFailed: "Nu s-a putut copia",
+    copyPhone: "Copiază numărul de telefon",
+    copyEmail: "Copiază adresa de email",
   },
 
   /* ——— Signalement d'une annonce (/animal/[id]/semnaleaza). ——— */
   report: {
     metaTitle: "Semnalează un anunț – TakeMeHome",
     title: (name: string) => `Semnalezi anunțul pentru ${name}`,
-    intro:
-      "Nu ai nevoie de cont. Citim fiecare semnalare și verificăm anunțul.",
+    // Pas un mot sur le compte : qui lit ceci en a un, la page l'a exigé.
+    intro: "Citim fiecare semnalare și verificăm anunțul.",
     reason: "Motiv *",
     reasonPlaceholder: "Alege motivul",
     message: "Detalii (opțional)",
@@ -252,9 +273,11 @@ export const STR = {
       `Se afișează cele mai recente ${countRo(n, "semnalare", "semnalări")}.`,
     seeAnimal: "Vezi anunțul",
     details: "Detalii",
-    ip: "IP",
-    unknownIp: "necunoscut",
     publishedBy: (name: string) => `Publicat de ${name}`,
+    // Nom ET email : le nom seul ne distingue pas deux « Maria », et c'est
+    // l'email qui permet de reconnaître un compte qui signale en série.
+    reportedBy: (name: string, email: string) =>
+      `Semnalat de ${name} (${email})`,
     hiddenBadge: "Anunț ascuns",
     suspendedBadge: "Cont suspendat",
     hide: "Ascunde anunțul",
@@ -334,6 +357,31 @@ export const STR = {
       submitPending: "Se creează contul…",
       hasAccount: "Ai deja un cont?",
       signIn: "Intră în cont",
+      /* ——— Acceptation des conditions — la case, jamais pré-cochée. ——— */
+      // Le libellé est découpé autour des deux liens : chacun mène au
+      // document qu'il nomme, ouvert dans un autre onglet pour ne pas
+      // perdre le formulaire.
+      termsBefore: "Am citit și accept ",
+      termsLink: "Termenii și condițiile",
+      termsAnd: " și ",
+      privacyLink: "Politica de confidențialitate",
+      termsAfter: ".",
+      termsRequired:
+        "Bifează acceptarea termenilor ca să îți creezi contul.",
+    },
+    /* ——— /accepta-termenii : la porte des comptes sans acceptation. ——— */
+    // Comptes créés avant cette règle, ou avec Google depuis /login (où il
+    // n'y a pas de case) : l'espace compte les amène ici une fois.
+    acceptTerms: {
+      metaTitle: "Acceptă termenii – TakeMeHome",
+      title: "Înainte să continui",
+      intro:
+        "Contul tău nu are încă înregistrată acceptarea termenilor. Ca să folosești contul, citește documentele de mai jos și bifează căsuța.",
+      submit: "Continuă",
+      submitPending: "Un moment…",
+      // L'échec ici bloque l'accès au compte : la personne doit savoir que
+      // ce n'est pas elle, quoi refaire, et à qui écrire si ça persiste.
+      failed: `Acceptarea nu s-a putut salva, e o problemă de partea noastră. Încearcă din nou; dacă se repetă, scrie la ${CONTACT_EMAIL}.`,
     },
     errors: {
       INVALID_EMAIL_OR_PASSWORD: "Email sau parolă greșită.",
@@ -343,6 +391,10 @@ export const STR = {
       USER_ALREADY_EXISTS: "Există deja un cont cu această adresă de email.",
       USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
         "Există deja un cont cu această adresă de email.",
+      // Changement de mot de passe.
+      INVALID_PASSWORD: "Parola actuală e greșită.",
+      CREDENTIAL_ACCOUNT_NOT_FOUND:
+        "Contul tău nu are parolă: intri în cont cu Google.",
       // Limita de debit (429) : fereastra e de 15 minute — « câteva minute »
       // spune adevărul fără să promită un cronometru.
       rateLimited: "Prea multe încercări. Așteaptă câteva minute și încearcă din nou.",
@@ -364,24 +416,64 @@ export const STR = {
     profilePublicEmail: "Email public",
     profileCounty: "Județ",
     notFilled: "necompletat",
-    unreachableWarning:
-      "Fără telefon sau email public, nimeni nu te poate contacta pentru adopție. Completează măcar unul în profil.",
-    // Coordonnées renseignées mais consentement absent : le compte est
-    // injoignable pour une raison différente, et le remède aussi. Ne jamais
-    // fusionner les deux messages — « complète tes coordonnées » quand elles
-    // sont déjà là enverrait la personne chercher un problème qui n'existe pas.
-    consentMissingWarning:
-      "Ai completat datele de contact, dar nu ai bifat afișarea lor publică. Până când o bifezi, anunțurile tale nu au buton de contact.",
+    /* ——— Profil incomplet : le bloc en haut de /cont, de /cont/animal/nou
+       et de /cont/animal/[id]/editare. ——— */
+    // Le titre dit ce qui se passe, pas ce qu'il faut ressentir. Dessous,
+    // le seul fait utile : ce qui manque — trois cas, trois phrases, jamais
+    // fusionnées (« complète tes coordonnées » à quelqu'un qui les a déjà
+    // remplies l'enverrait chercher un problème qui n'existe pas). Ni
+    // phrase rassurante, ni justification : le lien suffit.
+    contactWarning: {
+      title: "Anunțurile tale nu pot fi contactate",
+      // Le cas le plus fréquent : inscription, publication, et rien d'autre.
+      noContactNoConsent:
+        "Nu ai completat telefonul sau emailul public și nu ai bifat afișarea lor publică.",
+      noContact: "Nu ai completat nici telefonul, nici emailul public.",
+      noConsent: "Nu ai bifat afișarea publică a datelor de contact.",
+      action: "Completează profilul",
+    },
+    // Sur chaque fiche de la publiante, tant que le profil est incomplet :
+    // la pastille encre pleine, celle des états qui comptent.
+    noContactBadge: "Fără contact",
+    // Fiche sans photo : une invitation, avec le fait qui la motive —
+    // informative, jamais culpabilisante. La fiche est en ligne telle quelle.
+    noPhotoHint:
+      "Anunțul nu are fotografie. Anunțurile cu fotografie primesc mai multe cereri.",
+    addPhoto: "Adaugă o fotografie",
+    /* ——— Email non confirmé (n'apparaît qu'une fois l'envoi activé). ——— */
+    verifyEmail: {
+      title: "Confirmă-ți adresa de email",
+      description: (email: string) =>
+        `Ți-am trimis un email la ${email}. Deschide linkul din el ca să confirmi adresa.`,
+      resend: "Retrimite emailul",
+      resendPending: "Se trimite…",
+      resent: "Emailul a fost retrimis. Verifică și dosarul spam.",
+      resendFailed: "Emailul nu s-a putut trimite. Încearcă din nou.",
+    },
     profileContactConsent: "Afișarea publică a datelor de contact",
     contactConsentOn: "bifată",
     contactConsentOff: "nebifată",
-    // Compte suspendu : l'écran dit ce qui a changé, sans détour.
+    // Compte suspendu : l'écran dit ce qui a changé, ce qui reste possible,
+    // et à qui écrire — sans ces deux derniers, la personne croit à une
+    // panne et réessaie. L'adresse est rendue en lien (ContactEmailLink),
+    // d'où le libellé coupé en deux.
     suspendedTitle: "Contul e suspendat",
     suspendedDescription:
       "Echipa TakeMeHome ți-a suspendat contul. Nu mai poți publica sau modifica anunțuri, iar anunțurile tale nu mai apar în paginile publice.",
-    // Annonce masquée : le propriétaire la voit, marquée comme telle.
+    suspendedCanStill: "Ce poți face în continuare:",
+    suspendedCanStillList: [
+      "să vezi anunțurile tale, așa cum sunt acum",
+      "să ștergi anunțurile tale",
+      "să îți ștergi contul, din pagina profilului",
+    ],
+    // Annonce masquée : le propriétaire la voit, marquée comme telle. Même
+    // distinction que sur la fiche (animal.hiddenDescription*) : une
+    // suspension masque tout le compte, ce n'est pas « după o semnalare ».
     hiddenBadge: "Ascuns",
-    hiddenHint: "Ascuns din paginile publice după o semnalare.",
+    hiddenHint:
+      "Nu apare în paginile publice: echipa TakeMeHome l-a ascuns după o semnalare.",
+    hiddenHintSuspended:
+      "Nu apare în paginile publice cât timp contul e suspendat.",
     myAnimals: "Animalele mele",
     addAnimal: "Adaugă un animal",
     emptyTitle: "Niciun animal deocamdată",
@@ -415,7 +507,11 @@ export const STR = {
   profil: {
     metaTitle: "Profilul meu – TakeMeHome",
     title: "Profilul meu",
-    intro: "Aceste informații apar ca date de contact pe anunțurile tale.",
+    // Pas d'introduction : la conséquence du consentement se dit une seule
+    // fois, sous la case (contactConsentDescription).
+    // Les deux groupes du formulaire : le contact d'abord, le reste ensuite.
+    contactSection: "Date de contact",
+    otherSection: "Despre tine",
     name: "Nume",
     phone: "Telefon",
     publicEmail: "Email public de contact",
@@ -431,13 +527,33 @@ export const STR = {
     backToAccount: "Înapoi la cont",
 
     /* ——— Consentement à l'affichage public des coordonnées. ——— */
-    // Le libellé dit ce qui sera montré et à qui — « sunt de acord » sans
-    // objet ne serait pas un consentement « spécifique » (RGPD art. 4(11)).
+    // Le libellé dit seulement ce qu'on accepte — mais en entier : ce qui
+    // sera montré et où. « Sunt de acord » sans objet ne serait pas un
+    // consentement « spécifique » (RGPD art. 4(11)).
     contactConsentLabel:
-      "Sunt de acord ca telefonul și emailul public de mai sus să fie afișate pe anunțurile mele, vizibile pentru oricine intră pe site.",
+      "Sunt de acord ca telefonul și emailul public de mai sus să fie afișate public pe anunțurile mele.",
+    // La conséquence, une seule fois sur la page, et courte.
     contactConsentDescription:
-      "Fără această bifă, anunțurile tale nu afișează butoane de contact și nimeni nu te poate contacta pentru adopție. Poți retrage acordul oricând, debifând căsuța: butoanele dispar imediat.",
+      "Fără această bifă, anunțurile tale nu pot fi contactate. Poți retrage acordul oricând.",
     contactConsentPrivacyLink: "Cum tratăm datele tale",
+
+    /* ——— Parola : changement depuis le profil. ——— */
+    passwordTitle: "Parola",
+    // La raison d'être de l'écran, en une phrase : un compte dont on doute.
+    // « Celelalte sesiuni » — on dit ce que le geste fait d'autre.
+    passwordIntro:
+      "Schimbă parola dacă bănuiești că o știe altcineva. Celelalte sesiuni deschise cu contul tău se închid.",
+    currentPassword: "Parola actuală",
+    newPassword: "Parola nouă (cel puțin 8 caractere)",
+    confirmPassword: "Repetă parola nouă",
+    passwordMismatch: "Parolele nu coincid.",
+    passwordUnchanged: "Parola nouă e identică cu cea actuală.",
+    passwordChanged: "Parola a fost schimbată.",
+    changePassword: "Schimbă parola",
+    changePasswordPending: "Se schimbă…",
+    // Compte Google sans mot de passe local : rien à changer ici.
+    passwordGoogleOnly:
+      "Intri în cont cu Google, fără parolă TakeMeHome. Parola se schimbă din contul tău Google.",
 
     /* ——— Drepturile tale : export et suppression. ——— */
     rightsTitle: "Datele mele",
@@ -490,7 +606,19 @@ export const STR = {
     countyPlaceholder: "Alege județul",
     city: "Localitate",
     description: "Descriere",
+    // Sans astérisque : la photo est facultative, à la création comme à
+    // l'édition. Une fiche sans photo se publie et s'affiche (aplat crème).
     photo: "Fotografie",
+    // Les deux entrées : l'appareil photo (écrans tactiles seulement —
+    // sur un ordinateur, capture est ignoré et « Fă o poză » mentirait)
+    // et la galerie / le disque.
+    takePhoto: "Fă o poză",
+    choosePhoto: "Alege o fotografie",
+    chooseFromGallery: "Alege din galerie",
+    // La consigne de cadrage, tant qu'aucune photo n'est choisie — une
+    // information, jamais une exigence.
+    photoHint:
+      "O singură poză, cu animalul în prim-plan. Se pregătește în timp ce completezi restul.",
     health: "Sănătate",
     sterilized: "Sterilizat",
     vaccinated: "Vaccinat",
@@ -526,21 +654,41 @@ export const STR = {
     uploadNetworkError: "Fotografia nu s-a trimis: problemă de rețea. Încearcă din nou.",
     // Jamais le message brut de l'erreur : il arrive en anglais, du client
     // blob ou du réseau, et ne dit rien d'actionnable à un sauveteur. Le
-    // détail part dans Sentry, l'utilisateur reçoit une phrase utile.
+    // détail part dans Sentry, l'utilisateur reçoit une phrase utile. Les
+    // refus prononcés par /api/photo/upload (limite, session, suspension)
+    // arrivent, eux, avec leur propre phrase (STR.upload.*).
     uploadFailed: "Fotografia nu s-a trimis. Încearcă din nou.",
-    // Jeton refusé (limite de débit, session expirée) : le client blob ne
-    // transmet pas le motif exact, la phrase couvre les deux cas.
-    uploadRefused:
-      "Fotografia nu s-a trimis. Așteaptă un minut și încearcă din nou.",
     saving: "Se salvează…",
-    tooManyRequests: "Prea multe încercări. Așteaptă un minut și încearcă din nou.",
-    // Compte suspendu : l'écran /cont porte l'explication complète, ici on
-    // rappelle seulement pourquoi l'enregistrement n'a pas eu lieu.
-    accountSuspended:
-      "Contul tău e suspendat: nu mai poți publica sau modifica anunțuri.",
+    // Limite de débit : dire que c'est une limite, pas une panne, et que
+    // rien n'est perdu — c'est une association qui publie huit animaux
+    // d'affilée qui lit ceci, pas un robot.
+    tooManyRequests:
+      "Prea multe salvări într-un minut. Așteaptă un minut și încearcă din nou: ce ai completat rămâne pe ecran.",
+    // Compte suspendu pendant que le formulaire était ouvert (sinon la page
+    // a déjà renvoyé vers /cont) : dire que rien n'a été enregistré, et à
+    // qui écrire — sans l'adresse, la personne croit à une panne.
+    accountSuspended: `Contul tău e suspendat: anunțul nu s-a salvat. Nu mai poți publica sau modifica anunțuri. Dacă crezi că e o eroare, scrie la ${CONTACT_EMAIL}.`,
+    // Session expirée pendant la saisie : un renvoi vers /login jetterait
+    // tout ce qui est tapé. Le formulaire reste, la personne se reconnecte
+    // à côté et renvoie.
+    sessionExpired:
+      "Sesiunea a expirat și anunțul nu s-a salvat. Intră în cont într-o filă nouă, apoi apasă din nou pe buton: ce ai completat rămâne pe ecran.",
     // Panne côté serveur pendant l'enregistrement : la saisie reste à
     // l'écran, l'utilisateur n'a rien à retaper.
     saveFailed: "Anunțul nu s-a putut salva. Încearcă din nou.",
+  },
+
+  /* ——— Emails transactionnels (texte brut, voir lib/email.ts). ——— */
+  email: {
+    verify: {
+      subject: "Confirmă-ți adresa de email – TakeMeHome",
+      body: (name: string, url: string) =>
+        `Salut, ${name},\n\n` +
+        "Confirmă adresa de email a contului tău TakeMeHome deschizând linkul de mai jos:\n\n" +
+        `${url}\n\n` +
+        "Linkul e valabil 24 de ore. Dacă nu ți-ai creat cont pe TakeMeHome, ignoră acest email.\n\n" +
+        "TakeMeHome",
+    },
   },
 
   /* ——— Erreurs de compression photo (côté navigateur). ——— */
@@ -552,14 +700,19 @@ export const STR = {
     compressionFailed: "Fotografia nu s-a putut comprima pe acest dispozitiv.",
   },
 
-  /* ——— API d'upload (messages renvoyés au navigateur). ——— */
+  /* ——— API d'upload (messages renvoyés au navigateur). Le formulaire les
+         affiche tels quels sous le champ photo (lib/upload-token.ts lit le
+         corps de la réponse) : chacun dit ce qui s'est passé ET que la
+         saisie n'est pas perdue. ——— */
   upload: {
-    signInRequired: "Intră în cont ca să trimiți o fotografie.",
-    accountSuspended: "Contul tău e suspendat.",
+    signInRequired:
+      "Sesiunea a expirat și fotografia nu s-a trimis. Intră în cont într-o filă nouă, apoi apasă din nou pe buton: ce ai completat rămâne pe ecran.",
+    accountSuspended: `Contul tău e suspendat: fotografia nu s-a trimis și anunțul nu se poate salva. Dacă crezi că e o eroare, scrie la ${CONTACT_EMAIL}.`,
     pathNotAllowed: "Cale de fotografie neautorizată.",
     animalNotFound: "Animalul nu a fost găsit.",
     invalidStatus: "Status invalid.",
-    tooManyRequests: "Prea multe încercări. Așteaptă un minut și încearcă din nou.",
+    tooManyRequests:
+      "Prea multe fotografii trimise într-un minut. Așteaptă un minut și apasă din nou pe buton: ce ai completat rămâne pe ecran.",
     // Réponse par défaut de la route : tout ce qui n'est pas un de nos
     // propres refus sort sous cette phrase, jamais le message d'origine
     // (il viendrait de @vercel/blob, en anglais et technique).
@@ -597,6 +750,11 @@ export const STR = {
     loading: "Se încarcă…",
     seeMore: "Vezi mai multe",
     justNow: "chiar acum",
+    // « Dacă crezi că e o eroare, scrie la <adresă>. » — la même phrase
+    // sous chaque décision de modération (compte suspendu, annonce
+    // masquée), coupée autour du lien ContactEmailLink.
+    errorContactBefore: "Dacă crezi că e o eroare, scrie la ",
+    errorContactAfter: ".",
   },
 
   /* ——— Métadonnées globales (layout racine, manifest PWA). ——— */

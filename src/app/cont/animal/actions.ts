@@ -38,6 +38,10 @@ export type AnimalFormState = {
 // qu'un contrôle optimiste du cookie). La suspension est relue en base au
 // même moment : une session ouverte avant la suspension ne doit pas
 // continuer à publier.
+//
+// Réservé aux actions sans saisie (statut, suppression) : pour les
+// formulaires, createAnimal et updateAnimal rendent une erreur à l'écran
+// plutôt qu'un redirect, qui emporterait tout ce qui est tapé.
 async function requireViewer(): Promise<Viewer> {
   const viewer = await getViewer();
   if (!viewer) {
@@ -159,13 +163,25 @@ export async function createAnimal(
   if (await isRateLimited("animal-write", await headers())) {
     return { formError: STR.animalForm.tooManyRequests };
   }
-  const viewer = await requireViewer();
+  // Session expirée pendant la saisie : une erreur dans le formulaire, pas
+  // un redirect vers /login — le redirect jetterait tout ce qui est tapé.
+  // La personne se reconnecte dans une autre fila et renvoie le même
+  // formulaire.
+  const viewer = await getViewer();
+  if (!viewer) {
+    return { formError: STR.animalForm.sessionExpired };
+  }
   if (viewer.suspended) {
     return { formError: STR.animalForm.accountSuspended };
   }
   const userId = viewer.id;
 
   const parsed = parseAnimalForm(formData);
+  // La photo reste facultative, à la création comme à l'édition : un
+  // sauveteur à 23 h avec un animal stressé, une association qui saisit
+  // depuis un ordinateur sans les photos sous la main, un upload qui échoue
+  // en 4G — aucun ne doit être empêché de publier. Une fiche sans photo
+  // vaut mieux qu'une fiche jamais créée ; /cont invite à en ajouter une.
   const photo = parsePhotoUrl(formData, userId);
   if (!parsed.ok || !photo.ok) {
     // Erreurs des champs et de la photo réunies en une seule réponse.
@@ -213,7 +229,12 @@ export async function updateAnimal(
   if (await isRateLimited("animal-write", await headers())) {
     return { formError: STR.animalForm.tooManyRequests };
   }
-  const viewer = await requireViewer();
+  // Même règle qu'à la création : la session expirée est une erreur de
+  // formulaire, jamais un redirect qui emporte la saisie.
+  const viewer = await getViewer();
+  if (!viewer) {
+    return { formError: STR.animalForm.sessionExpired };
+  }
   if (viewer.suspended) {
     return { formError: STR.animalForm.accountSuspended };
   }

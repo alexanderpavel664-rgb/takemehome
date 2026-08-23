@@ -10,7 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/field";
 
-export function LoginForm({ oauthError }: { oauthError?: string }) {
+/**
+ * `next` : où aller une fois connecté — /cont par défaut, ou le chemin d'où
+ * l'on vient quand une page a exigé un compte (le signalement d'une annonce).
+ * Déjà filtré par la page serveur : jamais une URL externe.
+ */
+export function LoginForm({
+  oauthError,
+  next,
+}: {
+  oauthError?: string;
+  next: string;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +43,7 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
       setPending(false);
       return;
     }
-    router.push("/cont");
+    router.push(next);
   }
 
   async function onGoogle() {
@@ -40,11 +51,13 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
     // signIn.social ne lance jamais d'exception : l'échec arrive dans { error }.
     // Un compte Google inconnu = première inscription : direction le profil,
     // dont le contact s'affiche sur les fiches — il doit être rempli d'emblée.
+    // En cas d'échec, `next` survit au retour sur /login : la personne qui
+    // réessaie par email arrive quand même où elle allait.
     const { error } = await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/cont",
+      callbackURL: next,
       newUserCallbackURL: "/cont/profil",
-      errorCallbackURL: "/login?error=google",
+      errorCallbackURL: `/login?error=google&next=${encodeURIComponent(next)}`,
     });
     if (error) {
       setError(STR.auth.login.googleFailed);

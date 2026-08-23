@@ -92,12 +92,23 @@ model User {
   // additionalFields de better-auth : c'est la personne concernée
   // elle-même qui le pose et le retire, depuis /cont/profil.
   contactConsent Boolean @default(false)
+  // Acceptation des conditions (/termeni + /confidentialitate) : la date et
+  // la version acceptée (TERMS_VERSION dans lib/legal.ts). Des conditions
+  // jamais acceptées ne sont pas opposables ; c'est cette ligne qui prouve
+  // le clic. Posée par le hook user.create.before de better-auth (cookie
+  // d'acceptation du formulaire d'inscription) ou par /accepta-termenii ;
+  // déclarée input: false dans auth.ts — le navigateur ne l'écrit jamais
+  // directement. NULL = jamais acceptées : l'espace compte redirige vers
+  // /accepta-termenii.
+  termsAcceptedAt DateTime?
+  termsVersion    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   animals  Animal[]
   sessions Session[]
   accounts Account[]
+  reports  Report[]
 
   @@map("user")
 }
@@ -150,26 +161,34 @@ model Animal {
   @@index([size])
 }
 
-// Signalement d'une annonce par un visiteur — sans compte : un adoptant qui
-// repère une arnaque n'en a pas. La table n'est jamais lue par une page
-// publique : aucune jointure ne s'ajoute aux listes ni à la fiche.
+// Signalement d'une annonce par un compte connecté. Le compte est exigé
+// depuis août 2026 : le signalement anonyme stockait l'adresse IP de
+// personnes sans compte (une donnée personnelle de plus à justifier au RGPD)
+// et n'opposait au harcèlement par signalements répétés qu'une IP, que l'on
+// change en deux gestes. La table n'est jamais lue par une page publique :
+// aucune jointure ne s'ajoute aux listes ni à la fiche.
 model Report {
   id        String       @id @default(cuid())
   animalId  String
   animal    Animal       @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  // Qui signale : sert à repérer le harcèlement par signalements répétés et
+  // à écarter un doublon avant même l'écriture. Affiché dans /admin
+  // seulement, jamais journalisé. Cascade : le signalement est une donnée du
+  // compte qui l'a écrit, il disparaît avec lui — c'est ce que promet le
+  // point 4 de /confidentialitate.
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   reason    ReportReason
   message   String?
-  // Adresse du signalant : sert à repérer le harcèlement par signalements
-  // répétés (et à écarter un doublon avant même l'écriture). Jamais affichée
-  // hors de /admin, jamais journalisée.
-  ip        String?
   status    ReportStatus @default(PENDING)
   createdAt DateTime     @default(now())
 
-  // /admin liste par date décroissante ; le filtre (animalId, ip) sert au
-  // contrôle de doublon et à la cascade de suppression d'un animal.
+  // /admin liste par date décroissante ; le composite (animalId, userId)
+  // sert au contrôle de doublon et à la cascade de suppression d'un animal ;
+  // userId seul à la cascade de suppression d'un compte et à l'export RGPD.
   @@index([createdAt])
-  @@index([animalId, ip])
+  @@index([animalId, userId])
+  @@index([userId])
 }
 
 model AnimalPhoto {

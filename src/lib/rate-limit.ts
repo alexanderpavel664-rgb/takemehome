@@ -9,9 +9,9 @@ import { logError } from "@/lib/log";
 // tout Prisma — zéro requête Neon.
 //
 // Le plan Hobby n'autorise qu'UNE règle de rate limit : les préfixes de
-// seau (upload:<ip>, animal-write:<ip>, report:<ip>) créent des compteurs
-// distincts sous cette règle unique. À configurer une fois dans le dashboard :
-// Projet → Firewall → + New Rule → condition « @vercel/firewall »,
+// seau (upload:<ip>, animal-write:<ip>, report:<userId>) créent des
+// compteurs distincts sous cette règle unique. À configurer une fois dans le
+// dashboard : Projet → Firewall → + New Rule → condition « @vercel/firewall »,
 // Rate limit ID « app-api », Fixed Window 60 s / 20 requêtes, action
 // Deny → Publish. Tant que la règle n'existe pas (et en local), le
 // contrôle est transparent (rateLimited: false + avertissement console).
@@ -20,12 +20,18 @@ const RULE_ID = "app-api";
 export async function isRateLimited(
   bucket: "upload" | "animal-write" | "client-error" | "report",
   headers: Headers,
+  /**
+   * Entité comptée à la place de l'IP — l'identifiant du compte quand le
+   * chemin exige une session. Le WAF ne lit pas la clé, il la compte : une
+   * chaîne quelconque convient (`rateLimitKey` de @vercel/firewall).
+   */
+  key?: string,
 ): Promise<boolean> {
-  const ip = clientIp(headers) ?? "anon";
+  const entity = key ?? clientIp(headers) ?? "anon";
   try {
     const { rateLimited } = await checkRateLimit(RULE_ID, {
       headers,
-      rateLimitKey: `${bucket}:${ip}`,
+      rateLimitKey: `${bucket}:${entity}`,
     });
     return rateLimited;
   } catch (error) {

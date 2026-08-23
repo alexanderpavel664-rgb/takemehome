@@ -13,10 +13,11 @@
  * LES CHAMPS « DE COMPLETAT » — chaque `{}` est un champ à compléter,
  * rendu à l'écran par une case « de completat » impossible à manquer (voir
  * LegalDocument). Il vaut mieux un trou qui saute aux yeux qu'une adresse
- * inventée : ces documents engagent juridiquement une personne réelle.
- * Tous les champs sont remplis aujourd'hui ; le mécanisme reste, et un
- * bandeau hors production (voir fillCount et LegalDocument) signale tout
- * `{}` qui réapparaîtrait, avant qu'il ne parte en ligne.
+ * inventée : ces documents engagent juridiquement une société réelle
+ * (OPERATOR, ci-dessous). Tous les champs sont remplis aujourd'hui ; le
+ * mécanisme reste, et un bandeau hors production (voir fillCount et
+ * LegalDocument) signale tout `{}` qui réapparaîtrait, avant qu'il ne
+ * parte en ligne.
  *
  * TON — le tutoiement du reste du site, pour la raison que donne l'art. 12
  * RGPD : une information « concisă, transparentă, inteligibilă și ușor
@@ -39,8 +40,83 @@
  * l'Îndreptar §268. Jamais de guillemets droits ni de “…”.
  */
 
+import { CONTACT_EMAIL } from "@/lib/site";
+
 /** Marqueur de champ à compléter. Voir l'en-tête du fichier. */
 export const FILL = "{}";
+
+/**
+ * Version des deux documents, enregistrée avec chaque acceptation
+ * (User.termsVersion). À CHANGER À LA MAIN à chaque modification de TERMS
+ * ou de PRIVACY, en même temps que leur `updatedLabel` : c'est ce qui
+ * permet de dire, pour un compte donné, QUEL texte il a accepté. Une
+ * nouvelle version ne redemande pas l'acceptation aux comptes existants —
+ * l'article 11 des conditions règle ce cas (l'usage après modification
+ * vaut acceptation) ; /cont ne redirige que si termsAcceptedAt est NULL.
+ *
+ * Historique : « 2026-08 » = première version, opérateur personne physique ;
+ * « 2026-08-22 » = l'opérateur devient Kotech Engineering (SAS), nouvelle
+ * adresse de contact, point 8 (autorités) et point 13 des conditions
+ * (mentions légales LCEN).
+ */
+export const TERMS_VERSION = "2026-08-22";
+
+/**
+ * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
+ * source pour /confidentialitate (point 1, l'opérateur de données au sens de
+ * l'art. 13 RGPD) et /termeni (point 12, l'éditeur ; point 13, les mentions
+ * légales) : SIREN, capital et numéro de TVA ne doivent jamais diverger
+ * d'une page à l'autre. Données vérifiées le 22 août 2026 sur
+ * recherche-entreprises.api.gouv.fr (SIREN, SIRET, forme, siège, dirigeant).
+ *
+ * Sebastian Pavel n'apparaît qu'en qualité de représentant légal de la
+ * société — et, de ce fait, de directeur de la publication : pour une
+ * personne morale, c'est le représentant légal de plein droit (loi du
+ * 29 juillet 1982, art. 93-2), une mention contraire serait sans effet.
+ *
+ * Pas de numéro de téléphone : l'art. 1-1 I 2° de la LCEN (loi 2004-575,
+ * rédaction de la loi SREN du 21 mai 2024) et l'art. 19 2° en exigent un.
+ * Aucun numéro n'a été fourni ; la ligne est à ajouter dès qu'il existe,
+ * plutôt qu'inventer un champ vide (voir l'en-tête du fichier).
+ */
+export const OPERATOR = {
+  name: "Kotech Engineering",
+  legalForm:
+    "Société par actions simplifiée (SAS), societate de drept francez",
+  address: "15 rue du Breuil Marais, 79000 Bessines, Franța",
+  capital: "1 000 €",
+  siren: "901 107 920",
+  siret: "901 107 920 00018",
+  rcs: "901 107 920 RCS Niort",
+  vat: "FR23901107920",
+  representative: "Sebastian Pavel",
+} as const;
+
+/**
+ * Le bloc d'identification de l'opérateur, tel qu'il apparaît au point 1 de
+ * /confidentialitate et au point 12 de /termeni. Une fonction plutôt qu'une
+ * constante partagée : chaque document reçoit son propre tableau de lignes,
+ * aucun objet n'est partagé entre les deux.
+ */
+function operatorRows(): LegalBlock {
+  return {
+    rows: [
+      { term: "Denumire", value: OPERATOR.name },
+      { term: "Formă juridică", value: OPERATOR.legalForm },
+      { term: "Sediu social", value: OPERATOR.address },
+      { term: "Capital social", value: OPERATOR.capital },
+      { term: "Număr de identificare (SIREN)", value: OPERATOR.siren },
+      { term: "SIRET (sediu)", value: OPERATOR.siret },
+      {
+        term: "Înregistrare la Registrul Comerțului",
+        value: OPERATOR.rcs,
+      },
+      { term: "Cod de TVA intracomunitar", value: OPERATOR.vat },
+      { term: "Reprezentant legal", value: OPERATOR.representative },
+      { term: "Email de contact", value: CONTACT_EMAIL },
+    ],
+  };
+}
 
 export type LegalBlock =
   | { p: string }
@@ -71,7 +147,7 @@ export const PRIVACY: LegalDocumentContent = {
   metaTitle: "Politica de confidențialitate",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
-  updatedLabel: "Ultima actualizare: august 2026",
+  updatedLabel: "Ultima actualizare: 22 august 2026",
   intro:
     "TakeMeHome pune în legătură persoanele care au animale de dat spre adopție cu persoanele care vor să adopte. Pentru asta prelucrează câteva date despre tine. Pagina de față arată care sunt aceste date, în ce scop sunt prelucrate, cine le mai primește și ce drepturi ai asupra lor.",
   sections: [
@@ -79,20 +155,11 @@ export const PRIVACY: LegalDocumentContent = {
       title: "1. Cine răspunde de datele tale",
       blocks: [
         {
-          p: "Operatorul de date, adică persoana care răspunde legal de datele de pe site:",
+          p: "Operatorul de date, adică societatea care răspunde legal de datele de pe site:",
         },
+        operatorRows(),
         {
-          rows: [
-            { term: "Nume", value: "Sebastian Pavel" },
-            {
-              term: "Adresă",
-              value: "15 rue du Breuil Marais, 79000 Bessines, France",
-            },
-            { term: "Email de contact", value: "contact.takemehome@gmail.com" },
-          ],
-        },
-        {
-          p: "Pentru orice întrebare despre datele tale sau pentru exercitarea drepturilor de mai jos, scrie la adresa de email de contact. Primești răspuns în cel mult o lună, conform art. 12 din GDPR.",
+          p: "Reprezentantul legal acționează în numele societății, nu în nume propriu. Pentru orice întrebare despre datele tale sau pentru exercitarea drepturilor de mai jos, scrie la adresa de email de contact. Primești răspuns în cel mult o lună, conform art. 12 din GDPR.",
         },
       ],
     },
@@ -103,7 +170,7 @@ export const PRIVACY: LegalDocumentContent = {
           p: "Fiecare categorie de date de mai jos are un scop și un temei legal.",
         },
         {
-          p: "Contul tău. Nume, adresă de email și parolă, păstrată doar sub formă criptată, niciodată în clar. Dacă intri în cont cu Google, primim de la Google numele, adresa de email și fotografia de profil. Parola ta nu ne este transmisă. Temei: executarea contractului dintre tine și platformă, art. 6(1)(b) GDPR. Fără cont nu poți publica un anunț.",
+          p: "Contul tău. Nume, adresă de email și parolă, păstrată doar sub formă criptată, niciodată în clar. Dacă intri în cont cu Google, primim de la Google numele, adresa de email și fotografia de profil. Parola ta nu ne este transmisă. Păstrăm și data la care ai acceptat termenii și condițiile, împreună cu versiunea acceptată. Temei: executarea contractului dintre tine și platformă, art. 6(1)(b) GDPR. Fără cont nu poți publica un anunț și nu poți semnala unul.",
         },
         {
           p: "Profilul tău public. Telefon, email public, județ, oraș și descriere. Sunt afișate pe anunțurile tale numai dacă bifezi expres această opțiune în profil. Temei: consimțământul tău, art. 6(1)(a) GDPR. Îl poți retrage oricând, la fel de ușor cum l-ai dat, debifând căsuța din profil. Butoanele de contact dispar imediat de pe anunțurile tale.",
@@ -118,7 +185,7 @@ export const PRIVACY: LegalDocumentContent = {
           p: "Limitarea traficului. Adresa IP e folosită și pentru a număra câte încercări de autentificare, câte publicări și câte încărcări de fotografii vin de pe aceeași conexiune, ca să oprim atacurile automate. Temei: interesul legitim de a menține site-ul în funcțiune, art. 6(1)(f) GDPR.",
         },
         {
-          p: "Semnalările. Oricine poate semnala un anunț fără să aibă cont. În acest caz păstrăm motivul, mesajul scris și adresa IP de pe care a venit semnalarea. Adresa IP e păstrată pentru a identifica semnalările repetate împotriva aceluiași anunț. Nu e afișată public și nu ajunge în jurnale. Dacă ai semnalat un anunț, ai aceleași drepturi asupra acestei adrese IP ca orice altă persoană, chiar dacă nu ai cont pe site. Temei: interesul legitim de a preveni utilizarea abuzivă a mecanismului de semnalare, art. 6(1)(f) GDPR.",
+          p: "Semnalările. Poți semnala un anunț numai din contul tău. Păstrăm motivul, mesajul scris și contul din care a venit semnalarea, pentru a identifica semnalările repetate împotriva aceluiași anunț. Contul care a semnalat nu e afișat public și nu ajunge în jurnale: îl vede doar echipa TakeMeHome. Temei: interesul legitim de a preveni utilizarea abuzivă a mecanismului de semnalare, art. 6(1)(f) GDPR.",
         },
         {
           p: "Erorile tehnice. Când apare o eroare pe server, raportul de eroare e trimis către Sentry: eroarea, pagina pe care a apărut, tipul browserului și limba browserului. Adresa IP și conținutul cookie-urilor sunt eliminate înainte de trimitere. Temei: interesul legitim de a remedia defecțiunile, art. 6(1)(f) GDPR.",
@@ -193,7 +260,8 @@ export const PRIVACY: LegalDocumentContent = {
             },
             {
               term: "Semnalările",
-              value: "6 luni de la trimitere, apoi sunt șterse automat.",
+              value:
+                "6 luni de la trimitere, apoi sunt șterse automat. Dacă îți ștergi contul, semnalările tale dispar odată cu el.",
             },
             {
               term: "Rapoartele de eroare",
@@ -224,6 +292,11 @@ export const PRIVACY: LegalDocumentContent = {
               term: "Cookie de securitate",
               value:
                 "doar la autentificarea cu Google, 5 minute. Împiedică pe altcineva să pornească o autentificare în locul tău.",
+            },
+            {
+              term: "tmh_terms",
+              value:
+                "doar pe pagina de creare a contului, 15 minute. Reține că ai bifat acceptarea termenilor până când contul e creat, inclusiv dacă îl creezi cu Google. Conține numai versiunea termenilor acceptată.",
             },
             {
               term: "takemehome:install-refuse",
@@ -268,7 +341,7 @@ export const PRIVACY: LegalDocumentContent = {
           ],
         },
         {
-          p: "Ștergerea contului și descărcarea datelor se fac direct din pagina profilului tău. Pentru celelalte drepturi, scrie la contact.takemehome@gmail.com, adresa de email de contact de la punctul 1.",
+          p: `Ștergerea contului și descărcarea datelor se fac direct din pagina profilului tău. Pentru celelalte drepturi, scrie la ${CONTACT_EMAIL}, adresa de email de contact de la punctul 1.`,
         },
       ],
     },
@@ -276,7 +349,7 @@ export const PRIVACY: LegalDocumentContent = {
       title: "8. Dacă ai o plângere",
       blocks: [
         {
-          p: "Dacă apreciezi că datele tale nu sunt prelucrate corect, ne poți scrie mai întâi nouă, la contact.takemehome@gmail.com. Ai însă dreptul să te adresezi direct unei autorități de supraveghere, fără o solicitare prealabilă către noi. Autoritatea din România:",
+          p: `Dacă apreciezi că datele tale nu sunt prelucrate corect, ne poți scrie mai întâi nouă, la ${CONTACT_EMAIL}. Ai însă dreptul să te adresezi direct unei autorități de supraveghere, fără o solicitare prealabilă către noi, conform art. 77 GDPR: celei din statul în care locuiești, din statul în care lucrezi sau din statul în care s-a produs încălcarea. Pentru România:`,
         },
         {
           rows: [
@@ -296,7 +369,7 @@ export const PRIVACY: LegalDocumentContent = {
           ],
         },
         {
-          p: "Operatorul de date are reședința în Franța, iar site-ul se adresează persoanelor din România. Pentru o astfel de prelucrare transfrontalieră, autoritatea franceză CNIL poate fi autoritatea principală, conform mecanismului „ghișeului unic” din art. 56 GDPR. Poți depune plângerea la oricare dintre cele două autorități: dacă o depui la ANSPDCP, cele două colaborează potrivit regulamentului.",
+          p: "Operatorul de date e o societate cu sediul unic în Franța, iar site-ul se adresează persoanelor din România. Pentru o astfel de prelucrare transfrontalieră, autoritatea principală, cea care răspunde de operator, e autoritatea franceză CNIL, conform mecanismului „ghișeului unic” din art. 56 GDPR. ANSPDCP e autoritatea vizată pentru persoanele din România. O plângere depusă la ANSPDCP e examinată de cele două autorități împreună, potrivit art. 60 GDPR, iar ANSPDCP te informează despre stadiul și rezultatul ei. Poți depune plângerea și direct la CNIL:",
         },
         {
           rows: [
@@ -348,7 +421,7 @@ export const TERMS: LegalDocumentContent = {
   metaTitle: "Termeni și condiții",
   metaDescription:
     "Ce face și ce nu face TakeMeHome, regulile de publicare și răspunderea fiecăruia.",
-  updatedLabel: "Ultima actualizare: august 2026",
+  updatedLabel: "Ultima actualizare: 22 august 2026",
   intro:
     "Prin folosirea TakeMeHome ești de acord cu termenii de mai jos.",
   sections: [
@@ -399,7 +472,8 @@ export const TERMS: LegalDocumentContent = {
       blocks: [
         {
           list: [
-            "Contul e necesar numai pentru publicarea anunțurilor. Căutarea și adopția nu necesită cont.",
+            "Contul e necesar pentru publicarea și semnalarea anunțurilor. Căutarea și adopția nu necesită cont.",
+            "La crearea contului accepți acești termeni și politica de confidențialitate. Păstrăm data acceptării și versiunea acceptată.",
             "Crearea unui cont necesită vârsta de cel puțin 16 ani. Sub 16 ani e necesar acordul unui părinte sau al tutorelui.",
             "Datele din cont trebuie să fie reale și să îți aparțină.",
             "Răspunzi de parola ta și de activitatea desfășurată din contul tău.",
@@ -449,7 +523,7 @@ export const TERMS: LegalDocumentContent = {
       title: "7. Semnalarea unui anunț",
       blocks: [
         {
-          p: "Oricine poate semnala un anunț, fără cont. Semnalările sunt examinate și, dacă e cazul, anunțul e ascuns din paginile publice. Persoana care l-a publicat continuă să îl vadă în contul ei și e informată că a fost ascuns.",
+          p: "Poți semnala un anunț din contul tău. Semnalările sunt examinate și, dacă e cazul, anunțul e ascuns din paginile publice. Persoana care l-a publicat continuă să îl vadă în contul ei și e informată că a fost ascuns.",
         },
         {
           p: "Semnalarea unui anunț nu atrage obligația de a-l ascunde. Nu ne asumăm un termen de soluționare.",
@@ -512,16 +586,37 @@ export const TERMS: LegalDocumentContent = {
           p: "Acestor termeni li se aplică legea română. Litigiile se soluționează de instanțele competente din România.",
         },
         {
-          p: "Persoana care răspunde de acest site:",
+          p: "Societatea care editează și exploatează acest site:",
+        },
+        operatorRows(),
+      ],
+    },
+    {
+      title: "13. Informații legale",
+      blocks: [
+        {
+          p: "Informațiile de mai jos sunt cerute de legea franceză aplicabilă editorului site-ului: Legea nr. 2004-575 pentru încrederea în economia digitală, art. 1-1 și art. 19.",
         },
         {
           rows: [
-            { term: "Nume", value: "Sebastian Pavel" },
             {
-              term: "Adresă",
-              value: "15 rue du Breuil Marais, 79000 Bessines, France",
+              term: "Editor",
+              value: `${OPERATOR.name}, societatea identificată la punctul 12.`,
             },
-            { term: "Email de contact", value: "contact.takemehome@gmail.com" },
+            {
+              term: "Director de publicare",
+              value: `${OPERATOR.representative}, președinte și reprezentant legal al ${OPERATOR.name}.`,
+            },
+            {
+              term: "Găzduire",
+              value:
+                "Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, Statele Unite. Telefon: +1 559 288 7060. vercel.com",
+            },
+            {
+              term: "Stocarea datelor",
+              value:
+                "Baza de date: Neon, LLC, societate din grupul Databricks, Inc., 160 Spear Street, Suite 1300, San Francisco, CA 94105, Statele Unite, cu servere în Uniunea Europeană. Fotografiile: Vercel Blob, la Vercel Inc., adresa de mai sus. Rapoartele de eroare: Functional Software, Inc. (Sentry), 45 Fremont Street, 8th Floor, San Francisco, CA 94105, Statele Unite, cu servere în Uniunea Europeană.",
+            },
           ],
         },
       ],

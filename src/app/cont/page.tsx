@@ -1,12 +1,14 @@
-import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
+import { contactStatus } from "@/lib/contact-status";
 import { countyName } from "@/lib/counties";
+import { isEmailConfigured } from "@/lib/email";
 import { relativeTimeRo } from "@/lib/relative-time";
 import { STR } from "@/lib/strings";
+import { getSession } from "@/lib/viewer";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -14,8 +16,11 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { setAnimalStatus } from "./animal/actions";
 import { DeleteAnimalButton } from "./animal/delete-animal-button";
+import { ContactEmailLink } from "@/components/contact-email-link";
+import { ContactWarning } from "./contact-warning";
 import { InstallBanner } from "./install-banner";
 import { SignOutButton } from "./sign-out-button";
+import { VerifyEmailNotice } from "./verify-email-notice";
 
 export const metadata: Metadata = {
   title: STR.cont.metaTitle,
@@ -31,7 +36,9 @@ export const metadata: Metadata = {
 export default async function ContPage({ searchParams }: PageProps<"/cont">) {
   // La vraie vérification de session se fait ici, dans chaque page protégée :
   // le proxy ne fait qu'un contrôle optimiste sur la présence du cookie.
-  const session = await auth.api.getSession({ headers: await headers() });
+  // getSession est mis en cache par requête : le layout (porte des
+  // conditions) a déjà payé l'aller-retour.
+  const session = await getSession();
   if (!session) {
     redirect("/login");
   }
@@ -77,17 +84,19 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
     }),
   ]);
   const suspended = account?.suspended ?? false;
+  // Email à confirmer : seulement quand l'envoi est configuré (lib/email.ts)
+  // — sinon on demanderait de cliquer un lien qui n'a jamais été envoyé.
+  const emailPending = isEmailConfigured() && !user.emailVerified;
 
   const phone = user.phone?.trim();
   const publicEmail = user.publicEmail?.trim();
   const contactConsent = user.contactConsent ?? false;
-  // Deux pièges silencieux, deux messages distincts — dans les deux cas la
-  // fiche publique n'affiche aucun bouton de contact et l'animal est
-  // injoignable, mais le remède n'est pas le même. Dire « complète tes
-  // coordonnées » à quelqu'un qui les a déjà remplies l'enverrait chercher
-  // un problème qui n'existe pas.
-  const unreachable = !phone && !publicEmail;
-  const consentMissing = !unreachable && !contactConsent;
+  // La même règle que la fiche publique (lib/contact-status) : tant qu'elle
+  // dit « injoignable », le bloc en haut de page reste, et chaque fiche
+  // porte sa pastille. La session est relue à chaque rendu et le formulaire
+  // de profil fait un router.refresh() après sauvegarde : dès que le profil
+  // est complet, tout disparaît sans rien d'autre à faire.
+  const contact = contactStatus({ phone, publicEmail, contactConsent });
 
   // Ce que la carte Profil énumère : exactement ce qui habille les fiches
   // publiques — le nom (« Publié par… ») et les coordonnées de contact.
@@ -131,9 +140,11 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
         // avant le profil. Même langage que les autres avertissements du
         // site — bordure encre épaissie, message en toutes lettres, jamais
         // la couleur seule (la palette n'a pas de rouge, et n'en veut pas).
-        // Ivoire et non crème : la carte est posée sur le papier crème de la
-        // page, à l'inverse de l'avertissement du profil, qui vit DANS une
-        // carte ivoire et passe donc au crème pour s'en détacher.
+        // Même carte que l'avertissement de contact juste en dessous : les
+        // deux sont posés sur le papier crème, en ivoire.
+        // Trois choses, dans l'ordre où on les cherche : ce qui a changé,
+        // ce qui reste possible, à qui écrire. Sans les deux dernières, la
+        // personne croit à une panne et réessaie.
         <Card role="status" className="mt-4 border-[1.5px] border-warm-ink p-4">
           <h2 className="text-lg font-semibold text-warm-ink">
             {STR.cont.suspendedTitle}
@@ -141,8 +152,30 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
           <p className="mt-1 max-w-[66ch] text-base text-warm-ink">
             {STR.cont.suspendedDescription}
           </p>
+          <p className="mt-3 text-base text-warm-ink">
+            {STR.cont.suspendedCanStill}
+          </p>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-base text-warm-ink">
+            {STR.cont.suspendedCanStillList.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p className="mt-3 max-w-[66ch] text-base text-warm-ink">
+            {STR.common.errorContactBefore}
+            <ContactEmailLink />
+            {STR.common.errorContactAfter}
+          </p>
         </Card>
       )}
+
+      {/* Profil incomplet : le bloc vient AVANT la carte Profil, pas dedans —
+          c'est le scénario le plus probable (inscription, publication, et
+          rien d'autre), et il doit être impossible à manquer. Le chemin de
+          sortie est dans le bloc. Après la suspension, qui commande tout le
+          reste ; persistant tant que la règle dit « injoignable ». */}
+      <ContactWarning status={contact} className="mt-4" />
+
+      {emailPending && <VerifyEmailNotice email={user.email} />}
 
       {/* ——— Profil : ce que les adoptantes voient sur les fiches. ——— */}
       <Card className="mt-4 p-4">
@@ -164,28 +197,6 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
             </div>
           ))}
         </dl>
-        {unreachable && (
-          // Avertissement, pas erreur de champ, mais le même langage :
-          // bordure encre épaissie + message en toutes lettres, jamais la
-          // couleur seule (la palette n'a pas de rouge, et n'en veut pas).
-          // Le chemin de sortie est le bouton « Modifier » juste au-dessus.
-          <p
-            role="status"
-            className="mt-4 rounded-md border-[1.5px] border-warm-ink bg-cream-ground px-4 py-3 text-sm font-semibold text-warm-ink"
-          >
-            {STR.cont.unreachableWarning}
-          </p>
-        )}
-        {consentMissing && (
-          // Même langage que l'avertissement ci-dessus, et jamais les deux à
-          // la fois : `consentMissing` exclut déjà `unreachable`.
-          <p
-            role="status"
-            className="mt-4 rounded-md border-[1.5px] border-warm-ink bg-cream-ground px-4 py-3 text-sm font-semibold text-warm-ink"
-          >
-            {STR.cont.consentMissingWarning}
-          </p>
-        )}
       </Card>
 
       <InstallBanner />
@@ -262,15 +273,63 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                           {STR.cont.hiddenBadge}
                         </span>
                       )}
+                      {!contact.contactable && animal.status !== "ADOPTED" && (
+                        // Sans bouton de contact sur sa fiche publique : la
+                        // même pastille, même poids — l'animal est en ligne
+                        // et injoignable. Le contact est celui du compte,
+                        // donc toutes les fiches disponibles la portent ;
+                        // une fiche adoptée n'en a pas besoin, elle n'affiche
+                        // plus de contact par construction. Seule la
+                        // propriétaire lit ceci : /cont est derrière la session.
+                        <span className="inline-flex items-center rounded-pill bg-warm-ink px-3 py-1 text-[13px] font-semibold text-white">
+                          {STR.cont.noContactBadge}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-warm-gray">
                       {STR.cont.updated(relativeTimeRo(animal.updatedAt))}
                     </p>
                     {animal.hidden && (
-                      <p className="mt-1 text-sm font-semibold text-warm-ink">
-                        {STR.cont.hiddenHint}
+                      // Compte suspendu : toutes ses annonces sont masquées
+                      // d'un coup, et le bloc en haut de page a déjà dit
+                      // pourquoi — une ligne courte suffit. Sinon, c'est
+                      // une décision prise sur CETTE annonce : on dit qui,
+                      // pourquoi, et à qui écrire.
+                      <p className="mt-1 max-w-[66ch] text-sm font-semibold text-warm-ink">
+                        {suspended ? (
+                          STR.cont.hiddenHintSuspended
+                        ) : (
+                          <>
+                            {STR.cont.hiddenHint}{" "}
+                            {STR.common.errorContactBefore}
+                            <ContactEmailLink />
+                            {STR.common.errorContactAfter}
+                          </>
+                        )}
                       </p>
                     )}
+                    {!animal.photos[0] &&
+                      animal.status !== "ADOPTED" &&
+                      !suspended && (
+                        // Fiche sans photo : elle est en ligne telle quelle
+                        // (la photo est facultative), on invite à en ajouter
+                        // une — en gris chaud, une information, pas un
+                        // avertissement ; seul le lien est en encre. Il mène
+                        // droit au formulaire d'édition, dont le bloc photo
+                        // est en tête. Pas pour une fiche adoptée (elle ne
+                        // cherche plus personne) ni pour un compte suspendu
+                        // (il ne peut plus modifier). Seule la propriétaire
+                        // lit ceci : /cont est derrière la session.
+                        <p className="mt-1 text-sm text-warm-gray">
+                          {STR.cont.noPhotoHint}{" "}
+                          <Link
+                            href={`/cont/animal/${animal.id}/editare`}
+                            className="text-warm-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+                          >
+                            {STR.cont.addPhoto}
+                          </Link>
+                        </p>
+                      )}
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {/* La publiante voit son annonce comme un adoptant. */}
                       <ButtonLink variant="ghost" href={`/animal/${animal.id}`}>

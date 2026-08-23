@@ -1,7 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { isEmailConfigured, sendEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { reportError } from "@/lib/report";
+import { STR } from "@/lib/strings";
+import { isAcceptedVersion, TERMS_COOKIE } from "@/lib/terms";
 
 // secret et baseURL sont lus automatiquement depuis BETTER_AUTH_SECRET / BETTER_AUTH_URL.
 export const auth = betterAuth({
@@ -10,11 +14,66 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    // Pas de service d'envoi d'email en phase 2 (pas de domaine) :
-    // ni vérification d'email, ni réinitialisation de mot de passe.
+    // Reste à false tant que la vérification d'email n'est pas ACTIVÉE
+    // (voir emailVerification ci-dessous) : à true, un compte non vérifié ne
+    // peut plus se connecter — et sans email envoyé, il ne le sera jamais.
+    // C'est la seconde bascule, à tourner seulement après la première, une
+    // fois l'envoi observé en production.
     requireEmailVerification: false,
     minPasswordLength: 8,
   },
+  // ——— Vérification d'email : le terrain est prêt, rien n'est actif. ———
+  //
+  // Tout est branché mais conditionné à isEmailConfigured(), c'est-à-dire
+  // aux variables RESEND_API_KEY et EMAIL_FROM. Tant qu'elles manquent,
+  // better-auth ne reçoit pas de bloc emailVerification et se comporte
+  // exactement comme aujourd'hui. Pour activer, dans l'ordre :
+  //
+  //   1. Chez Resend : ajouter le domaine (takemehome.ro) et poser ses
+  //      enregistrements DNS (SPF, DKIM, le MX de retour) ; attendre le
+  //      statut « verified ».
+  //   2. Mettre à jour /confidentialitate, point 3 : la phrase « Nu folosim
+  //      încă un serviciu de trimitere a emailurilor » promet que la page
+  //      sera modifiée AVANT la mise en service — ajouter Resend (société
+  //      américaine, clauses contractuelles standard, resend.com/privacy)
+  //      et changer TERMS_VERSION + updatedLabel dans lib/legal.ts.
+  //   3. Poser RESEND_API_KEY et EMAIL_FROM sur Vercel (production), et
+  //      dans .env.local pour tester en dev.
+  //   4. Créer un compte de test : l'email part à l'inscription
+  //      (sendOnSignUp), le lien ouvre /api/auth/verify-email puis redirige
+  //      vers callbackURL (/cont/profil). /cont affiche le bandeau
+  //      « Confirmă-ți adresa » avec « Retrimite » tant que emailVerified
+  //      est faux — y compris pour les comptes créés avant l'activation.
+  //   5. Une fois l'envoi observé : passer requireEmailVerification à true
+  //      (ci-dessus) si l'on veut bloquer la connexion des comptes non
+  //      vérifiés, et revoir requireLocalEmailVerified (plus bas).
+  //
+  // La réinitialisation de mot de passe (sendResetPassword + une page
+  // « Parolă uitată ») n'est PAS préparée ici : même tuyau, autre chantier.
+  emailVerification: isEmailConfigured()
+    ? {
+        sendVerificationEmail: async ({ user, url }) => {
+          try {
+            await sendEmail({
+              to: user.email,
+              subject: STR.email.verify.subject,
+              text: STR.email.verify.body(user.name, url),
+            });
+          } catch (error) {
+            // better-auth avalerait l'exception en arrière-plan : on alerte
+            // nous-mêmes. Un email de vérification qui ne part pas est une
+            // inscription qui n'aboutit pas.
+            await reportError("email.verification_send_failed", error, {
+              userId: user.id,
+            });
+          }
+        },
+        sendOnSignUp: true,
+        autoSignInAfterVerification: true,
+        // 24 h : l'email est souvent ouvert le lendemain, sur un autre appareil.
+        expiresIn: 60 * 60 * 24,
+      }
+    : undefined,
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -37,6 +96,12 @@ export const auth = betterAuth({
       "/sign-up/email": { window: 900, max: 5 },
       // Le départ OAuth ne vérifie pas de mot de passe : un peu plus large.
       "/sign-in/social": { window: 900, max: 10 },
+      // Le changement de mot de passe vérifie l'ANCIEN : pour qui a volé une
+      // session, c'est une oracle du mot de passe. Même budget qu'un login.
+      "/change-password": { window: 900, max: 5 },
+      // Chaque appel envoie un email : trois par quart d'heure suffisent à
+      // qui n'a pas reçu le premier, et arrêtent qui voudrait en inonder un.
+      "/send-verification-email": { window: 900, max: 3 },
       // Personne ne l'appelle côté client aujourd'hui, mais si un useSession
       // arrive, le chemin le plus chaud ne doit pas coûter 2 requêtes Neon
       // de plus par appel.
@@ -58,7 +123,7 @@ export const auth = betterAuth({
       // Sans envoi d'email, les comptes mot de passe restent emailVerified=false ;
       // sans ce flag, leur retour via "Se connecter avec Google" échouerait en
       // account_not_linked malgré trustedProviders. À réévaluer quand la
-      // vérification d'email arrivera (avec le domaine + Resend).
+      // vérification d'email sera active (étape 5 du commentaire ci-dessus).
       requireLocalEmailVerified: false,
     },
   },
@@ -81,6 +146,34 @@ export const auth = betterAuth({
         type: "boolean",
         required: false,
         defaultValue: false,
+      },
+      // Acceptation des conditions : déclarés pour que la SESSION les porte
+      // (la porte de /cont les lit sans requête), mais input: false — un
+      // corps de requête qui tenterait de les poser est refusé
+      // (FIELD_NOT_ALLOWED). Seuls le hook ci-dessous et l'action de
+      // /accepta-termenii les écrivent.
+      termsAcceptedAt: { type: "date", required: false, input: false },
+      termsVersion: { type: "string", required: false, input: false },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        // La case cochée sur /inregistrare arrive ici par le cookie
+        // tmh_terms (lib/terms.ts) — le même chemin pour l'inscription par
+        // email et pour Google, dont l'aller-retour OAuth ne transporte
+        // aucun corps de requête. Sans cookie, on n'invente rien : la ligne
+        // naît avec termsAcceptedAt NULL et l'espace compte renverra vers
+        // /accepta-termenii. Une fausse date ne prouverait rien.
+        before: async (user, ctx) => {
+          const version = ctx?.getCookie(TERMS_COOKIE) ?? null;
+          if (!isAcceptedVersion(version)) {
+            return;
+          }
+          return {
+            data: { ...user, termsAcceptedAt: new Date(), termsVersion: version },
+          };
+        },
       },
     },
   },

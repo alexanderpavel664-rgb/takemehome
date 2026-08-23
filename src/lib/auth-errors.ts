@@ -15,6 +15,9 @@ const MESSAGES: Record<string, string> = {
   USER_ALREADY_EXISTS: STR.auth.errors.USER_ALREADY_EXISTS,
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
     STR.auth.errors.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL,
+  // Changement de mot de passe (/cont/profil).
+  INVALID_PASSWORD: STR.auth.errors.INVALID_PASSWORD,
+  CREDENTIAL_ACCOUNT_NOT_FOUND: STR.auth.errors.CREDENTIAL_ACCOUNT_NOT_FOUND,
 };
 
 export function authErrorMessage(error: {

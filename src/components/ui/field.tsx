@@ -143,12 +143,29 @@ export function Select({
 export function Checkbox({
   label,
   description,
+  error,
+  id,
+  name,
   className = "",
   ...props
-}: ComponentProps<"input"> & { label: string; description?: ReactNode }) {
+}: ComponentProps<"input"> & {
+  /** Texte ou fragment : la case des conditions porte deux liens. */
+  label: ReactNode;
+  description?: ReactNode;
+  /** Même contrat que les champs : en toutes lettres, sous le libellé. */
+  error?: string;
+}) {
+  const inputId = fieldId(id, name);
   return (
     <label className={`flex cursor-pointer gap-3 ${className}`}>
-      <input {...props} type="checkbox" className="peer sr-only" />
+      <input
+        {...props}
+        id={inputId}
+        name={name}
+        {...a11yProps(inputId, error)}
+        type="checkbox"
+        className="peer sr-only"
+      />
       {/* mt-0.5 : la case s'aligne sur la hauteur d'x de la première ligne
           du libellé, pas sur le haut de la boîte de texte. Le rayon de 6 px
           est une exception assumée au token de 20 px : à 24 px de côté,
@@ -184,6 +201,15 @@ export function Checkbox({
         {description && (
           <span className="mt-1 block max-w-[60ch] text-sm text-warm-gray">
             {description}
+          </span>
+        )}
+        {error && (
+          <span
+            id={inputId ? `${inputId}-error` : undefined}
+            role="alert"
+            className="mt-1 block text-sm font-semibold text-warm-ink"
+          >
+            {error}
           </span>
         )}
       </span>

@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# logo PNG pour la console Google Cloud (généré depuis public/paw.svg, pas versionné)
+/takemehome-logo-512.png
+
 # debug
 npm-debug.log*
 yarn-debug.log*

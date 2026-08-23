@@ -1,11 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { contactStatus } from "@/lib/contact-status";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
 import { getViewer } from "@/lib/viewer";
 import { Card } from "@/components/ui/card";
 import { updateAnimal } from "../../actions";
 import { AnimalForm } from "../../animal-form";
+import { ContactWarning } from "../../../contact-warning";
 
 export const metadata: Metadata = {
   title: STR.animalForm.editMetaTitle,
@@ -32,17 +34,32 @@ export default async function EditareAnimalPage({
   // indistinguable d'un animal inexistant → 404, jamais 403 (un 403
   // confirmerait que l'animal existe). Un ADMIN n'a pas de passe-droit ici :
   // la modération masque une annonce, elle ne la réécrit pas.
-  const animal = await prisma.animal.findFirst({
-    where: { id, userId: viewer.id },
-    // Le formulaire consomme presque tous les scalaires (valeurs
-    // initiales) ; des photos, seule l'URL de la première sert.
-    include: {
-      photos: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-    },
-  });
+  //
+  // Le contact se relit en base, en parallèle, comme sur /cont/animal/nou :
+  // la base est la seule source que la fiche publique consulte, et c'est
+  // ce qu'elle affichera qu'on annonce ici.
+  const [animal, account] = await Promise.all([
+    prisma.animal.findFirst({
+      where: { id, userId: viewer.id },
+      // Le formulaire consomme presque tous les scalaires (valeurs
+      // initiales) ; des photos, seule l'URL de la première sert.
+      include: {
+        photos: {
+          orderBy: { position: "asc" },
+          take: 1,
+          select: { url: true },
+        },
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: viewer.id },
+      select: { phone: true, publicEmail: true, contactConsent: true },
+    }),
+  ]);
   if (!animal) {
     notFound();
   }
+  const contact = contactStatus(account ?? {});
 
   return (
     // w-full : enfant du body en flex-col, mx-auto seul annulerait
@@ -51,6 +68,10 @@ export default async function EditareAnimalPage({
       <h1 className="text-2xl font-semibold text-warm-ink">
         {STR.animalForm.editTitle(animal.name)}
       </h1>
+      {/* Profil incomplet : le même avertissement qu'à la création, AVANT le
+          formulaire — c'est ici aussi qu'on fait la chose qui va échouer.
+          La sauvegarde reste possible. */}
+      <ContactWarning status={contact} className="mt-4" />
       {/* Le formulaire est posé sur l'ivoire : un contenant, pas des champs
           qui flottent sur le papier. */}
       <Card className="mt-4 p-4">

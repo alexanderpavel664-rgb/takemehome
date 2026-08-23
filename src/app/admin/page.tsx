@@ -60,12 +60,12 @@ export default async function AdminPage() {
         id: true,
         reason: true,
         message: true,
-        ip: true,
         status: true,
         createdAt: true,
         // Jointures assumées : elles sont le contenu même de l'écran, et
         // cette requête ne sert QUE /admin — aucune page publique ne lit
         // jamais la table Report.
+        user: { select: { name: true, email: true } },
         animal: {
           select: {
             id: true,
@@ -143,8 +143,16 @@ export default async function AdminPage() {
                         </p>
                       )}
                       <p className="mt-2 text-sm text-warm-gray">
-                        {STR.admin.publishedBy(animal.user.name)} ·{" "}
-                        {STR.admin.ip} {report.ip ?? STR.admin.unknownIp}
+                        {STR.admin.publishedBy(animal.user.name)}
+                      </p>
+                      {/* Qui signale, sur sa propre ligne : c'est la donnée
+                          qui révèle un signalement en série, elle ne doit
+                          pas se fondre dans celle du publiant. */}
+                      <p className="text-sm text-warm-gray">
+                        {STR.admin.reportedBy(
+                          report.user.name,
+                          report.user.email,
+                        )}
                       </p>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">

@@ -11,7 +11,8 @@ import { createReport, type ReportFormState } from "./actions";
 /**
  * Formulaire court : un motif, un champ libre facultatif, un bouton. Rien
  * d'autre — celui qui signale rend service, on ne lui fait pas remplir un
- * dossier. Aucun champ d'identité : le signalement se fait sans compte.
+ * dossier. Aucun champ d'identité : la session dit déjà qui signale, la
+ * page a renvoyé vers /login quiconque n'en a pas.
  *
  * Le titre vit DANS la carte, comme sur /login et /inregistrare : la carte
  * est le bloc entier, et la confirmation la remplace d'un coup — titre

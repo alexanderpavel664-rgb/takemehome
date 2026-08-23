@@ -6,26 +6,51 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { STR } from "@/lib/strings";
+import { rememberTermsAcceptance } from "@/lib/terms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/field";
+import { Checkbox, Input } from "@/components/ui/field";
+import { TermsLabel } from "@/components/terms-label";
 
 export function RegisterForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Jamais pré-cochée : des conditions acceptées par défaut ne sont pas
+  // acceptées du tout (CJUE Planet49, C-673/17).
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  // Le même verrou devant les deux portes, email et Google : sans la case,
+  // rien ne part. Avec, le cookie tmh_terms porte l'acceptation jusqu'à la
+  // création du compte — c'est le hook user.create.before (auth.ts) qui
+  // l'inscrit en base, pour les deux chemins.
+  function ensureTermsAccepted(): boolean {
+    if (!termsAccepted) {
+      setTermsError(STR.auth.register.termsRequired);
+      return false;
+    }
+    rememberTermsAcceptance();
+    return true;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!ensureTermsAccepted()) {
+      return;
+    }
     setPending(true);
     const { error } = await authClient.signUp.email({
       name: name.trim(),
       email: email.trim(),
       password,
+      // Destination du lien de vérification d'email, le jour où l'envoi
+      // sera actif (auth.ts) ; sans effet d'ici là.
+      callbackURL: "/cont/profil",
     });
     if (error) {
       setError(authErrorMessage(error));
@@ -39,6 +64,9 @@ export function RegisterForm() {
 
   async function onGoogle() {
     setError(null);
+    if (!ensureTermsAccepted()) {
+      return;
+    }
     // signIn.social ne lance jamais d'exception : l'échec arrive dans { error }.
     // Compte Google inconnu = première inscription : même destination /cont/profil.
     const { error } = await authClient.signIn.social({
@@ -85,6 +113,21 @@ export function RegisterForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
+          />
+          {/* La case vaut pour les deux chemins, email et Google : elle est
+              posée AVANT le bouton plein et au-dessus de la hairline qui
+              sépare Google, pour qu'on la lise comme la condition des deux.
+              Pas d'attribut required : la bulle du navigateur ne couvrirait
+              pas le bouton Google, qui n'est pas une soumission. */}
+          <Checkbox
+            name="terms"
+            label={<TermsLabel />}
+            checked={termsAccepted}
+            onChange={(e) => {
+              setTermsAccepted(e.target.checked);
+              if (e.target.checked) setTermsError(null);
+            }}
+            error={termsError ?? undefined}
           />
           {/* Erreur globale par nature (compte existant, échec Google) :
               en toutes lettres sous les champs — la palette n'a pas de rouge. */}

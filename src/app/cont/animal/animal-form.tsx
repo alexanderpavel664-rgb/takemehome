@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { upload } from "@vercel/blob/client";
+import { put } from "@vercel/blob/client";
 import {
   AGE_GROUP_OPTIONS,
   SEX_OPTIONS,
@@ -20,7 +20,8 @@ import { STR } from "@/lib/strings";
 import { animalPhotoPathname } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
 import { reportClientError } from "@/lib/client-report";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { requestUploadToken, UploadRefusedError } from "@/lib/upload-token";
+import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ChipCheckbox } from "@/components/ui/chip";
 import { Input, Select, Textarea } from "@/components/ui/field";
 import type { AnimalFormState } from "./actions";
@@ -57,16 +58,16 @@ function formatSize(bytes: number): string {
 }
 
 function uploadErrorMessage(error: unknown): string {
+  // Jeton refusé par /api/photo/upload : la route a écrit pourquoi, en
+  // roumain (limite de débit, session expirée, compte suspendu — chacune
+  // avec la conduite à tenir). Sans phrase lisible (page HTML de la
+  // plateforme), la formule générique.
+  if (error instanceof UploadRefusedError) {
+    return error.serverMessage ?? STR.animalForm.uploadFailed;
+  }
   // fetch échoue en TypeError quand le réseau est coupé.
   if (error instanceof TypeError) {
     return STR.animalForm.uploadNetworkError;
-  }
-  // Le client blob ne lit pas le corps des réponses non-2xx de
-  // /api/photo/upload : tout refus de jeton (limite de débit, session
-  // expirée…) arrive comme « Failed to retrieve the client token ».
-  // On le couvre d'une phrase actionnable plutôt que de l'anglais interne.
-  if (error instanceof Error && error.message.includes("client token")) {
-    return STR.animalForm.uploadRefused;
   }
   // Le message d'origine n'est jamais affiché : il vient du client blob ou
   // du réseau, en anglais, et ne dit rien d'actionnable. Il part dans le
@@ -79,9 +80,20 @@ function uploadErrorMessage(error: unknown): string {
 // en anglais avec du détail technique.
 const COMPRESS_MESSAGES: readonly string[] = Object.values(STR.compress);
 
+// Le groupe qui entoure un input fichier en sr-only et son label-bouton :
+// le focus clavier de l'input se dessine sur le groupe (has-[:focus-visible]
+// — jamais après un clic souris), et l'état disabled de l'input éteint le
+// bouton. `relative` : l'input absolu reste près du groupe, sans faire
+// sauter le défilement quand il prend le focus.
+const PHOTO_GROUP =
+  "relative rounded-md " +
+  "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-warm-ink " +
+  "has-[:disabled]:pointer-events-none has-[:disabled]:opacity-50";
+
 // Formulaire partagé création/édition. Seuls name, type et county sont
-// obligatoires — tout le reste peut rester vide pour une saisie rapide
-// au téléphone.
+// obligatoires — tout le reste, photo comprise, peut rester vide pour une
+// saisie rapide au téléphone : une fiche sans photo vaut mieux qu'une fiche
+// jamais créée. /cont invite ensuite à en ajouter une.
 export function AnimalForm({
   action,
   initial,
@@ -102,6 +114,9 @@ export function AnimalForm({
 }) {
   const [state, formAction, pending] = useActionState(action, null);
 
+  // Deux entrées pour un seul fichier : l'appareil photo (capture) et la
+  // galerie. Toutes deux sont vidées ensemble après un refus.
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<CompressedPhoto | null>(null);
   const [originalSize, setOriginalSize] = useState<number | null>(null);
@@ -121,8 +136,21 @@ export function AnimalForm({
     };
   }, [previewUrl]);
 
+  function resetPhotoInputs() {
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
+
   async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
+    // L'autre entrée est vidée : un seul fichier à la fois, celui qu'on
+    // vient de choisir, quelle que soit la porte.
+    if (event.target !== cameraInputRef.current && cameraInputRef.current) {
+      cameraInputRef.current.value = "";
+    }
+    if (event.target !== photoInputRef.current && photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
     setPhoto(null);
     setOriginalSize(null);
     setPreviewUrl(null);
@@ -137,12 +165,12 @@ export function AnimalForm({
     // on laisse le décodage trancher plutôt que de refuser d'office.
     if (file.type && !file.type.startsWith("image/")) {
       setPhotoError(STR.animalForm.notAnImage);
-      if (photoInputRef.current) photoInputRef.current.value = "";
+      resetPhotoInputs();
       return;
     }
     if (file.size > MAX_SOURCE_SIZE) {
       setPhotoError(STR.animalForm.fileTooLarge(formatSize(file.size)));
-      if (photoInputRef.current) photoInputRef.current.value = "";
+      resetPhotoInputs();
       return;
     }
 
@@ -162,22 +190,33 @@ export function AnimalForm({
         reportClientError("photo_prepare_failed", error);
       }
       setPhotoError(known ? message : STR.animalForm.preparingFailed);
-      if (photoInputRef.current) photoInputRef.current.value = "";
+      resetPhotoInputs();
     } finally {
       setPreparing(false);
     }
   }
 
-  // Avec une photo en attente, on intercepte la soumission : upload direct
-  // du navigateur vers Vercel Blob (progression affichée), puis dispatch de
-  // la server action avec l'URL obtenue dans photoUrl.
+  // La soumission est TOUJOURS interceptée, photo ou pas. Soumis par son
+  // attribut action, un formulaire React 19 est réinitialisé (form.reset())
+  // dès que l'action se termine — y compris quand elle rend une erreur :
+  // « limite atteinte » ou « panne » s'afficheraient au-dessus de champs
+  // vidés, et le sauveteur retaperait tout. Dispatchée à la main dans une
+  // transition, la même action laisse le DOM tel quel. L'attribut action
+  // reste pour la soumission avant hydratation (sans JavaScript) ; la
+  // validation native (required) s'exécute avant l'événement submit.
+  //
+  // Avec une photo en attente : upload direct du navigateur vers Vercel
+  // Blob (progression affichée), puis dispatch avec l'URL dans photoUrl.
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    if (!photo && !uploadedUrl) {
-      return;
-    }
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    void submitWithPhoto(formData);
+    if (photo || uploadedUrl) {
+      void submitWithPhoto(formData);
+      return;
+    }
+    startTransition(() => {
+      formAction(formData);
+    });
   }
 
   async function submitWithPhoto(formData: FormData) {
@@ -186,17 +225,19 @@ export function AnimalForm({
       let url = uploadedUrl;
       if (!url && photo) {
         setProgress(0);
-        const result = await upload(
-          animalPhotoPathname(userId, photo.extension),
-          photo.blob,
-          {
-            access: "public",
-            handleUploadUrl: "/api/photo/upload",
-            contentType: photo.blob.type,
-            clientPayload: JSON.stringify({ animalId: animalId ?? null }),
-            onUploadProgress: ({ percentage }) => setProgress(percentage),
-          },
-        );
+        const pathname = animalPhotoPathname(userId, photo.extension);
+        // Deux requêtes, séparées pour lire le refus éventuel de la
+        // première (voir lib/upload-token.ts) : le jeton, puis le PUT.
+        const token = await requestUploadToken({
+          pathname,
+          clientPayload: JSON.stringify({ animalId: animalId ?? null }),
+        });
+        const result = await put(pathname, photo.blob, {
+          access: "public",
+          token,
+          contentType: photo.blob.type,
+          onUploadProgress: ({ percentage }) => setProgress(percentage),
+        });
         url = result.url;
         setUploadedUrl(url);
       }
@@ -210,11 +251,15 @@ export function AnimalForm({
     } catch (error) {
       // L'upload part du navigateur droit vers Vercel Blob : sans cette
       // balise, l'échec ne laisse aucune trace côté serveur. C'est le moment
-      // où un sauveteur referme l'onglet.
+      // où un sauveteur referme l'onglet. Le statut d'un refus de jeton
+      // distingue une limite atteinte (429 — la protection qui bloque
+      // quelqu'un de légitime, à surveiller) d'une panne.
       reportClientError("photo_upload_failed", error, {
         bytes: photo?.blob.size ?? 0,
         format: photo?.extension ?? "aucun",
         editing: animalId ? "oui" : "non",
+        status:
+          error instanceof UploadRefusedError ? String(error.status) : "none",
       });
       setPhotoError(uploadErrorMessage(error));
     } finally {
@@ -228,9 +273,153 @@ export function AnimalForm({
   // serveur (validation) — un seul message affiché, relié au champ #photo.
   const photoErrorMessage = photoError ?? state?.fieldErrors?.photo ?? null;
 
+  // Sous les boutons photo, tant qu'aucune n'est choisie ni déjà en ligne :
+  // la consigne de cadrage — une information, pas une exigence.
+  const showPhotoHint = !photo && !preparing && !initialPhotoUrl;
+  // Ne référence que ce qui est rendu : un id absent ne décrit rien.
+  const photoDescribedBy = photoErrorMessage
+    ? "photo-error"
+    : showPhotoHint
+      ? "photo-hint"
+      : undefined;
+
   return (
     <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
       {animalId && <input type="hidden" name="id" value={animalId} />}
+      {/* La photo D'ABORD : le sauveteur a l'animal devant lui, et la
+          préparation (décodage + compression) tourne pendant qu'il remplit
+          le reste — à la soumission il ne reste que l'envoi. */}
+      <div>
+        <p id="photo-label" className="mb-1 text-sm text-warm-ink">
+          {STR.animalForm.photo}
+        </p>
+        {/* Deux entrées, un seul gestionnaire. Aucune n'a d'attribut name :
+            le fichier ne doit jamais partir dans la server action (limite
+            de 1 Mo par défaut, 4,5 Mo sur Vercel) — il est envoyé au store
+            par upload() après compression. Les inputs restent dans le flux
+            en sr-only (clavier, lecteurs d'écran) ; les <label> voisins
+            portent le rendu bouton. Aucun n'est plein : le seul bouton
+            plein de l'écran est « Publică anunțul ». */}
+        <div className="flex flex-wrap gap-2">
+          {/* L'appareil photo, sur écrans tactiles seulement :
+              capture="environment" ouvre directement la caméra arrière,
+              sans passer par la galerie. Sur un ordinateur l'attribut est
+              ignoré et « Fă o poză » mentirait — le bouton n'y est pas. */}
+          <span className={`hidden pointer-coarse:block ${PHOTO_GROUP}`}>
+            <input
+              id="photo-camera"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              ref={cameraInputRef}
+              onChange={handlePhotoChange}
+              disabled={busy}
+              aria-invalid={photoErrorMessage ? true : undefined}
+              aria-describedby={photoDescribedBy}
+              className="sr-only"
+            />
+            <label
+              htmlFor="photo-camera"
+              className={buttonClasses("outline", "cursor-pointer")}
+            >
+              {STR.animalForm.takePhoto}
+            </label>
+          </span>
+          {/* La galerie (ou le disque) : la seule entrée sur ordinateur,
+              donc en outline ; la seconde sur téléphone, donc en ghost.
+              Deux labels pour le même input — HTML l'autorise — plutôt
+              qu'un libellé qui change de classe. */}
+          <span className={PHOTO_GROUP}>
+            <input
+              id="photo"
+              type="file"
+              accept="image/*"
+              ref={photoInputRef}
+              onChange={handlePhotoChange}
+              disabled={busy}
+              aria-invalid={photoErrorMessage ? true : undefined}
+              aria-describedby={photoDescribedBy}
+              className="sr-only"
+            />
+            <span className="pointer-coarse:hidden">
+              <label
+                htmlFor="photo"
+                className={buttonClasses("outline", "cursor-pointer")}
+              >
+                {STR.animalForm.choosePhoto}
+              </label>
+            </span>
+            <span className="hidden pointer-coarse:block">
+              <label
+                htmlFor="photo"
+                className={buttonClasses("ghost", "cursor-pointer")}
+              >
+                {STR.animalForm.chooseFromGallery}
+              </label>
+            </span>
+          </span>
+        </div>
+        {showPhotoHint && (
+          <p id="photo-hint" className="mt-2 max-w-[60ch] text-sm text-warm-gray">
+            {STR.animalForm.photoHint}
+          </p>
+        )}
+        {preparing && (
+          <p role="status" className="mt-2 text-sm text-warm-ink">
+            {STR.animalForm.preparing}
+          </p>
+        )}
+        {photo && previewUrl && (
+          <div className="mt-2">
+            {/* Aperçu local d'un blob : next/image ne s'applique pas ici. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewUrl}
+              alt={STR.animalForm.previewAlt}
+              width={240}
+              className="rounded-md border border-warm-border"
+            />
+            <p className="mt-1 text-sm text-warm-gray">
+              {/* Le format affiché dit si la bascule Safari (pas d'encodage WebP)
+                  s'est déclenchée : WebP = voie normale, JPEG = bascule. */}
+              {STR.animalForm.photoReady(
+                photo.extension === "webp" ? "WebP" : "JPEG",
+                originalSize !== null && photo.blob.size < originalSize
+                  ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
+                  : `, ${formatSize(photo.blob.size)}`,
+              )}
+            </p>
+          </div>
+        )}
+        {!photo && !preparing && initialPhotoUrl && (
+          <div className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={initialPhotoUrl}
+              alt={STR.animalForm.currentPhotoAlt}
+              width={240}
+              className="rounded-md border border-warm-border"
+            />
+            <p className="mt-1 text-sm text-warm-gray">
+              {STR.animalForm.currentPhotoHint}
+            </p>
+          </div>
+        )}
+        {progress !== null && (
+          <p role="status" className="mt-2 text-sm text-warm-ink">
+            {STR.animalForm.uploading(Math.round(progress))}
+          </p>
+        )}
+        {photoErrorMessage && (
+          <p
+            id="photo-error"
+            role="alert"
+            className="mt-2 text-sm font-semibold text-warm-ink"
+          >
+            {photoErrorMessage}
+          </p>
+        )}
+      </div>
       <Input
         label={STR.animalForm.name}
         id="name"
@@ -328,80 +517,6 @@ export function AnimalForm({
         defaultValue={initial?.description}
         rows={4}
       />
-      <div>
-        <label htmlFor="photo" className="mb-1 block text-sm text-warm-ink">
-          {STR.animalForm.photo}
-        </label>
-        {/* Pas d'attribut name : le fichier ne doit jamais partir dans la
-            server action (limite de 1 Mo par défaut, 4,5 Mo sur Vercel) —
-            il est envoyé au store par upload() après compression. */}
-        <input
-          id="photo"
-          type="file"
-          accept="image/*"
-          ref={photoInputRef}
-          onChange={handlePhotoChange}
-          disabled={busy}
-          aria-invalid={photoErrorMessage ? true : undefined}
-          aria-describedby={photoErrorMessage ? "photo-error" : undefined}
-          className="flex min-h-11 w-full items-center text-sm text-warm-gray file:mr-3 file:rounded-md file:border file:border-warm-border file:bg-card-ivory file:px-4 file:py-2 file:text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink disabled:opacity-50"
-        />
-        {preparing && (
-          <p role="status" className="mt-2 text-sm text-warm-ink">
-            {STR.animalForm.preparing}
-          </p>
-        )}
-        {photo && previewUrl && (
-          <div className="mt-2">
-            {/* Aperçu local d'un blob : next/image ne s'applique pas ici. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt={STR.animalForm.previewAlt}
-              width={240}
-              className="rounded-md border border-warm-border"
-            />
-            <p className="mt-1 text-sm text-warm-gray">
-              {/* Le format affiché dit si la bascule Safari (pas d'encodage WebP)
-                  s'est déclenchée : WebP = voie normale, JPEG = bascule. */}
-              {STR.animalForm.photoReady(
-                photo.extension === "webp" ? "WebP" : "JPEG",
-                originalSize !== null && photo.blob.size < originalSize
-                  ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
-                  : `, ${formatSize(photo.blob.size)}`,
-              )}
-            </p>
-          </div>
-        )}
-        {!photo && !preparing && initialPhotoUrl && (
-          <div className="mt-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={initialPhotoUrl}
-              alt={STR.animalForm.currentPhotoAlt}
-              width={240}
-              className="rounded-md border border-warm-border"
-            />
-            <p className="mt-1 text-sm text-warm-gray">
-              {STR.animalForm.currentPhotoHint}
-            </p>
-          </div>
-        )}
-        {progress !== null && (
-          <p role="status" className="mt-2 text-sm text-warm-ink">
-            {STR.animalForm.uploading(Math.round(progress))}
-          </p>
-        )}
-        {photoErrorMessage && (
-          <p
-            id="photo-error"
-            role="alert"
-            className="mt-2 text-sm font-semibold text-warm-ink"
-          >
-            {photoErrorMessage}
-          </p>
-        )}
-      </div>
       <fieldset>
         <legend className="mb-2 text-sm text-warm-ink">
           {STR.animalForm.health}

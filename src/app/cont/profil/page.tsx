@@ -1,11 +1,12 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
+import { getSession } from "@/lib/viewer";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
+import { PasswordSection } from "./password-form";
 import { AccountData } from "./account-data";
 
 export const metadata: Metadata = {
@@ -13,12 +14,22 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
   if (!session) {
     redirect("/login");
   }
-
   const { user } = session;
+
+  // Un mot de passe local existe-t-il ? better-auth range les identifiants
+  // email + mot de passe dans Account sous providerId "credential" ; un
+  // compte entré par Google seul n'en a pas, et la section Parola le dit
+  // plutôt que de proposer un formulaire qui échouerait.
+  const credential = await prisma.account.findFirst({
+    where: { userId: user.id, providerId: "credential" },
+    select: { password: true },
+  });
+  const hasPassword = Boolean(credential?.password);
+
   return (
     // w-full : enfant du body en flex-col, mx-auto seul annulerait
     // l'étirement — la page se tasserait sur la largeur de ses champs.
@@ -26,9 +37,9 @@ export default async function ProfilPage() {
       <h1 className="text-2xl font-semibold text-warm-ink">
         {STR.profil.title}
       </h1>
-      <p className="mt-2 text-base text-warm-gray">{STR.profil.intro}</p>
-      {/* Le formulaire est posé sur l'ivoire : un contenant, pas des champs
-          qui flottent sur le papier. */}
+      {/* Pas d'introduction : la conséquence du consentement se lit une seule
+          fois, sous la case, dans le formulaire. Le formulaire est posé sur
+          l'ivoire : un contenant, pas des champs qui flottent sur le papier. */}
       <Card className="mt-4 p-4">
         <ProfileForm
           initial={{
@@ -45,6 +56,8 @@ export default async function ProfilPage() {
           }}
         />
       </Card>
+
+      <PasswordSection hasPassword={hasPassword} />
 
       <AccountData />
 

@@ -1,14 +1,15 @@
 "use server";
 
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-import { clientIp } from "@/lib/client-ip";
+import { notFound, redirect } from "next/navigation";
 import { logInfo } from "@/lib/log";
+import { loginHref } from "@/lib/next-path";
 import { prisma } from "@/lib/prisma";
 import { purgeExpiredReports } from "@/lib/purge-reports";
 import { isRateLimited } from "@/lib/rate-limit";
 import { reportError } from "@/lib/report";
 import { STR } from "@/lib/strings";
+import { getViewer } from "@/lib/viewer";
 import { ReportReason } from "@/generated/prisma/client";
 
 export type ReportFormState = {
@@ -22,23 +23,33 @@ export type ReportFormState = {
 const MAX_MESSAGE_LENGTH = 1000;
 
 /**
- * Signalement public — SANS compte : un adoptant qui repère une arnaque n'en
- * a pas, et lui en demander un reviendrait à ne recevoir aucun signalement.
- * L'ouverture se paie donc en garde-fous : limite de débit du WAF (clé
- * report:<ip>, sous la règle app-api existante), puis refus silencieux d'un
- * second signalement en attente venu de la même IP sur la même annonce.
+ * Signalement d'une annonce — depuis un compte connecté. Le compte est la
+ * mesure anti-harcèlement : la limite de débit du WAF compte par compte
+ * (clé report:<userId>, sous la règle app-api existante), puis un second
+ * signalement en attente du même compte sur la même annonce est refusé en
+ * silence. Rien n'est plus à stocker sur qui signale : ni IP, ni empreinte.
  */
 export async function createReport(
   _prevState: ReportFormState,
   formData: FormData,
 ): Promise<ReportFormState> {
+  const animalId = String(formData.get("animalId") ?? "");
+
+  // La page a déjà renvoyé l'anonyme vers /login, mais une session peut
+  // expirer entre l'ouverture du formulaire et l'envoi : même chemin, qui
+  // ramène ici. redirect() lève une exception, il reste hors de tout try.
+  const viewer = await getViewer();
+  if (!viewer) {
+    redirect(loginHref(`/animal/${animalId}/semnaleaza`));
+  }
+
+  // Avant tout autre Prisma : une rafale rejetée ne coûte rien de plus que
+  // la lecture de session qui précède.
   const requestHeaders = await headers();
-  // Avant tout Prisma : une rafale rejetée ne coûte aucune requête Neon.
-  if (await isRateLimited("report", requestHeaders)) {
+  if (await isRateLimited("report", requestHeaders, viewer.id)) {
     return { formError: STR.report.tooManyRequests };
   }
 
-  const animalId = String(formData.get("animalId") ?? "");
   const rawReason = String(formData.get("reason") ?? "");
   const reason = (Object.values(ReportReason) as string[]).includes(rawReason)
     ? (rawReason as ReportReason)
@@ -67,24 +78,25 @@ export async function createReport(
     notFound();
   }
 
-  const ip = clientIp(requestHeaders);
-
   try {
-    // Doublon en attente depuis la même IP : on répond la même confirmation
+    // Doublon en attente du même compte : on répond la même confirmation
     // sans rien écrire. Dire « tu as déjà signalé » donnerait à un harceleur
     // la mesure de ce qui passe et de ce qui ne passe pas.
-    if (ip) {
-      const existing = await prisma.report.findFirst({
-        where: { animalId: animal.id, ip, status: "PENDING" },
-        select: { id: true },
-      });
-      if (existing) {
-        return { sent: true };
-      }
+    const existing = await prisma.report.findFirst({
+      where: { animalId: animal.id, userId: viewer.id, status: "PENDING" },
+      select: { id: true },
+    });
+    if (existing) {
+      return { sent: true };
     }
 
     await prisma.report.create({
-      data: { animalId: animal.id, reason, message: message || null, ip },
+      data: {
+        animalId: animal.id,
+        userId: viewer.id,
+        reason,
+        message: message || null,
+      },
     });
   } catch (error) {
     // Un signalement perdu, c'est une arnaque qui reste en ligne : on veut
@@ -94,7 +106,8 @@ export async function createReport(
   }
 
   // Trace ops : un pic de signalements se voit ici avant de se voir en base.
-  // Ni l'IP ni le texte libre n'y entrent — seul le motif, qui est un enum.
+  // Ni le compte ni le texte libre n'y entrent — seul le motif, qui est un
+  // enum. Qui a signalé se lit dans /admin, pas dans les journaux.
   logInfo("report.created", { animalId: animal.id, reason });
 
   // Deuxième point d'appel de la purge opportuniste, après l'écriture

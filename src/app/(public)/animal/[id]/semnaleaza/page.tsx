@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { loginHref } from "@/lib/next-path";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
+import { getViewer } from "@/lib/viewer";
 import { ReportForm } from "./report-form";
 
 export const metadata: Metadata = {
@@ -21,6 +23,15 @@ export default async function SemnaleazaPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // Compte exigé. Le lien « Semnalează » de la fiche reste visible pour
+  // tous : c'est ici que l'anonyme part vers /login, et `next` le ramène
+  // sur ce formulaire une fois connecté. getViewer rend la main sans
+  // toucher la base quand il n'y a pas de cookie de session.
+  const viewer = await getViewer();
+  if (!viewer) {
+    redirect(loginHref(`/animal/${id}/semnaleaza`));
+  }
 
   // Même filtre que la fiche publique : une annonce masquée est
   // indistinguable d'une annonce inexistante → 404.

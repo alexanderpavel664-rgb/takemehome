@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -10,8 +12,20 @@ import { SiteFooter } from "@/components/site-footer";
  * Le pied de page juridique est ici aussi, sans les liens publics : c'est
  * précisément dans son compte qu'une publiante a le plus de raisons d'aller
  * lire ce qu'on fait de ses données.
+ *
+ * C'est aussi la porte des conditions : un compte dont l'acceptation n'est
+ * pas enregistrée (créé avant la règle, ou avec Google depuis /login) est
+ * renvoyé vers /accepta-termenii avant toute page de l'espace. Le layout
+ * est rendu à chaque entrée dans /cont — et la session est lue par le
+ * getSession mis en cache, que la page réutilise : aucune requête de plus.
+ * L'absence de session reste l'affaire de chaque page (redirect /login).
  */
-export default function ContLayout({ children }: { children: ReactNode }) {
+export default async function ContLayout({ children }: { children: ReactNode }) {
+  const session = await getSession();
+  if (session && !session.user.termsAcceptedAt) {
+    redirect("/accepta-termenii");
+  }
+
   return (
     <>
       <SiteHeader />

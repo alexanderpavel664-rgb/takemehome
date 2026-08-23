@@ -29,7 +29,7 @@ export async function GET(): Promise<Response> {
     return new Response(null, { status: 401 });
   }
 
-  const [user, animals, sessions, accounts] = await Promise.all([
+  const [user, animals, sessions, accounts, reports] = await Promise.all([
     prisma.user.findUnique({
       where: { id: viewer.id },
       select: {
@@ -44,6 +44,8 @@ export async function GET(): Promise<Response> {
         city: true,
         description: true,
         contactConsent: true,
+        termsAcceptedAt: true,
+        termsVersion: true,
         role: true,
         suspended: true,
         createdAt: true,
@@ -79,6 +81,21 @@ export async function GET(): Promise<Response> {
       orderBy: { createdAt: "asc" },
       select: { providerId: true, createdAt: true, updatedAt: true },
     }),
+    // Les signalements sont rattachés au compte depuis août 2026 : ce que la
+    // personne a écrit, et sur quelle annonce, fait partie de « ce qu'on a
+    // sur elle ». L'identifiant interne du signalement ne dit rien, il
+    // reste dehors.
+    prisma.report.findMany({
+      where: { userId: viewer.id },
+      orderBy: { createdAt: "asc" },
+      select: {
+        animalId: true,
+        reason: true,
+        message: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   if (!user) {
@@ -94,6 +111,7 @@ export async function GET(): Promise<Response> {
     animale: animals,
     sesiuni: sessions,
     autentificari: accounts,
+    semnalari: reports,
   };
 
   return new Response(JSON.stringify(payload, null, 2), {

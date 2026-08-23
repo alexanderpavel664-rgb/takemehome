@@ -9,10 +9,12 @@ import { relativeTimeRo } from "@/lib/relative-time";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { getViewer } from "@/lib/viewer";
+import { ContactEmailLink } from "@/components/contact-email-link";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CopyButton } from "@/components/ui/copy-button";
 
 // Sans API de requête, une route à segment dynamique serait rendue puis
 // mise en cache : statut « adopté », photos et coordonnées resteraient
@@ -34,6 +36,10 @@ const getAnimal = cache(async (id: string) =>
           publicEmail: true,
           // Sans lui, phone et publicEmail ne sortent pas de cette page.
           contactConsent: true,
+          // Ne sert qu'à la mention « ascuns » lue par le propriétaire :
+          // une suspension masque tout le compte, ce n'est pas « după o
+          // semnalare ». Une colonne de plus sur la même jointure.
+          suspended: true,
         },
       },
     },
@@ -57,9 +63,13 @@ export async function generateMetadata(
 
   const place = animal.city?.trim() || countyName(animal.county);
   const title = `${animal.name} – ${place}`;
+  // Fiche adoptée : l'aperçu Facebook le dit avant le clic — un lien
+  // partagé il y a trois semaines continue de circuler après l'adoption.
   const description =
-    animal.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
-    `${STR.animal.metaDescription(animal.name)} ${animalMetaLine(animal)}.`;
+    animal.status === "ADOPTED"
+      ? STR.animal.adoptedMetaDescription(animal.name)
+      : animal.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+        `${STR.animal.metaDescription(animal.name)} ${animalMetaLine(animal)}.`;
   const photo = animal.photos[0];
 
   return {
@@ -122,6 +132,30 @@ function ContactActions({
           {STR.animal.email}
         </a>
       )}
+    </div>
+  );
+}
+
+/**
+ * Une coordonnée en toutes lettres : « Telefon : 07xx » avec « Copiază ».
+ * Sur un ordinateur, tel: et mailto: ne font souvent rien ; la valeur doit
+ * se lire (select-all : un clic la sélectionne entière) et se copier. Sur
+ * téléphone, c'est le numéro qu'on colle dans WhatsApp.
+ */
+function ContactRow({
+  label,
+  value,
+  copyLabel,
+}: {
+  label: string;
+  value: string;
+  copyLabel: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2">
+      <dt className="text-warm-gray">{label} :</dt>
+      <dd className="select-all text-warm-ink">{value}</dd>
+      <CopyButton value={value} ariaLabel={copyLabel} />
     </div>
   );
 }
@@ -225,7 +259,14 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             {STR.animal.hiddenTitle}
           </h2>
           <p className="mt-1 max-w-[66ch] text-base text-warm-ink">
-            {STR.animal.hiddenDescription}
+            {animal.user.suspended
+              ? STR.animal.hiddenDescriptionSuspended
+              : STR.animal.hiddenDescription}
+          </p>
+          <p className="mt-2 max-w-[66ch] text-base text-warm-ink">
+            {STR.common.errorContactBefore}
+            <ContactEmailLink />
+            {STR.common.errorContactAfter}
           </p>
         </Card>
       )}
@@ -273,23 +314,54 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
           </p>
 
           {adopted && (
-            // Fiche adoptée : ce bloc prend la place de la carte de contact.
+            // Fiche adoptée : ce bloc prend la place de la carte de contact,
+            // et son bouton prend la place du bouton d'appel — LE bouton
+            // plein de l'écran (La Règle du Bouton Unique), comme sur la
+            // 404 : quelqu'un qui arrive de Facebook sur une fiche adoptée
+            // n'a qu'une chose utile à faire, et elle doit sauter aux yeux.
             <div className="mt-4">
               <p className="text-base text-warm-ink">
                 {STR.animal.alreadyAdopted}
               </p>
-              <ButtonLink href="/animale" variant="outline" className="mt-3">
+              <ButtonLink href="/animale" variant="primary" className="mt-3">
                 {STR.animal.seeAvailable}
               </ButtonLink>
             </div>
           )}
 
           {hasContact && (
-            // Desktop : les mêmes actions dans une carte statique, visibles
-            // sans défiler — posées sur l'ivoire opaque, jamais sur la photo
-            // (La Règle du Chien Fauve).
-            <Card className="mt-4 hidden p-4 lg:block">
-              <ContactActions phone={phone} email={email} className="flex-col" />
+            // Les coordonnées en toutes lettres, à toutes les largeurs :
+            // numéro et email se lisent et se copient. À partir de lg, les
+            // boutons Sună / Email les rejoignent dans la carte (sous lg,
+            // c'est la barre fixe en bas qui les porte) — posés sur
+            // l'ivoire opaque, jamais sur la photo (La Règle du Chien Fauve).
+            <Card className="mt-4 p-4">
+              <h2 className="text-lg font-semibold text-warm-ink">
+                {STR.animal.contactTitle}
+              </h2>
+              <dl className="mt-2 space-y-1 text-base">
+                {phone && (
+                  <ContactRow
+                    label={STR.animal.phoneLabel}
+                    value={phone}
+                    copyLabel={STR.animal.copyPhone}
+                  />
+                )}
+                {email && (
+                  <ContactRow
+                    label={STR.animal.emailLabel}
+                    value={email}
+                    copyLabel={STR.animal.copyEmail}
+                  />
+                )}
+              </dl>
+              <div className="mt-3 hidden lg:block">
+                <ContactActions
+                  phone={phone}
+                  email={email}
+                  className="flex-col"
+                />
+              </div>
             </Card>
           )}
 
@@ -334,8 +406,10 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             // Le signalement en bas de fiche, derrière une hairline : une
             // porte, pas une accusation — discrète au point qu'elle ne pèse
             // sur aucune annonce honnête, visible au point qu'on la trouve
-            // quand on cherche à signaler. Aucun compte n'est demandé
-            // derrière : celui qui repère une arnaque n'en a pas.
+            // quand on cherche à signaler. Visible pour tous, connecté ou
+            // non : c'est la page de signalement qui exige le compte et
+            // renvoie l'anonyme vers /login (puis le ramène). La fiche ne
+            // lit donc pas la session pour ce lien — elle reste à coût nul.
             <p className="mt-6 border-t border-warm-border pt-4">
               <Link
                 href={`/animal/${animal.id}/semnaleaza`}

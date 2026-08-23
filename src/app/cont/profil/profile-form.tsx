@@ -66,83 +66,105 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Input
-        label={STR.profil.name}
-        name="name"
-        type="text"
-        value={values.name}
-        onChange={(e) => set("name", e.target.value)}
-        required
-        error={nameError ?? undefined}
-      />
-      <Input
-        label={STR.profil.phone}
-        name="phone"
-        type="tel"
-        value={values.phone}
-        onChange={(e) => set("phone", e.target.value)}
-      />
-      <Input
-        label={STR.profil.publicEmail}
-        name="publicEmail"
-        type="email"
-        value={values.publicEmail}
-        onChange={(e) => set("publicEmail", e.target.value)}
-      />
-      <Select
-        label={STR.profil.county}
-        name="county"
-        value={values.county}
-        onChange={(e) => set("county", e.target.value)}
-      >
-        <option value="">{STR.profil.countyPlaceholder}</option>
-        {COUNTIES.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.name}
-          </option>
-        ))}
-      </Select>
-      <Input
-        label={STR.profil.city}
-        name="city"
-        type="text"
-        value={values.city}
-        onChange={(e) => set("city", e.target.value)}
-      />
-      <Textarea
-        label={STR.profil.description}
-        name="description"
-        value={values.description}
-        onChange={(e) => set("description", e.target.value)}
-        rows={5}
-      />
+      {/* Le contact D'ABORD : c'est l'écran d'arrivée après l'inscription,
+          et la seule chose qui rend un animal joignable. Téléphone, email
+          public, puis la case — le nom, le județ et la description viennent
+          après la hairline, ce sont des champs secondaires. */}
+      <fieldset>
+        <legend className="text-lg font-semibold text-warm-ink">
+          {STR.profil.contactSection}
+        </legend>
+        <div className="mt-3 space-y-4">
+          <Input
+            label={STR.profil.phone}
+            name="phone"
+            type="tel"
+            value={values.phone}
+            onChange={(e) => set("phone", e.target.value)}
+          />
+          <Input
+            label={STR.profil.publicEmail}
+            name="publicEmail"
+            type="email"
+            value={values.publicEmail}
+            onChange={(e) => set("publicEmail", e.target.value)}
+          />
 
-      {/* Le consentement se pose SOUS les champs qu'il concerne : on lit
-          d'abord ce qui sera montré, on décide ensuite. Séparé par une
-          hairline — ce n'est pas un champ de plus, c'est une décision.
+          {/* Le consentement se pose SOUS les champs qu'il concerne : on lit
+              d'abord ce qui sera montré, on décide ensuite — son libellé dit
+              « de mai sus », et les deux champs sont bien juste au-dessus.
 
-          `checked` vient de la base et vaut false par défaut (colonne
-          contactConsent, DEFAULT false) : la case n'est jamais pré-cochée.
-          Ne pas la remplacer par un defaultChecked à true « pour aider » —
-          ce serait exactement ce que Planet49 et Orange România sanctionnent. */}
+              `checked` vient de la base et vaut false par défaut (colonne
+              contactConsent, DEFAULT false) : la case n'est jamais
+              pré-cochée. Ne pas la remplacer par un defaultChecked à true
+              « pour aider » — ce serait exactement ce que Planet49 et
+              Orange România sanctionnent. */}
+          <Checkbox
+            name="contactConsent"
+            label={STR.profil.contactConsentLabel}
+            checked={values.contactConsent}
+            onChange={(e) => set("contactConsent", e.target.checked)}
+            description={
+              <>
+                {STR.profil.contactConsentDescription}{" "}
+                <Link
+                  href="/confidentialitate"
+                  className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+                >
+                  {STR.profil.contactConsentPrivacyLink}
+                </Link>
+              </>
+            }
+          />
+        </div>
+      </fieldset>
+
+      {/* La hairline est sur le div, pas sur le fieldset : une legend posée
+          sur un fieldset bordé se dessine À CHEVAL sur la bordure. */}
       <div className="border-t border-warm-border pt-4">
-        <Checkbox
-          name="contactConsent"
-          label={STR.profil.contactConsentLabel}
-          checked={values.contactConsent}
-          onChange={(e) => set("contactConsent", e.target.checked)}
-          description={
-            <>
-              {STR.profil.contactConsentDescription}{" "}
-              <Link
-                href="/confidentialitate"
-                className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-              >
-                {STR.profil.contactConsentPrivacyLink}
-              </Link>
-            </>
-          }
-        />
+        <fieldset>
+          <legend className="text-lg font-semibold text-warm-ink">
+            {STR.profil.otherSection}
+          </legend>
+          <div className="mt-3 space-y-4">
+            <Input
+              label={STR.profil.name}
+              name="name"
+              type="text"
+              value={values.name}
+              onChange={(e) => set("name", e.target.value)}
+              required
+              error={nameError ?? undefined}
+            />
+            <Select
+              label={STR.profil.county}
+              name="county"
+              value={values.county}
+              onChange={(e) => set("county", e.target.value)}
+            >
+              <option value="">{STR.profil.countyPlaceholder}</option>
+              {COUNTIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            <Input
+              label={STR.profil.city}
+              name="city"
+              type="text"
+              value={values.city}
+              onChange={(e) => set("city", e.target.value)}
+            />
+            <Textarea
+              label={STR.profil.description}
+              name="description"
+              value={values.description}
+              onChange={(e) => set("description", e.target.value)}
+              rows={5}
+            />
+          </div>
+        </fieldset>
       </div>
 
       {error && (
