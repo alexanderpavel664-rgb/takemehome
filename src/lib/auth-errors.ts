@@ -18,6 +18,8 @@ const MESSAGES: Record<string, string> = {
   // Changement de mot de passe (/cont/profil).
   INVALID_PASSWORD: STR.auth.errors.INVALID_PASSWORD,
   CREDENTIAL_ACCOUNT_NOT_FOUND: STR.auth.errors.CREDENTIAL_ACCOUNT_NOT_FOUND,
+  // Réinitialisation de mot de passe (/parola-noua).
+  INVALID_TOKEN: STR.auth.errors.INVALID_TOKEN,
 };
 
 export function authErrorMessage(error: {

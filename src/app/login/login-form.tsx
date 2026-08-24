@@ -104,6 +104,17 @@ export function LoginForm({
           >
             {pending ? STR.auth.login.submitPending : STR.auth.login.submit}
           </Button>
+          {/* Sous le bouton, pas sous le champ mot de passe : c'est après
+              un échec qu'on le cherche, et l'erreur s'affiche juste
+              au-dessus du bouton. */}
+          <p className="text-sm text-warm-gray">
+            <Link
+              href="/parola-uitata"
+              className="inline-flex min-h-11 items-center text-warm-ink underline underline-offset-4"
+            >
+              {STR.auth.login.forgotPassword}
+            </Link>
+          </p>
         </form>
         {/* Google, séparé du formulaire email par une hairline douce. */}
         <div className="mt-6 border-t border-warm-border pt-6">

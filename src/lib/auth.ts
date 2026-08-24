@@ -21,6 +21,76 @@ export const auth = betterAuth({
     // fois l'envoi observé en production.
     requireEmailVerification: false,
     minPasswordLength: 8,
+    // ——— Réinitialisation de mot de passe (« Ai uitat parola? »). ———
+    //
+    // Même tuyau que la vérification d'email, mêmes conditions : sans
+    // RESEND_API_KEY + EMAIL_FROM, sendResetPassword est absent et
+    // /request-password-reset répond RESET_PASSWORD_DISABLED. Le chemin :
+    // /parola-uitata → /request-password-reset (via /api/auth, où le WAF
+    // compte password-reset:<ip>) → email → /api/auth/reset-password/<jeton>
+    // → /parola-noua?token= (ou ?error=INVALID_TOKEN) → action serveur qui
+    // pose le mot de passe puis connecte → /cont.
+    sendResetPassword: isEmailConfigured()
+      ? async ({ user, url }) => {
+          try {
+            // Compte entré par Google seul : aucun mot de passe à
+            // réinitialiser. On le dit DANS l'email — le seul endroit où
+            // on peut le dire sans révéler à la page que l'adresse a un
+            // compte, ni comment il se connecte. Le jeton créé par
+            // better-auth n'est envoyé nulle part : il expire sans usage.
+            const credential = await prisma.account.findFirst({
+              where: { userId: user.id, providerId: "credential" },
+              select: { id: true },
+            });
+            if (!credential) {
+              await sendEmail({
+                to: user.email,
+                subject: STR.email.resetPasswordGoogle.subject,
+                text: STR.email.resetPasswordGoogle.body(
+                  user.name,
+                  new URL("/login", url).href,
+                ),
+              });
+              return;
+            }
+            await sendEmail({
+              to: user.email,
+              subject: STR.email.resetPassword.subject,
+              text: STR.email.resetPassword.body(user.name, url),
+            });
+          } catch (error) {
+            // Comme pour la vérification : better-auth logue et continue,
+            // la page affiche « dacă adresa are un cont… » — sans cette
+            // alerte, une association bloquée dehors le resterait sans
+            // qu'on le sache.
+            await reportError("email.password_reset_send_failed", error, {
+              userId: user.id,
+            });
+          }
+        }
+      : undefined,
+    // 1 h (le défaut better-auth, écrit pour être lu) : contrairement à la
+    // vérification (24 h, ouverte le lendemain), la personne attend ce
+    // lien devant le formulaire. Une heure couvre une boîte mail lente et
+    // un dossier spam ; au-delà, un lien qui traîne dans une boîte mal
+    // fermée n'a plus de raison d'ouvrir un compte. Redemander coûte un
+    // clic. Le texte de l'email (STR.email.resetPassword) dit « o oră ».
+    resetPasswordTokenExpiresIn: 60 * 60,
+    // Le pendant du revokeOtherSessions du profil : qui réinitialise son
+    // mot de passe reprend la main sur son compte, et toute session
+    // ouverte ailleurs (vol compris) se ferme. L'action de /parola-noua
+    // ouvre ensuite la sienne.
+    revokeSessionsOnPasswordReset: true,
+    // Ouvrir le lien reçu prouve le contrôle de la boîte : c'est exactement
+    // ce que la vérification d'email prouve. Un compte qui réinitialise
+    // n'a plus à reconfirmer son adresse.
+    onPasswordReset: async ({ user }) => {
+      if (user.emailVerified) return;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true },
+      });
+    },
   },
   // ——— Vérification d'email : le terrain est prêt, rien n'est actif. ———
   //
@@ -51,8 +121,8 @@ export const auth = betterAuth({
   //      (ci-dessus) si l'on veut bloquer la connexion des comptes non
   //      vérifiés, et revoir requireLocalEmailVerified (plus bas).
   //
-  // La réinitialisation de mot de passe (sendResetPassword + une page
-  // « Parolă uitată ») n'est PAS préparée ici : même tuyau, autre chantier.
+  // La réinitialisation de mot de passe vit dans emailAndPassword
+  // (sendResetPassword, ci-dessus) : même tuyau, mêmes conditions.
   emailVerification: isEmailConfigured()
     ? {
         sendVerificationEmail: async ({ user, url }) => {
@@ -105,6 +175,13 @@ export const auth = betterAuth({
       // Chaque appel envoie un email : trois par quart d'heure suffisent à
       // qui n'a pas reçu le premier, et arrêtent qui voudrait en inonder un.
       "/send-verification-email": { window: 900, max: 3 },
+      // Même logique : un email par appel. S'ajoute au compteur WAF
+      // password-reset:<ip> (20 / 60 s, route.ts) : le WAF arrête la
+      // rafale, ce compteur arrête la goutte-à-goutte sur un quart d'heure.
+      "/request-password-reset": { window: 900, max: 3 },
+      // Le jeton fait 24 caractères aléatoires : indevinable, mais une
+      // pose de mot de passe n'a pas à être plus large qu'un login.
+      "/reset-password": { window: 900, max: 5 },
       // Personne ne l'appelle côté client aujourd'hui, mais si un useSession
       // arrive, le chemin le plus chaud ne doit pas coûter 2 requêtes Neon
       // de plus par appel.

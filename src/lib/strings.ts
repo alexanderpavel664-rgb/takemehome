@@ -351,6 +351,45 @@ export const STR = {
       googleFailed: "Conectarea cu Google nu a reușit. Încearcă din nou.",
       noAccount: "Nu ai cont încă?",
       createAccount: "Creează-ți un cont",
+      forgotPassword: "Ai uitat parola?",
+    },
+    /* ——— /parola-uitata : la demande de réinitialisation. ——— */
+    forgotPassword: {
+      metaTitle: "Parolă uitată – TakeMeHome",
+      title: "Ai uitat parola?",
+      intro:
+        "Scrie adresa de email a contului. Îți trimitem un link cu care alegi o parolă nouă.",
+      email: "Email",
+      submit: "Trimite linkul",
+      submitPending: "Se trimite…",
+      // ACELAȘI text, indiferent dacă adresa are sau nu cont : altfel
+      // pagina ar spune cine are cont pe site. Serverul răspunde la fel
+      // (better-auth, /request-password-reset) — fraza de aici e singura
+      // care ajunge pe ecran.
+      sent: "Dacă adresa are un cont TakeMeHome, ai primit un email cu linkul. Verifică și dosarul spam: linkul e valabil o oră.",
+      backToLogin: "Înapoi la conectare",
+    },
+    /* ——— /parola-noua : le nouveau mot de passe, depuis le lien. ——— */
+    resetPassword: {
+      metaTitle: "Parolă nouă – TakeMeHome",
+      title: "Alege o parolă nouă",
+      intro:
+        "Celelalte sesiuni deschise cu contul tău se închid. Rămâi conectat aici.",
+      newPassword: "Parola nouă (cel puțin 8 caractere)",
+      confirmPassword: "Repetă parola nouă",
+      submit: "Salvează parola",
+      submitPending: "Se salvează…",
+      // Link expirat, deja folosit sau greșit : un singur mesaj — cele trei
+      // cazuri se rezolvă la fel, cu un link nou.
+      invalidTitle: "Linkul nu mai e valabil",
+      invalidDescription:
+        "Linkul de resetare a expirat sau a fost deja folosit. Cere unul nou: e valabil o oră și se folosește o singură dată.",
+      requestAgain: "Cere un link nou",
+      // Parola s-a schimbat, dar conectarea automată a eșuat : nu pierde
+      // nimic, se conectează cu parola nouă.
+      changedSignInFailed:
+        "Parola a fost schimbată, dar conectarea automată nu a reușit. Intră în cont cu parola nouă.",
+      goToLogin: "Intră în cont",
     },
     register: {
       metaTitle: "Creează-ți un cont – TakeMeHome",
@@ -400,6 +439,10 @@ export const STR = {
       INVALID_PASSWORD: "Parola actuală e greșită.",
       CREDENTIAL_ACCOUNT_NOT_FOUND:
         "Contul tău nu are parolă: intri în cont cu Google.",
+      // Reinițializarea parolei (/parola-noua) : jetonul consumat, expirat
+      // sau necunoscut — better-auth nu le distinge, nici noi.
+      INVALID_TOKEN:
+        "Linkul de resetare a expirat sau a fost deja folosit. Cere unul nou.",
       // Limita de debit (429) : fereastra e de 15 minute — « câteva minute »
       // spune adevărul fără să promită un cronometru.
       rateLimited: "Prea multe încercări. Așteaptă câteva minute și încearcă din nou.",
@@ -692,6 +735,30 @@ export const STR = {
         "Confirmă adresa de email a contului tău TakeMeHome deschizând linkul de mai jos:\n\n" +
         `${url}\n\n` +
         "Linkul e valabil 24 de ore. Dacă nu ți-ai creat cont pe TakeMeHome, ignoră acest email.\n\n" +
+        "TakeMeHome",
+    },
+    // Resetarea parolei : o oră (auth.ts, resetPasswordTokenExpiresIn) —
+    // cine a cerut linkul îl așteaptă acum, în fața formularului. Ultima
+    // frază spune ce se întâmplă dacă NU ai cerut tu: nimic.
+    resetPassword: {
+      subject: "Resetează-ți parola – TakeMeHome",
+      body: (name: string, url: string) =>
+        `Salut, ${name},\n\n` +
+        "Ai cerut resetarea parolei contului tău TakeMeHome. Alege o parolă nouă deschizând linkul de mai jos:\n\n" +
+        `${url}\n\n` +
+        "Linkul e valabil o oră și se poate folosi o singură dată. Dacă nu ai cerut tu resetarea, ignoră acest email: parola rămâne neschimbată.\n\n" +
+        "TakeMeHome",
+    },
+    // Cont fără parolă locală (Google) : singurul loc unde se poate spune
+    // fără să dezvăluie nimic — emailul ajunge doar la proprietarul adresei.
+    // Fără link: nu e nimic de resetat.
+    resetPasswordGoogle: {
+      subject: "Contul tău TakeMeHome intră cu Google – TakeMeHome",
+      body: (name: string, loginUrl: string) =>
+        `Salut, ${name},\n\n` +
+        "Cineva a cerut resetarea parolei pentru această adresă. Contul tău TakeMeHome nu are parolă: intri în cont cu butonul „Continuă cu Google”, de aici:\n\n" +
+        `${loginUrl}\n\n` +
+        "Dacă nu ai cerut tu resetarea, ignoră acest email.\n\n" +
         "TakeMeHome",
     },
   },

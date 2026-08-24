@@ -9,7 +9,7 @@ import { logError } from "@/lib/log";
 // tout Prisma — zéro requête Neon.
 //
 // Le plan Hobby n'autorise qu'UNE règle de rate limit : les préfixes de
-// seau (upload:<ip>, animal-write:<ip>, report:<userId>) créent des
+// seau (upload:<ip>, animal-write:<ip>, report:<userId>, password-reset:<ip>) créent des
 // compteurs distincts sous cette règle unique. À configurer une fois dans le
 // dashboard : Projet → Firewall → + New Rule → condition « @vercel/firewall »,
 // Rate limit ID « app-api », Fixed Window 60 s / 20 requêtes, action
@@ -18,7 +18,14 @@ import { logError } from "@/lib/log";
 const RULE_ID = "app-api";
 
 export async function isRateLimited(
-  bucket: "upload" | "animal-write" | "client-error" | "report",
+  bucket:
+    | "upload"
+    | "animal-write"
+    | "client-error"
+    | "report"
+    // Demande de lien ET pose du nouveau mot de passe — chaque demande
+    // coûte un email Resend, chaque pose est une tentative sur un jeton.
+    | "password-reset",
   headers: Headers,
   /**
    * Entité comptée à la place de l'IP — l'identifiant du compte quand le
