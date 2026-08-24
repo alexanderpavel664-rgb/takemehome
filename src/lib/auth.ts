@@ -36,7 +36,12 @@ export const auth = betterAuth({
   //      jour /confidentialitate AVANT la mise en service : Resend aux
   //      points 2, 3 et 4, TERMS_VERSION + updatedLabel dans lib/legal.ts.
   //   3. Poser RESEND_API_KEY et EMAIL_FROM sur Vercel (production), et
-  //      dans .env.local pour tester en dev.
+  //      dans .env.local pour tester en dev. PUIS REDÉMARRER : la condition
+  //      isEmailConfigured() ci-dessous est évaluée UNE FOIS, à la
+  //      construction de `auth`. next dev recharge .env.local mais pas ce
+  //      module ; Vercel n'applique une variable qu'aux déploiements
+  //      postérieurs à son ajout. (Constaté le 24 août 2026 : « No sent
+  //      emails yet » avec les variables posées — un redémarrage a suffi.)
   //   4. Créer un compte de test : l'email part à l'inscription
   //      (sendOnSignUp), le lien ouvre /api/auth/verify-email puis redirige
   //      vers callbackURL (/cont/profil). /cont affiche le bandeau
