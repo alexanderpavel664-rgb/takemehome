@@ -32,11 +32,9 @@ export const auth = betterAuth({
   //   1. Chez Resend : ajouter le domaine (takemehome.ro) et poser ses
   //      enregistrements DNS (SPF, DKIM, le MX de retour) ; attendre le
   //      statut « verified ».
-  //   2. Mettre à jour /confidentialitate, point 3 : la phrase « Nu folosim
-  //      încă un serviciu de trimitere a emailurilor » promet que la page
-  //      sera modifiée AVANT la mise en service — ajouter Resend (société
-  //      américaine, clauses contractuelles standard, resend.com/privacy)
-  //      et changer TERMS_VERSION + updatedLabel dans lib/legal.ts.
+  //   2. (Fait le 24 août 2026, TERMS_VERSION « 2026-08-24 ».) Mettre à
+  //      jour /confidentialitate AVANT la mise en service : Resend aux
+  //      points 2, 3 et 4, TERMS_VERSION + updatedLabel dans lib/legal.ts.
   //   3. Poser RESEND_API_KEY et EMAIL_FROM sur Vercel (production), et
   //      dans .env.local pour tester en dev.
   //   4. Créer un compte de test : l'email part à l'inscription

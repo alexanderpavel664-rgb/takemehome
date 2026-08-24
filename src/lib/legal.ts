@@ -64,9 +64,14 @@ export const FILL = "{}";
  * adopți », des conseils sans valeur contractuelle, désormais dans /despre
  * seulement), les points 4 à 13 deviennent 3 à 12 ; « 2026-08-23.3 » =
  * au point 12 des conditions, « Stocarea datelor » ne nomme plus Neon ni
- * Sentry et renvoie au point 3 de la politique, seul l'hébergeur reste.
+ * Sentry et renvoie au point 3 de la politique, seul l'hébergeur reste ;
+ * « 2026-08-24 » = Resend (envoi des emails de vérification d'adresse et de
+ * réinitialisation de mot de passe, région Irlande) entre au point 3 de la
+ * politique, la donnée transmise au point 2, la conservation des journaux
+ * d'envoi (30 jours, resend.com/pricing) au point 4 ; la phrase « aucun
+ * service d'envoi d'emails » disparaît, comme elle le promettait.
  */
-export const TERMS_VERSION = "2026-08-23.3";
+export const TERMS_VERSION = "2026-08-24";
 
 /**
  * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
@@ -156,7 +161,7 @@ export const PRIVACY: LegalDocumentContent = {
   metaTitle: "Politica de confidențialitate",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
-  updatedLabel: "Ultima actualizare: 23 august 2026",
+  updatedLabel: "Ultima actualizare: 24 august 2026",
   intro:
     "TakeMeHome pune în legătură persoanele care au animale de dat spre adopție cu persoanele care vor să adopte. Pentru asta prelucrează câteva date despre tine. Pagina de față arată care sunt aceste date, în ce scop sunt prelucrate, cine le mai primește și ce drepturi ai asupra lor.",
   sections: [
@@ -186,6 +191,9 @@ export const PRIVACY: LegalDocumentContent = {
         },
         {
           p: "Animalele pe care le publici. Nume, specie, sex, vârstă, talie, județ, oraș, descriere, starea de sănătate declarată și fotografii. Textul și fotografiile le scrii tu. Dacă incluzi acolo date despre o altă persoană, cum ar fi un număr de telefon sau o față într-o fotografie, răspunderea îți revine. Temei: executarea contractului, art. 6(1)(b) GDPR.",
+        },
+        {
+          p: "Emailurile pe care ți le trimitem. Adresa ta de email și numele tău sunt transmise către Resend, serviciul prin care trimitem emailul de confirmare a adresei și pe cel de resetare a parolei. Nu trimitem alte emailuri. Temei: executarea contractului, art. 6(1)(b) GDPR. Fără confirmarea adresei nu putem ști că emailul din cont îți aparține, iar fără el nu îți putem reseta parola.",
         },
         {
           p: "Sesiunile tale. La fiecare autentificare păstrăm adresa IP și tipul de browser (user-agent) al dispozitivului de pe care ai intrat. Temei: interesul legitim de a-ți proteja contul și de a putea recunoaște o autentificare care nu îți aparține, art. 6(1)(f) GDPR.",
@@ -232,10 +240,12 @@ export const PRIVACY: LegalDocumentContent = {
               value:
                 "rapoartele de eroare de pe server. Contul nostru e în regiunea europeană: datele stau la Frankfurt, în Germania. sentry.io/privacy",
             },
+            {
+              term: "Resend",
+              value:
+                "trimiterea emailurilor de confirmare a adresei și de resetare a parolei. Primește adresa ta de email, numele tău și conținutul mesajului. Contul nostru e în regiunea europeană: datele stau în Irlanda, în Uniunea Europeană. Resend (Plus Five Five, Inc.) e o societate din Statele Unite: transferul se face în baza clauzelor contractuale standard aprobate de Comisia Europeană. resend.com/legal/privacy-policy",
+            },
           ],
-        },
-        {
-          p: "Nu folosim încă un serviciu de trimitere a emailurilor. Când va fi adăugat unul, pentru confirmarea adresei și resetarea parolei, pagina de față va fi actualizată înainte ca serviciul să fie pus în funcțiune.",
         },
         {
           p: "În afara acestora, datele tale nu sunt transmise nimănui, cu o singură excepție: dacă o autoritate le solicită printr-o cerere legală, suntem obligați să răspundem.",
@@ -276,6 +286,11 @@ export const PRIVACY: LegalDocumentContent = {
               term: "Rapoartele de eroare",
               value:
                 "cât le păstrează Sentry pentru planul nostru, apoi sunt șterse automat de ei.",
+            },
+            {
+              term: "Jurnalele emailurilor trimise",
+              value:
+                "30 de zile la Resend, cu adresa destinatarului și conținutul mesajului, apoi sunt șterse automat de ei.",
             },
           ],
         },
