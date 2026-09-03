@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { animalDisplayName, dateInputValue } from "@/lib/animal-display";
 import { contactStatus } from "@/lib/contact-status";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
@@ -66,7 +67,7 @@ export default async function EditareAnimalPage({
     // l'étirement — la page se tasserait sur la largeur de ses champs.
     <main className="mx-auto w-full max-w-2xl px-4 py-4 md:px-6">
       <h1 className="text-2xl font-semibold text-warm-ink">
-        {STR.animalForm.editTitle(animal.name)}
+        {STR.animalForm.editTitle(animalDisplayName(animal))}
       </h1>
       {/* Profil incomplet : le même avertissement qu'à la création, AVANT le
           formulaire — c'est ici aussi qu'on fait la chose qui va échouer.
@@ -82,8 +83,13 @@ export default async function EditareAnimalPage({
           initialPhotoUrl={animal.photos[0]?.url}
           submitLabel={STR.animalForm.editSubmit}
           initial={{
-            name: animal.name,
+            name: animal.name ?? "",
+            // NULL en base = « Nu are nume » coché, champ désactivé.
+            noName: animal.name === null,
             type: animal.type,
+            count: animal.count,
+            mustStayTogether: animal.mustStayTogether,
+            availableUntil: dateInputValue(animal.availableUntil),
             sex: animal.sex ?? "",
             ageGroup: animal.ageGroup ?? "",
             ageText: animal.ageText ?? "",

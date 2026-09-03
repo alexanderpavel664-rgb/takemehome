@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { animalDisplayName } from "@/lib/animal-display";
 import { loginHref } from "@/lib/next-path";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
@@ -37,7 +38,8 @@ export default async function SemnaleazaPage({
   // indistinguable d'une annonce inexistante → 404.
   const animal = await prisma.animal.findFirst({
     where: { id, hidden: false },
-    select: { id: true, name: true },
+    // type et count : ce qu'il faut pour nommer une annonce sans nom.
+    select: { id: true, name: true, type: true, count: true },
   });
   if (!animal) {
     notFound();
@@ -52,7 +54,7 @@ export default async function SemnaleazaPage({
     <main className="px-4 pt-10 pb-10 md:px-6 md:pt-16 lg:px-8">
       <ReportForm
         animalId={animal.id}
-        animalName={animal.name}
+        animalName={animalDisplayName(animal)}
         animalHref={`/animal/${animal.id}`}
       />
     </main>

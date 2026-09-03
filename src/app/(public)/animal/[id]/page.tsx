@@ -2,7 +2,14 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { animalMetaLine } from "@/lib/animal-display";
+import {
+  animalDisplayName,
+  animalMetaLine,
+  animalSubject,
+  deadlineLabel,
+  groupLabel,
+  shareText,
+} from "@/lib/animal-display";
 import { countyName } from "@/lib/counties";
 import { prisma } from "@/lib/prisma";
 import { relativeTimeRo } from "@/lib/relative-time";
@@ -11,10 +18,11 @@ import { STR } from "@/lib/strings";
 import { getViewer } from "@/lib/viewer";
 import { ContactEmailLink } from "@/components/contact-email-link";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
-import { Badge } from "@/components/ui/badge";
+import { Badge, DeadlineBadge } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { ShareButton } from "@/components/ui/share-button";
 
 // Sans API de requête, une route à segment dynamique serait rendue puis
 // mise en cache : statut « adopté », photos et coordonnées resteraient
@@ -62,14 +70,18 @@ export async function generateMetadata(
   }
 
   const place = animal.city?.trim() || countyName(animal.county);
-  const title = `${animal.name} – ${place}`;
+  // Sans nom : « Cățel – Cluj-Napoca » ; la description, elle, dit « Un
+  // cățel își așteaptă familia » — le sujet avec son article.
+  const name = animalDisplayName(animal);
+  const subject = animalSubject(animal);
+  const title = `${name} – ${place}`;
   // Fiche adoptée : l'aperçu Facebook le dit avant le clic — un lien
   // partagé il y a trois semaines continue de circuler après l'adoption.
   const description =
     animal.status === "ADOPTED"
-      ? STR.animal.adoptedMetaDescription(animal.name)
+      ? STR.animal.adoptedMetaDescription(subject, animal.count > 1)
       : animal.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
-        `${STR.animal.metaDescription(animal.name)} ${animalMetaLine(animal)}.`;
+        `${STR.animal.metaDescription(subject)} ${animalMetaLine(animal)}.`;
   const photo = animal.photos[0];
 
   return {
@@ -82,7 +94,7 @@ export async function generateMetadata(
       url: `${SITE_URL}/animal/${animal.id}`,
       siteName: STR.site.name,
       ...(photo && {
-        images: [{ url: photo.url, alt: STR.animal.photoAlt(animal.name) }],
+        images: [{ url: photo.url, alt: STR.animal.photoAlt(name) }],
       }),
     },
   };
@@ -220,6 +232,12 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const email = consented ? animal.user.publicEmail?.trim() : undefined;
   const hasContact = !adopted && Boolean(phone || email);
   const photo = animal.photos[0];
+  const name = animalDisplayName(animal);
+  const group = groupLabel(animal);
+  // L'échéance ne se montre que dans les derniers jours, et plus du tout
+  // sur une fiche adoptée : la date n'a plus rien à presser.
+  const deadline = adopted ? null : deadlineLabel(animal.availableUntil, "long");
+  const url = `${SITE_URL}/animal/${animal.id}`;
 
   const health = [
     animal.sterilized && STR.animal.sterilized,
@@ -279,12 +297,12 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             {photo ? (
               <AnimalPhoto
                 src={photo.url}
-                name={animal.name}
+                name={name}
                 sizes="(min-width: 1152px) 640px, (min-width: 1024px) 60vw, (min-width: 768px) 720px, 100vw"
                 preload
               />
             ) : (
-              <PhotoFallback name={animal.name} />
+              <PhotoFallback name={name} />
             )}
           </div>
 
@@ -301,12 +319,24 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             le défilement d'une longue description. */}
         <div className="lg:sticky lg:top-4 lg:self-start">
           <h1 className="mt-3 flex flex-wrap items-center gap-3 text-[32px]/[1.05] font-semibold text-warm-ink lg:mt-0">
-            {animal.name}
+            {name}
             {adopted && <Badge>{STR.animal.adoptedBadge}</Badge>}
+            {/* L'échéance à côté du nom, jamais sur la photo : c'est la
+                première chose à lire après le nom. */}
+            {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
           </h1>
           <p className="mt-1 text-base text-warm-ink">
             {animalMetaLine(animal)}
           </p>
+          {group && (
+            // Fratrie : le nombre, et « Se adoptă împreună » seulement
+            // quand la publiante l'a dit — une portée n'est pas un groupe
+            // inséparable par défaut.
+            <p className="text-base text-warm-ink">
+              {group}
+              {animal.mustStayTogether && ` · ${STR.animal.mustStayTogether}`}
+            </p>
+          )}
           <p className="text-base text-warm-gray">
             {[animal.city?.trim(), countyName(animal.county)]
               .filter(Boolean)
@@ -321,7 +351,9 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             // n'a qu'une chose utile à faire, et elle doit sauter aux yeux.
             <div className="mt-4">
               <p className="text-base text-warm-ink">
-                {STR.animal.alreadyAdopted}
+                {animal.count > 1
+                  ? STR.animal.alreadyAdoptedPlural
+                  : STR.animal.alreadyAdopted}
               </p>
               <ButtonLink href="/animale" variant="primary" className="mt-3">
                 {STR.animal.seeAvailable}
@@ -363,6 +395,23 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
                 />
               </div>
             </Card>
+          )}
+
+          {!adopted && !animal.hidden && (
+            // Le partage, juste sous le contact et jamais en concurrence
+            // avec lui : outline, pleine largeur sur mobile pour tomber
+            // sous le pouce, à sa taille sur ordinateur. « Sună » reste LE
+            // bouton plein (barre fixe en bas, carte à partir de lg). Pas
+            // sur une fiche adoptée (« caută o familie » serait faux) ni
+            // masquée (le lien mènerait sur un 404 pour tout le monde).
+            <div className="mt-4">
+              <ShareButton
+                title={name}
+                text={shareText(animal)}
+                url={url}
+                className="w-full lg:w-auto"
+              />
+            </div>
           )}
 
           {animal.description && (

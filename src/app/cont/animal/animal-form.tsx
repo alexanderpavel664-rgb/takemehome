@@ -23,12 +23,19 @@ import { reportClientError } from "@/lib/client-report";
 import { requestUploadToken, UploadRefusedError } from "@/lib/upload-token";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ChipCheckbox } from "@/components/ui/chip";
-import { Input, Select, Textarea } from "@/components/ui/field";
+import { Checkbox, Input, Select, Textarea } from "@/components/ui/field";
 import type { AnimalFormState } from "./actions";
 
 export type AnimalFormValues = {
   name: string;
+  /** « Nu are nume » : NULL en base, le champ nom désactivé. */
+  noName: boolean;
   type: string;
+  /** Combien d'animaux dans l'annonce (fratrie) — 1 par défaut. */
+  count: number;
+  mustStayTogether: boolean;
+  /** « AAAA-LL-JJ » ou vide — la valeur d'un <input type="date">. */
+  availableUntil: string;
   sex: string;
   ageGroup: string;
   ageText: string;
@@ -127,6 +134,25 @@ export function AnimalForm({
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // « Nu are nume » désactive le champ nom (un champ désactivé ne part pas
+  // dans le FormData : l'action lit la case, pas un nom vide).
+  const [noName, setNoName] = useState(initial?.noName ?? false);
+  // Le nombre commande deux choses : « Se adoptă împreună » n'apparaît
+  // qu'à partir de 2, et « Mixt » n'est proposé qu'à partir de 2 — s'il
+  // était choisi et que le nombre redescend à 1, le sexe se vide.
+  const [count, setCount] = useState(initial?.count ?? 1);
+  const [sex, setSex] = useState(initial?.sex ?? "");
+  const group = count > 1;
+
+  function handleCountChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const parsed = Number.parseInt(event.target.value, 10);
+    const next = Number.isFinite(parsed) ? parsed : 1;
+    setCount(next);
+    if (next <= 1 && sex === "MIXED") {
+      setSex("");
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -420,15 +446,29 @@ export function AnimalForm({
           </p>
         )}
       </div>
-      <Input
-        label={STR.animalForm.name}
-        id="name"
-        name="name"
-        type="text"
-        defaultValue={initial?.name}
-        required
-        error={state?.fieldErrors?.name}
-      />
+      <div>
+        {/* Le nom, ou son absence : la case juste sous le champ, pour que
+            personne n'écrive plus « - » dans un champ qui l'y forçait. Le
+            champ garde sa valeur, seulement désactivé : décocher la
+            rend. Sans nom, l'annonce affiche « Cățel » ou « Pisică ». */}
+        <Input
+          label={STR.animalForm.name}
+          id="name"
+          name="name"
+          type="text"
+          defaultValue={initial?.name}
+          required={!noName}
+          disabled={noName}
+          error={state?.fieldErrors?.name}
+        />
+        <Checkbox
+          label={STR.animalForm.noName}
+          name="noName"
+          checked={noName}
+          onChange={(e) => setNoName(e.target.checked)}
+          className="mt-2"
+        />
+      </div>
       <Select
         label={STR.animalForm.type}
         id="type"
@@ -447,21 +487,53 @@ export function AnimalForm({
         ))}
       </Select>
       {/* À partir de md, les champs courts vont deux par deux ; sur mobile
-          ils restent empilés. */}
+          ils restent empilés. Le nombre et le sexe ensemble : « Mixt »
+          dépend du nombre. */}
       <div className="grid gap-4 md:grid-cols-2">
+        <Input
+          label={STR.animalForm.count}
+          id="count"
+          name="count"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={99}
+          step={1}
+          defaultValue={initial?.count ?? 1}
+          onChange={handleCountChange}
+          error={state?.fieldErrors?.count}
+        />
         <Select
           label={STR.animalForm.sex}
           id="sex"
           name="sex"
-          defaultValue={initial?.sex ?? ""}
+          value={sex}
+          onChange={(e) => setSex(e.target.value)}
+          error={state?.fieldErrors?.sex}
         >
           <option value="">{STR.animalForm.notSpecified}</option>
-          {SEX_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
+          {SEX_OPTIONS.filter(([value]) => group || value !== "MIXED").map(
+            ([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ),
+          )}
         </Select>
+      </div>
+      {group && (
+        // Deux champs, exprès : une portée n'est pas un groupe inséparable.
+        // La phrase sous la case porte cette nuance — c'est elle qui évite
+        // que tout le monde coche par réflexe. Démontée sous 2 : rien ne
+        // part, l'action lit false.
+        <Checkbox
+          label={STR.animalForm.mustStayTogether}
+          name="mustStayTogether"
+          defaultChecked={initial?.mustStayTogether}
+          description={STR.animalForm.mustStayTogetherHint}
+        />
+      )}
+      <div className="grid gap-4 md:grid-cols-2">
         <Select
           label={STR.animalForm.age}
           id="ageGroup"
@@ -475,15 +547,15 @@ export function AnimalForm({
             </option>
           ))}
         </Select>
+        <Input
+          label={STR.animalForm.ageText}
+          id="ageText"
+          name="ageText"
+          type="text"
+          defaultValue={initial?.ageText}
+          placeholder={STR.animalForm.ageTextPlaceholder}
+        />
       </div>
-      <Input
-        label={STR.animalForm.ageText}
-        id="ageText"
-        name="ageText"
-        type="text"
-        defaultValue={initial?.ageText}
-        placeholder={STR.animalForm.ageTextPlaceholder}
-      />
       <div className="grid gap-4 md:grid-cols-2">
         <Select
           label={STR.animalForm.county}
@@ -588,6 +660,27 @@ export function AnimalForm({
             </option>
           ))}
         </Select>
+      </div>
+      <div>
+        {/* L'échéance : une date, jamais une case « urgent ». Pas de min :
+            une annonce modifiée après sa date doit rester enregistrable,
+            et le semn s'efface de lui-même. La phrase dessous dit ce que
+            la date fait, et que l'annonce reste après. */}
+        <Input
+          label={STR.animalForm.availableUntil}
+          id="availableUntil"
+          name="availableUntil"
+          type="date"
+          defaultValue={initial?.availableUntil}
+          aria-describedby="availableUntil-hint"
+          error={state?.fieldErrors?.availableUntil}
+        />
+        <p
+          id="availableUntil-hint"
+          className="mt-1 max-w-[60ch] text-sm text-warm-gray"
+        >
+          {STR.animalForm.availableUntilHint}
+        </p>
       </div>
       {state?.formError && (
         <p role="alert" className="text-sm font-semibold text-warm-ink">

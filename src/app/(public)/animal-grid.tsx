@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { animalMetaLine } from "@/lib/animal-display";
+import {
+  animalDisplayName,
+  animalMetaLine,
+  deadlineLabel,
+  groupLabel,
+} from "@/lib/animal-display";
 import { countyName } from "@/lib/counties";
 import { AnimalCard } from "@/components/ui/animal-card";
 import { LoadMore } from "./load-more";
@@ -47,6 +52,10 @@ export async function AnimalGrid({
       ageText: true,
       county: true,
       status: true,
+      // V2 : deux colonnes de plus, un entier et une date — le nom sans nom,
+      // la pastille « 3 pui » et l'échéance. Toujours pas de description.
+      count: true,
+      availableUntil: true,
       photos: {
         orderBy: { position: "asc" },
         take: 1,
@@ -61,6 +70,9 @@ export async function AnimalGrid({
     return <>{empty}</>;
   }
 
+  // Une seule lecture de l'horloge pour toute la grille.
+  const now = new Date();
+
   return (
     <>
       <ul className={GRID_CLASSES}>
@@ -68,12 +80,19 @@ export async function AnimalGrid({
           <li key={animal.id}>
             <AnimalCard
               href={`/animal/${animal.id}`}
-              name={animal.name}
+              name={animalDisplayName(animal)}
               meta={animalMetaLine(animal)}
               county={countyName(animal.county)}
               photoUrl={animal.photos[0]?.url}
               // Sur /adoptati, chaque carte porte la pastille « Adoptat ».
               adopted={animal.status === "ADOPTED"}
+              group={groupLabel(animal)}
+              // Une fiche adoptée n'a plus d'échéance à montrer.
+              deadline={
+                animal.status === "ADOPTED"
+                  ? null
+                  : deadlineLabel(animal.availableUntil, "short", now)
+              }
               eager={i < 4}
             />
           </li>

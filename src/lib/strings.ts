@@ -14,7 +14,7 @@ import { CONTACT_EMAIL } from "@/lib/site";
  * mais « 20 DE semnalări » — la préposition apparaît dès que les deux
  * derniers chiffres valent 00 ou 20 et plus.
  */
-function countRo(n: number, one: string, many: string): string {
+export function countRo(n: number, one: string, many: string): string {
   if (n === 1) {
     return `1 ${one}`;
   }
@@ -59,6 +59,9 @@ export const STR = {
     sex: {
       MALE: "Mascul",
       FEMALE: "Femelă",
+      // Fratrie mélangée — proposé seulement quand l'annonce compte
+      // plusieurs animaux ; jamais un filtre.
+      MIXED: "Mixt",
     } satisfies Record<Sex, string>,
     ageGroup: {
       BABY: "Pui",
@@ -180,10 +183,52 @@ export const STR = {
   /* ——— Fiche publique /animal/[id]. ——— */
   animal: {
     notFoundMetaTitle: "Animalul nu a fost găsit – TakeMeHome",
-    metaDescription: (name: string) => `${name} își așteaptă familia.`,
+    // `subject` : le nom, ou ce qui en tient lieu (animalSubject dans
+    // lib/animal-display.ts) — « Fulga », « 3 pui », « Un cățel ». Le
+    // verbe a la même forme au singulier et au pluriel.
+    metaDescription: (subject: string) => `${subject} își așteaptă familia.`,
+    /* ——— Sans nom. Le mot tient lieu de nom, en Display comme un vrai :
+       singulier pour un animal, pluriel pour une fratrie. Avec l'article
+       quand il ouvre une phrase (« Un cățel caută o familie »), sinon la
+       phrase sonne comme un titre. ——— */
+    unnamed: {
+      DOG: "Cățel",
+      CAT: "Pisică",
+      OTHER: "Animal",
+    } satisfies Record<AnimalType, string>,
+    unnamedPlural: {
+      DOG: "Căței",
+      CAT: "Pisici",
+      OTHER: "Animale",
+    } satisfies Record<AnimalType, string>,
+    unnamedSubject: {
+      DOG: "Un cățel",
+      CAT: "O pisică",
+      OTHER: "Un animal",
+    } satisfies Record<AnimalType, string>,
+    /* ——— Fratries : « 3 pui », « 2 câini », « 20 de pisici » (accord
+       countRo). « pui » dès que l'annonce dit Pui, sinon le mot du type. ——— */
+    groupBaby: ["pui", "pui"] as const,
+    groupByType: {
+      DOG: ["câine", "câini"],
+      CAT: ["pisică", "pisici"],
+      OTHER: ["animal", "animale"],
+    } satisfies Record<AnimalType, readonly [string, string]>,
+    mustStayTogether: "Se adoptă împreună",
+    // Échéance : « Până la 15 sept. » sur la carte, « Până la 15 septembrie »
+    // sur la fiche — la date, jamais le mot « urgent » (il ne veut plus rien
+    // dire dès que tout le monde peut l'écrire).
+    until: (date: string) => `Până la ${date}`,
+    /* ——— Partage : le menu natif du téléphone (Facebook, WhatsApp,
+       Messenger, SMS), sinon le lien copié. ——— */
+    share: "Distribuie",
+    shareText: (subject: string) => `${subject} caută o familie`,
+    linkCopied: "Link copiat",
+    shareFailed: "Nu s-a putut copia linkul",
     backToList: "← Toate animalele",
     adoptedBadge: "Adoptat",
     alreadyAdopted: "Acest animal și-a găsit deja familia.",
+    alreadyAdoptedPlural: "Aceste animale și-au găsit deja familia.",
     seeAvailable: "Vezi animalele de adoptat",
     call: "Sună",
     // Court : dans la barre fixe à 360 px, « Trimite un email » casserait
@@ -222,8 +267,9 @@ export const STR = {
     hiddenDescriptionSuspended:
       "E ascuns cât timp contul tău e suspendat. Nu apare în paginile publice și doar tu îl mai vezi.",
     // Partage Facebook d'une fiche adoptée : l'aperçu le dit avant le clic.
-    adoptedMetaDescription: (name: string) =>
-      `${name} și-a găsit deja familia. Vezi celelalte animale de adoptat.`,
+    // Seul verbe qui change de forme au pluriel (« Rex și Nala și-au… »).
+    adoptedMetaDescription: (subject: string, plural: boolean) =>
+      `${subject} ${plural ? "și-au" : "și-a"} găsit deja familia. Vezi celelalte animale de adoptat.`,
     /* ——— Coordonnées en toutes lettres. Sur un ordinateur, tel: ne fait
        rien d'utile : le numéro doit se lire et se copier. ——— */
     contactTitle: "Contact",
@@ -643,9 +689,29 @@ export const STR = {
     // la forme longue lève l'ambiguïté.
     editSubmit: "Salvează modificările",
     cancel: "Renunță",
-    name: "Nume *",
+    // « Numele animalului », pas « Nume » : cinq personnes avaient écrit
+    // LEUR nom dans le champ — le libellé seul ne disait pas de qui.
+    name: "Numele animalului *",
+    // La case sous le nom : cochée, le champ se désactive et l'annonce
+    // affiche « Cățel » / « Pisică ». Avant elle, les sauveteurs écrivaient
+    // « - » ou « Nu are » dans un champ qui les y forçait.
+    noName: "Nu are nume",
     type: "Tip *",
     typePlaceholder: "Alege",
+    /* ——— Fratries. Deux champs distincts, exprès : le nombre, et
+       l'inséparabilité — une portée n'est pas un groupe inséparable. ——— */
+    count: "Câți sunt?",
+    mustStayTogether: "Se adoptă împreună",
+    mustStayTogetherHint:
+      "Bifează doar dacă nu pot fi despărțiți. Puii din aceeași fătare se adaptează de obicei bine și separat.",
+    countInvalid: "Scrie un număr între 1 și 99.",
+    sexMixedSingle: "„Mixt” e doar pentru mai multe animale.",
+    /* ——— Échéance. Ce que la date fait, en une phrase : le semn dans les
+       derniers jours, et l'annonce qui reste après. ——— */
+    availableUntil: "Disponibil până la",
+    availableUntilHint:
+      "Doar dacă are un termen. În ultimele 14 zile, anunțul primește semnul „Până la …”; după dată rămâne publicat, doar semnul dispare.",
+    availableUntilInvalid: "Data nu e validă.",
     sex: "Sex",
     age: "Vârstă",
     ageText: "Vârsta exactă",

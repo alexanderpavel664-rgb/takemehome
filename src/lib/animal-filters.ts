@@ -3,13 +3,13 @@ import type {
   AnimalSize,
   AnimalType,
   Prisma,
-  Sex,
 } from "@/generated/prisma/client";
 import {
   AGE_GROUP_LABELS,
-  SEX_LABELS,
+  FILTER_SEX_LABELS,
   SIZE_LABELS,
   TYPE_LABELS,
+  type FilterSex,
 } from "@/lib/animal-labels";
 import { COUNTY_CODES, type CountyCode } from "@/lib/counties";
 
@@ -28,7 +28,9 @@ export type PublicFilters = {
   tip?: AnimalType;
   judet?: CountyCode;
   varsta?: AgeGroup;
-  sex?: Sex;
+  // Mascul ou Femelă seulement : « Mixt » n'est pas un filtre (voir
+  // FILTER_SEX_LABELS), et ?sex=MIXED dans l'URL est ignoré.
+  sex?: FilterSex;
   marime?: AnimalSize;
   sterilizat: boolean;
   vaccinat: boolean;
@@ -65,7 +67,7 @@ export function parseFilters(sp: PublicSearchParams): PublicFilters {
         ? (judet as CountyCode)
         : undefined,
     varsta: parseEnum(first(sp.varsta), AGE_GROUP_LABELS),
-    sex: parseEnum(first(sp.sex), SEX_LABELS),
+    sex: parseEnum(first(sp.sex), FILTER_SEX_LABELS),
     marime: parseEnum(first(sp.marime), SIZE_LABELS),
     sterilizat: first(sp.sterilizat) === "1",
     vaccinat: first(sp.vaccinat) === "1",
@@ -133,7 +135,10 @@ export function publicWhere(f: PublicFilters): Prisma.AnimalWhereInput {
     ...(f.tip && { type: f.tip }),
     ...(f.judet && { county: f.judet }),
     ...(f.varsta && { ageGroup: f.varsta }),
-    ...(f.sex && { sex: f.sex }),
+    // Une fratrie « Mixt » contient des mâles ET des femelles : elle sort
+    // avec l'un comme avec l'autre. IN sur deux valeurs, l'index (sex)
+    // sert toujours.
+    ...(f.sex && { sex: { in: [f.sex, "MIXED"] } }),
     ...(f.marime && { size: f.marime }),
     ...(f.sterilizat && { sterilized: true }),
     ...(f.vaccinat && { vaccinated: true }),

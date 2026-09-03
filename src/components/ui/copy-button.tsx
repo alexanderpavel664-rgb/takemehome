@@ -46,11 +46,7 @@ export function CopyButton({
 
   async function onCopy() {
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        legacyCopy(value);
-      }
+      await copyToClipboard(value);
       show("copied");
     } catch {
       show("failed");
@@ -79,6 +75,19 @@ export function CopyButton({
       </span>
     </>
   );
+}
+
+/**
+ * Copie dans le presse-papiers — l'API Clipboard quand elle existe, sinon le
+ * repli execCommand. Lève si ça échoue : l'appelant affiche « Nu s-a putut
+ * copia ». Partagée avec le bouton de partage (share-button.tsx).
+ */
+export async function copyToClipboard(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+  } else {
+    legacyCopy(value);
+  }
 }
 
 // Navigateurs sans API Clipboard (contexte non sécurisé, anciens WebView) :

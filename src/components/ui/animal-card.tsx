@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { STR } from "@/lib/strings";
-import { Badge } from "./badge";
+import { Badge, DeadlineBadge, Pill } from "./badge";
 import { AnimalPhoto, PhotoFallback } from "./animal-photo";
 
 // Largeurs réelles d'une carte : grille 2 colonnes sur mobile ; dès md,
@@ -13,6 +13,7 @@ const DEFAULT_SIZES = "(min-width: 768px) 410px, 50vw";
 
 export type AnimalCardProps = {
   href: ComponentProps<typeof Link>["href"];
+  /** Le nom, ou ce qui en tient lieu (animalDisplayName). */
   name: string;
   /** Ligne « type · sexe · âge » — Label gris chaud sous le nom. */
   meta?: string;
@@ -20,6 +21,10 @@ export type AnimalCardProps = {
   county?: string;
   photoUrl?: string | null;
   adopted?: boolean;
+  /** « 3 pui » — la pastille discrète des fratries (groupLabel). */
+  group?: string | null;
+  /** « Până la 15 sept. » — la pastille terracotta des derniers jours (deadlineLabel). */
+  deadline?: string | null;
   sizes?: string;
   /** Premières cartes de la grille : chargement immédiat. */
   eager?: boolean;
@@ -35,6 +40,9 @@ export type AnimalCardProps = {
  * cellule (qui varie selon la présence de la colonne de filtres), pas à
  * celle de l'écran. Cellule large (@sm, 24rem) : padding et métadonnées
  * respirent ; le nom reste à 19 px/600 (échelle DESIGN.md).
+ *
+ * Les pastilles d'échéance et de fratrie vivent dans la zone de texte,
+ * sous les métadonnées : seule « Adoptat » a le droit de recouvrir la photo.
  */
 export function AnimalCard({
   href,
@@ -43,6 +51,8 @@ export function AnimalCard({
   county,
   photoUrl,
   adopted = false,
+  group,
+  deadline,
   sizes = DEFAULT_SIZES,
   eager = false,
 }: AnimalCardProps) {
@@ -76,6 +86,12 @@ export function AnimalCard({
         {county && (
           <span className="block text-[13px]/[1.4] text-warm-gray @sm:text-sm">
             {county}
+          </span>
+        )}
+        {(deadline || group) && (
+          <span className="mt-2 flex flex-wrap gap-1.5">
+            {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
+            {group && <Pill>{group}</Pill>}
           </span>
         )}
       </span>

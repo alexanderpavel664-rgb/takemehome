@@ -47,3 +47,13 @@ body {
   background-color: var(--color-cream-ground);
   color: var(--color-warm-ink);
 }
+
+/* Safari iOS centre horizontalement la valeur d'un <input type="date"> et
+   la laisse sans hauteur ; alignée à gauche et étirée, elle se pose comme
+   le texte des autres champs (la hauteur vient du h-12 du composant). */
+@layer base {
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    height: 100%;
+  }
+}

@@ -45,3 +45,6 @@ next-env.d.ts
 
 # prisma — client généré (régénérer avec `npx prisma generate`)
 /src/generated/prisma
+
+# trace locale des animaux publiés sur les réseaux (npm run post:candidats)
+/social-export/publicate.json

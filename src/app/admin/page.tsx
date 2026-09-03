@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { animalDisplayName } from "@/lib/animal-display";
 import {
   REPORT_REASON_LABELS,
   REPORT_STATUS_LABELS,
@@ -70,6 +71,9 @@ export default async function AdminPage() {
           select: {
             id: true,
             name: true,
+            // type et count : ce qu'il faut pour nommer une annonce sans nom.
+            type: true,
+            count: true,
             hidden: true,
             user: { select: { id: true, name: true, suspended: true } },
           },
@@ -132,7 +136,7 @@ export default async function AdminPage() {
                       </div>
 
                       <h2 className="mt-2 text-lg font-semibold text-warm-ink">
-                        {animal.name}
+                        {animalDisplayName(animal)}
                       </h2>
                       <p className="text-base text-warm-ink">
                         {REPORT_REASON_LABELS[report.reason]}

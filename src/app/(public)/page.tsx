@@ -2,7 +2,12 @@ import { Suspense, type ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { animalMetaLine } from "@/lib/animal-display";
+import {
+  animalDisplayName,
+  animalMetaLine,
+  deadlineLabel,
+  groupLabel,
+} from "@/lib/animal-display";
 import { countyName } from "@/lib/counties";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
@@ -136,6 +141,10 @@ async function RecentAnimals() {
       ageGroup: true,
       ageText: true,
       county: true,
+      // V2 : un entier et une date de plus, pour les mêmes pastilles que
+      // la grille publique.
+      count: true,
+      availableUntil: true,
       photos: {
         orderBy: { position: "asc" },
         take: 1,
@@ -148,6 +157,8 @@ async function RecentAnimals() {
     return null;
   }
 
+  const now = new Date();
+
   return (
     <RecentSection>
       <ul className={GRID_CLASSES}>
@@ -155,10 +166,12 @@ async function RecentAnimals() {
           <li key={animal.id}>
             <AnimalCard
               href={`/animal/${animal.id}`}
-              name={animal.name}
+              name={animalDisplayName(animal)}
               meta={animalMetaLine(animal)}
               county={countyName(animal.county)}
               photoUrl={animal.photos[0]?.url}
+              group={groupLabel(animal)}
+              deadline={deadlineLabel(animal.availableUntil, "short", now)}
             />
           </li>
         ))}

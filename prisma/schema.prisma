@@ -17,6 +17,9 @@ enum AnimalType {
 enum Sex {
   MALE
   FEMALE
+  // Plusieurs animaux dans une même annonce (count > 1) : mâles et femelles
+  // ensemble. Le formulaire et l'action le refusent pour un animal seul.
+  MIXED
 }
 
 enum AgeGroup {
@@ -117,9 +120,13 @@ model Animal {
   id           String        @id @default(cuid())
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
+  // Nullable depuis septembre 2026 : beaucoup de sauveteurs n'ont pas de nom
+  // pour l'animal et écrivaient « - » ou « Nu are » dans un champ
+  // obligatoire. NULL = pas de nom ; l'affichage met « Cățel » / « Pisică »
+  // selon le type (animalDisplayName dans lib/animal-display.ts).
+  name         String?
   type         AnimalType
-  // Seuls name, type et county sont exigés à la création (formulaire rapide) :
+  // Seuls type et county sont exigés à la création (formulaire rapide) :
   // tout le reste est nullable et signifie « non renseigné ».
   sex          Sex?
   ageGroup     AgeGroup?
@@ -134,6 +141,21 @@ model Animal {
   goodWithKids Boolean       @default(false)
   goodWithDogs Boolean       @default(false)
   goodWithCats Boolean       @default(false)
+  // Plusieurs animaux dans une même annonce : une fratrie trouvée ensemble.
+  // Quand un individu part, la publiante décrémente elle-même — pas de
+  // statut par individu. Un compteur d'animaux du site doit sommer cette
+  // colonne, pas compter les annonces.
+  count            Int     @default(1)
+  // Distinct de count : une fratrie n'est PAS automatiquement inséparable
+  // (chiots et chatons d'une même portée s'adaptent souvent bien seuls).
+  // N'a de sens que si count > 1 ; l'action le remet à false sinon.
+  mustStayTogether Boolean @default(false)
+  // Échéance (« Disponibil până la ») : le mécanisme des refuges, à la place
+  // d'une case « urgent » que tout le monde cocherait. DATE sans heure : une
+  // échéance est un jour. Le badge n'apparaît que dans les derniers jours
+  // (URGENCY_WINDOW_DAYS, lib/animal-display.ts) et s'efface seul après ;
+  // l'annonce, elle, reste visible.
+  availableUntil   DateTime? @db.Date
   // Non affiché en V1 — on prépare seulement le modèle.
   purpose      AnimalPurpose @default(ADOPTION)
   status       AnimalStatus  @default(AVAILABLE)

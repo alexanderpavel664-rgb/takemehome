@@ -34,6 +34,21 @@ export const TYPE_OPTIONS = Object.entries(TYPE_LABELS) as [
   string,
 ][];
 export const SEX_OPTIONS = Object.entries(SEX_LABELS) as [Sex, string][];
+
+/**
+ * Les sexes qu'on peut filtrer : Mascul et Femelă. « Mixt » n'est pas un
+ * filtre — c'est une fratrie mélangée, qui contient des mâles ET des
+ * femelles : elle sort avec l'un comme avec l'autre (publicWhere).
+ */
+export type FilterSex = Exclude<Sex, "MIXED">;
+export const FILTER_SEX_LABELS: Record<FilterSex, string> = {
+  MALE: SEX_LABELS.MALE,
+  FEMALE: SEX_LABELS.FEMALE,
+};
+export const FILTER_SEX_OPTIONS = Object.entries(FILTER_SEX_LABELS) as [
+  FilterSex,
+  string,
+][];
 export const AGE_GROUP_OPTIONS = Object.entries(AGE_GROUP_LABELS) as [
   AgeGroup,
   string,

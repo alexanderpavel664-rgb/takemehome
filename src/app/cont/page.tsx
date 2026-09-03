@@ -2,18 +2,26 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import {
+  animalDisplayName,
+  deadlineLabel,
+  groupLabel,
+  shareText,
+} from "@/lib/animal-display";
 import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
 import { contactStatus } from "@/lib/contact-status";
 import { countyName } from "@/lib/counties";
 import { isEmailConfigured } from "@/lib/email";
 import { relativeTimeRo } from "@/lib/relative-time";
+import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { getSession } from "@/lib/viewer";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
-import { Badge } from "@/components/ui/badge";
+import { Badge, DeadlineBadge, Pill } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ShareButton } from "@/components/ui/share-button";
 import { setAnimalStatus } from "./animal/actions";
 import { DeleteAnimalButton } from "./animal/delete-animal-button";
 import { ContactEmailLink } from "@/components/contact-email-link";
@@ -59,7 +67,8 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
   // ne puisse l'écrire) : elle se relit en base, en parallèle des animaux.
   //
   // Isolation : uniquement les animaux du compte connecté. Select minimal :
-  // la rangée n'affiche que nom, type, statut, masquage, date et photo.
+  // la rangée n'affiche que nom, type, statut, masquage, date et photo —
+  // plus, depuis V2, le nombre, l'âge (pour « 3 pui ») et l'échéance.
   const [account, animals] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -72,6 +81,9 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
         id: true,
         name: true,
         type: true,
+        ageGroup: true,
+        count: true,
+        availableUntil: true,
         status: true,
         hidden: true,
         updatedAt: true,
@@ -97,6 +109,7 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
   // de profil fait un router.refresh() après sauvegarde : dès que le profil
   // est complet, tout disparaît sans rien d'autre à faire.
   const contact = contactStatus({ phone, publicEmail, contactConsent });
+  const now = new Date();
 
   // Ce que la carte Profil énumère : exactement ce qui habille les fiches
   // publiques — le nom (« Publié par… ») et les coordonnées de contact.
@@ -227,7 +240,19 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
           </Card>
         ) : (
           <ul className="mt-4 space-y-4">
-            {animals.map((animal) => (
+            {animals.map((animal) => {
+              const name = animalDisplayName(animal);
+              const group = groupLabel(animal);
+              const deadline =
+                animal.status === "ADOPTED"
+                  ? null
+                  : deadlineLabel(animal.availableUntil, "short", now);
+              // Partager : seulement une annonce en ligne et disponible —
+              // « caută o familie » serait faux pour une adoptée, et le
+              // lien d'une annonce masquée mène sur un 404 pour tout le
+              // monde sauf sa propriétaire.
+              const shareable = animal.status === "AVAILABLE" && !animal.hidden;
+              return (
               // La cellule est le conteneur : à la largeur de lecture la carte
               // passe en rangée (photo 160×120 à gauche) dès que la place le
               // permet, et s'empile sur mobile — selon SA largeur (@container),
@@ -243,17 +268,17 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                     {animal.photos[0] ? (
                       <AnimalPhoto
                         src={animal.photos[0].url}
-                        name={animal.name}
+                        name={name}
                         sizes="(min-width: 768px) 720px, 100vw"
                       />
                     ) : (
-                      <PhotoFallback name={animal.name} />
+                      <PhotoFallback name={name} />
                     )}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-semibold text-warm-ink">
-                        {animal.name}
+                        {name}
                       </span>
                       <span className="text-sm text-warm-gray">
                         {TYPE_LABELS[animal.type]}
@@ -261,10 +286,13 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                       {animal.status === "ADOPTED" ? (
                         <Badge>{STR.animal.adoptedBadge}</Badge>
                       ) : (
-                        <span className="inline-flex items-center rounded-pill border border-warm-border bg-card-ivory px-3 py-1 text-[13px] text-warm-ink">
-                          {STATUS_LABELS[animal.status]}
-                        </span>
+                        <Pill>{STATUS_LABELS[animal.status]}</Pill>
                       )}
+                      {/* Les mêmes pastilles que la carte publique : la
+                          publiante voit ce que le public voit — et voit le
+                          semn d'échéance apparaître, puis s'effacer. */}
+                      {group && <Pill>{group}</Pill>}
+                      {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
                       {animal.hidden && (
                         // Masquée par la modération : la pastille encre
                         // pleine, celle des états qui comptent — la
@@ -331,6 +359,18 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                         </p>
                       )}
                     <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {/* Le partage EN PREMIER, et en outline quand tout le
+                          reste est en encre : c'est ici que la publiante
+                          regarde ses annonces et décide de les diffuser —
+                          le levier de croissance du site. Le seul bouton
+                          plein de l'écran reste « Adaugă un animal ». */}
+                      {shareable && (
+                        <ShareButton
+                          title={name}
+                          text={shareText(animal)}
+                          url={`${SITE_URL}/animal/${animal.id}`}
+                        />
+                      )}
                       {/* La publiante voit son annonce comme un adoptant. */}
                       <ButtonLink variant="ghost" href={`/animal/${animal.id}`}>
                         {STR.cont.seePublicListing}
@@ -366,12 +406,13 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                           </form>
                         </>
                       )}
-                      <DeleteAnimalButton id={animal.id} name={animal.name} />
+                      <DeleteAnimalButton id={animal.id} name={name} />
                     </div>
                   </div>
                 </Card>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>

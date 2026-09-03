@@ -16,7 +16,7 @@ type FieldOwnProps = {
 };
 
 const fieldBase =
-  "block w-full rounded-md border bg-card-ivory px-4 text-base text-warm-ink " +
+  "w-full rounded-md border bg-card-ivory px-4 text-base text-warm-ink " +
   "placeholder:text-warm-gray outline-none transition-[border-color,box-shadow]";
 
 function fieldState(invalid: boolean) {
@@ -68,17 +68,23 @@ export function Input({
   error,
   id,
   name,
+  type,
   className = "",
   ...props
 }: ComponentProps<"input"> & FieldOwnProps) {
   const inputId = fieldId(id, name);
+  // Un <input type="date"> à hauteur fixe ne centre pas sa valeur : Safari
+  // la colle en haut du champ (son contenu est un arbre interne, pas du
+  // texte en ligne). En flex, elle se centre comme dans les autres champs.
+  const display = type === "date" ? "flex items-center" : "block";
   return (
     <Field id={inputId} label={label} error={error}>
       <input
         id={inputId}
         name={name}
+        type={type}
         {...a11yProps(inputId, error)}
-        className={`h-12 ${fieldBase} ${fieldState(Boolean(error))} ${className}`}
+        className={`h-12 ${display} ${fieldBase} ${fieldState(Boolean(error))} ${className}`}
         {...props}
       />
     </Field>
@@ -102,7 +108,7 @@ export function Select({
           id={inputId}
           name={name}
           {...a11yProps(inputId, error)}
-          className={`h-12 appearance-none pr-10 ${fieldBase} ${fieldState(Boolean(error))} ${className}`}
+          className={`block h-12 appearance-none pr-10 ${fieldBase} ${fieldState(Boolean(error))} ${className}`}
           {...props}
         >
           {children}
@@ -234,7 +240,7 @@ export function Textarea({
         name={name}
         rows={rows}
         {...a11yProps(inputId, error)}
-        className={`py-3 ${fieldBase} ${fieldState(Boolean(error))} ${className}`}
+        className={`block py-3 ${fieldBase} ${fieldState(Boolean(error))} ${className}`}
         {...props}
       />
     </Field>

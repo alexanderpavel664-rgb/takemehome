@@ -26,6 +26,9 @@ type FieldErrors = {
   type?: string;
   county?: string;
   photo?: string;
+  count?: string;
+  sex?: string;
+  availableUntil?: string;
 };
 
 export type AnimalFormState = {
@@ -75,8 +78,12 @@ function checkbox(formData: FormData, name: string): boolean {
 }
 
 type ParsedAnimal = {
-  name: string;
+  /** NULL = « Nu are nume » : l'annonce affiche « Cățel » / « Pisică ». */
+  name: string | null;
   type: AnimalType;
+  count: number;
+  mustStayTogether: boolean;
+  availableUntil: Date | null;
   sex: Sex | null;
   ageGroup: AgeGroup | null;
   ageText: string | null;
@@ -93,24 +100,84 @@ type ParsedAnimal = {
   status: AnimalStatus;
 };
 
-// Seuls name, type et county sont obligatoires ; le reste vaut null
-// (« non renseigné ») ou false. Les trois champs sont validés d'un coup :
-// toutes les erreurs sont collectées, pas une correction à la fois.
+// Combien d'animaux dans l'annonce. Absent (ancien formulaire, JavaScript
+// coupé) vaut 1 ; sinon un entier de 1 à 99 — au-delà, ce n'est plus une
+// annonce, c'est un inventaire. null = invalide.
+const MAX_COUNT = 99;
+function parseCount(formData: FormData): number | null {
+  const raw = text(formData, "count");
+  if (!raw) {
+    return 1;
+  }
+  if (!/^\d{1,2}$/.test(raw)) {
+    return null;
+  }
+  const n = Number.parseInt(raw, 10);
+  return n >= 1 && n <= MAX_COUNT ? n : null;
+}
+
+// « AAAA-LL-JJ » d'un <input type="date">, ou vide. La valeur devient un
+// jour à minuit UTC — exactement ce que Prisma lit d'une colonne DATE, et
+// ce qu'il y écrit. L'aller-retour par toISOString refuse le 31 février.
+function parseDate(
+  formData: FormData,
+  name: string,
+): { ok: true; value: Date | null } | { ok: false } {
+  const raw = text(formData, name);
+  if (!raw) {
+    return { ok: true, value: null };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return { ok: false };
+  }
+  const date = new Date(`${raw}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== raw) {
+    return { ok: false };
+  }
+  return { ok: true, value: date };
+}
+
+// Seuls type et county sont obligatoires, plus le nom sauf si « Nu are
+// nume » est coché ; le reste vaut null (« non renseigné ») ou false. Tout
+// est validé d'un coup : toutes les erreurs sont collectées, pas une
+// correction à la fois.
 function parseAnimalForm(
   formData: FormData,
 ): { ok: true; data: ParsedAnimal } | { ok: false; fieldErrors: FieldErrors } {
-  const name = text(formData, "name");
+  // Case cochée = pas de nom, quoi que contienne le champ (désactivé par
+  // le formulaire, il ne part de toute façon pas).
+  const noName = checkbox(formData, "noName");
+  const name = noName ? null : text(formData, "name");
   const type = optionalEnum(formData, "type", AnimalType);
   const county = text(formData, "county");
   const countyValid = (COUNTY_CODES as readonly string[]).includes(county);
+  const count = parseCount(formData);
+  const sex = optionalEnum(formData, "sex", Sex);
+  // « Mixt » n'a de sens que pour plusieurs animaux : le formulaire ne le
+  // propose qu'à partir de 2, mais un POST direct ou un nombre redescendu
+  // sans JavaScript arriveraient ici.
+  const sexValid = sex !== "MIXED" || (count !== null && count > 1);
+  const availableUntil = parseDate(formData, "availableUntil");
 
-  if (!name || !type || !countyValid) {
+  if (
+    (!noName && !name) ||
+    !type ||
+    !countyValid ||
+    count === null ||
+    !sexValid ||
+    !availableUntil.ok
+  ) {
     return {
       ok: false,
       fieldErrors: {
-        ...(name ? {} : { name: STR.animalForm.nameRequired }),
+        ...(noName || name ? {} : { name: STR.animalForm.nameRequired }),
         ...(type ? {} : { type: STR.animalForm.typeRequired }),
         ...(countyValid ? {} : { county: STR.animalForm.countyRequired }),
+        ...(count === null ? { count: STR.animalForm.countInvalid } : {}),
+        ...(sexValid ? {} : { sex: STR.animalForm.sexMixedSingle }),
+        ...(availableUntil.ok
+          ? {}
+          : { availableUntil: STR.animalForm.availableUntilInvalid }),
       },
     };
   }
@@ -120,7 +187,13 @@ function parseAnimalForm(
     data: {
       name,
       type,
-      sex: optionalEnum(formData, "sex", Sex),
+      count,
+      // Un animal seul ne « s'adopte pas ensemble » : la case n'est même
+      // pas rendue sous 2, et une valeur restée d'une édition précédente
+      // retombe à false ici.
+      mustStayTogether: count > 1 && checkbox(formData, "mustStayTogether"),
+      availableUntil: availableUntil.value,
+      sex,
       ageGroup: optionalEnum(formData, "ageGroup", AgeGroup),
       ageText: optionalText(formData, "ageText"),
       size: optionalEnum(formData, "size", AnimalSize),

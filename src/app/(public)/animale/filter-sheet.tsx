@@ -2,11 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type {
-  AgeGroup,
-  AnimalSize,
-  Sex,
-} from "@/generated/prisma/client";
+import type { AgeGroup, AnimalSize } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
@@ -18,8 +14,9 @@ import {
 } from "@/lib/animal-filters";
 import {
   AGE_GROUP_OPTIONS,
-  SEX_OPTIONS,
+  FILTER_SEX_OPTIONS,
   SIZE_OPTIONS,
+  type FilterSex,
 } from "@/lib/animal-labels";
 import { COUNTIES } from "@/lib/counties";
 import type { CountyCode } from "@/lib/counties";
@@ -132,12 +129,14 @@ function FilterPanel({
         onChange={(e) =>
           setDraft({
             ...draft,
-            sex: (e.target.value || undefined) as Sex | undefined,
+            sex: (e.target.value || undefined) as FilterSex | undefined,
           })
         }
       >
         <option value="">{STR.filters.any}</option>
-        {SEX_OPTIONS.map(([value, label]) => (
+        {/* Mascul et Femelă : « Mixt » n'est pas un filtre, une fratrie
+            mélangée sort avec l'un comme avec l'autre. */}
+        {FILTER_SEX_OPTIONS.map(([value, label]) => (
           <option key={value} value={value}>
             {label}
           </option>
