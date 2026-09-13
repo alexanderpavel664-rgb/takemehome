@@ -69,9 +69,24 @@ export const FILL = "{}";
  * réinitialisation de mot de passe, région Irlande) entre au point 3 de la
  * politique, la donnée transmise au point 2, la conservation des journaux
  * d'envoi (30 jours, resend.com/pricing) au point 4 ; la phrase « aucun
- * service d'envoi d'emails » disparaît, comme elle le promettait.
+ * service d'envoi d'emails » disparaît, comme elle le promettait ;
+ * « 2026-09-13 » = republication sur les réseaux sociaux. Conditions : la
+ * licence du point 8 s'étend aux comptes Facebook, Instagram et TikTok de la
+ * plateforme (adoption de l'animal et notoriété de la plateforme seulement,
+ * sans le nom ni le contact, aucune personne reconnaissable, retrait sur
+ * simple demande, les partages de tiers hors de notre contrôle), nouvelle
+ * condition de publication au point 4 (les personnes reconnaissables sont
+ * d'accord). Politique : la finalité au point 2 sur l'intérêt légitime,
+ * art. 6(1)(f), avec le droit d'opposition (pas de consentement : le nom et
+ * le contact ne partent pas, une case du publiant ne couvrirait de toute
+ * façon pas les tiers visibles sur une photo, et un consentement serait
+ * retirable à tout moment sans qu'on sache quelles publications retirer) ;
+ * Meta et TikTok au point 3 comme responsables indépendants, pas
+ * sous-traitants ; la durée au point 4 ; la photo réenvoyée comme fichier
+ * (jamais l'URL du store, qui contient l'identifiant du compte) au point 6 ;
+ * l'opposition au point 7.
  */
-export const TERMS_VERSION = "2026-08-24";
+export const TERMS_VERSION = "2026-09-13";
 
 /**
  * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
@@ -161,7 +176,7 @@ export const PRIVACY: LegalDocumentContent = {
   metaTitle: "Politica de confidențialitate",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
-  updatedLabel: "Ultima actualizare: 24 august 2026",
+  updatedLabel: "Ultima actualizare: 13 septembrie 2026",
   intro:
     "TakeMeHome pune în legătură persoanele care au animale de dat spre adopție cu persoanele care vor să adopte. Pentru asta prelucrează câteva date despre tine. Pagina de față arată care sunt aceste date, în ce scop sunt prelucrate, cine le mai primește și ce drepturi ai asupra lor.",
   sections: [
@@ -191,6 +206,14 @@ export const PRIVACY: LegalDocumentContent = {
         },
         {
           p: "Animalele pe care le publici. Nume, specie, sex, vârstă, talie, județ, oraș, descriere, starea de sănătate declarată și fotografii. Textul și fotografiile le scrii tu. Dacă incluzi acolo date despre o altă persoană, cum ar fi un număr de telefon sau o față într-o fotografie, răspunderea îți revine. Temei: executarea contractului, art. 6(1)(b) GDPR.",
+        },
+        // Republication sur les réseaux sociaux : intérêt légitime, pas
+        // consentement. Ce qui part est l'animal (le nom et le contact du
+        // publiant restent sur le site), une personne reconnaissable n'est
+        // jamais republiée, et l'opposition tient en un email. Voir le
+        // commentaire de TERMS_VERSION pour le raisonnement.
+        {
+          p: "Republicarea anunțurilor pe rețelele sociale. Fotografiile și informațiile despre animal din anunțul tău pot fi republicate pe conturile TakeMeHome de pe Facebook, Instagram și TikTok, cu un link către anunț, pentru a-i găsi animalului o familie și pentru a face cunoscută platforma. Numele tău și datele tale de contact nu apar în aceste publicări. O fotografie în care o persoană poate fi recunoscută nu e republicată, sau e decupată înainte. Temei: interesul legitim de a ajuta animalele din anunțuri să fie adoptate și de a face cunoscută platforma, art. 6(1)(f) GDPR. Te poți opune oricând, scriind la adresa de email de contact: nu mai facem publicări noi cu animalele tale și ștergem publicările existente de pe conturile noastre. Distribuirile și copiile făcute de alte persoane nu depind de noi. Condițiile republicării sunt la punctul 8 din termeni și condiții.",
         },
         {
           p: "Emailurile pe care ți le trimitem. Adresa ta de email și numele tău sunt transmise către Resend, serviciul prin care trimitem emailul de confirmare a adresei și pe cel de resetare a parolei. Nu trimitem alte emailuri. Temei: executarea contractului, art. 6(1)(b) GDPR. Fără confirmarea adresei nu putem ști că emailul din cont îți aparține, iar fără el nu îți putem reseta parola.",
@@ -247,8 +270,30 @@ export const PRIVACY: LegalDocumentContent = {
             },
           ],
         },
+        // Les réseaux sociaux ne sont PAS des sous-traitants : ce qui y est
+        // publié est traité selon leurs règles (responsables indépendants).
+        // D'où un paragraphe à part, hors de la liste des « persoane
+        // împuternicite ». Un seul lien par réseau : la politique de Meta
+        // couvre Facebook et Instagram ensemble.
         {
-          p: "În afara acestora, datele tale nu sunt transmise nimănui, cu o singură excepție: dacă o autoritate le solicită printr-o cerere legală, suntem obligați să răspundem.",
+          p: "Rețelele sociale pe care republicăm anunțuri, descrise la punctul 2, nu sunt persoane împuternicite, ci operatori independenți: ce publicăm acolo e prelucrat potrivit politicilor lor și poate fi văzut, distribuit și copiat de oricine.",
+        },
+        {
+          rows: [
+            {
+              term: "Meta Platforms Ireland Limited (Facebook, Instagram)",
+              value:
+                "conturile TakeMeHome de pe Facebook și Instagram. Societate din Irlanda, din grupul Meta, cu sediul principal în Statele Unite. facebook.com/privacy/policy",
+            },
+            {
+              term: "TikTok Technology Limited (TikTok)",
+              value:
+                "contul TakeMeHome de pe TikTok. Societate din Irlanda. Potrivit politicii sale, datele pot fi stocate pe servere din Statele Unite, Malaysia și Singapore. tiktok.com/legal/page/eea/privacy-policy",
+            },
+          ],
+        },
+        {
+          p: "În afara celor de mai sus, datele tale nu sunt transmise nimănui, cu o singură excepție: dacă o autoritate le solicită printr-o cerere legală, suntem obligați să răspundem.",
         },
       ],
     },
@@ -291,6 +336,11 @@ export const PRIVACY: LegalDocumentContent = {
               term: "Jurnalele emailurilor trimise",
               value:
                 "30 de zile la Resend, cu adresa destinatarului și conținutul mesajului, apoi sunt șterse automat de ei.",
+            },
+            {
+              term: "Publicările pe rețelele sociale",
+              value:
+                "până când ne ceri ștergerea lor sau până când le ștergem noi. Distribuirile și copiile făcute de alte persoane nu depind de noi.",
             },
           ],
         },
@@ -343,7 +393,7 @@ export const PRIVACY: LegalDocumentContent = {
       title: "6. Adresele fotografiilor",
       blocks: [
         {
-          p: "Fotografiile animalelor sunt stocate la o adresă publică, greu de ghicit, care conține identificatorul intern al contului tău. Cine cunoaște adresa exactă a unei fotografii o poate deschide fără să aibă cont. Din compararea a două astfel de adrese se poate deduce că cele două animale au fost publicate de același cont. La ștergerea unui animal sau a contului, fotografiile sunt șterse și din acest spațiu de stocare.",
+          p: "Fotografiile animalelor sunt stocate la o adresă publică, greu de ghicit, care conține identificatorul intern al contului tău. Cine cunoaște adresa exactă a unei fotografii o poate deschide fără să aibă cont. Din compararea a două astfel de adrese se poate deduce că cele două animale au fost publicate de același cont. La ștergerea unui animal sau a contului, fotografiile sunt șterse și din acest spațiu de stocare. În publicările de pe rețelele sociale, fotografia e încărcată ca fișier: adresa ei de stocare nu e publicată acolo.",
         },
       ],
     },
@@ -359,7 +409,7 @@ export const PRIVACY: LegalDocumentContent = {
             "Rectificare: să corectezi ce e greșit. Îți poți edita singur profilul și anunțurile, oricând.",
             "Ștergere: să ceri ștergerea datelor tale. Poți face asta singur, din profil, cu butonul de ștergere a contului.",
             "Portabilitate: să primești datele tale într-un fișier pe care îl poți duce altundeva. Butonul de descărcare din profil îți dă un fișier JSON.",
-            "Opoziție: să te opui prelucrărilor bazate pe interesul legitim, adică celor de la punctul 2 care se sprijină pe art. 6(1)(f).",
+            "Opoziție: să te opui prelucrărilor bazate pe interesul legitim, adică celor de la punctul 2 care se sprijină pe art. 6(1)(f), inclusiv republicării anunțurilor tale pe rețelele sociale.",
             "Restricționare: să ceri să oprim temporar prelucrarea, cât timp se lămurește o contestație.",
             "Retragerea consimțământului: să retragi oricând acordul pentru afișarea publică a datelor tale de contact, debifând căsuța din profil. Retragerea nu afectează ce s-a întâmplat înainte de ea.",
           ],
@@ -445,7 +495,7 @@ export const TERMS: LegalDocumentContent = {
   metaTitle: "Termeni și condiții",
   metaDescription:
     "Ce face și ce nu face TakeMeHome, regulile de publicare și răspunderea fiecăruia.",
-  updatedLabel: "Ultima actualizare: 23 august 2026",
+  updatedLabel: "Ultima actualizare: 13 septembrie 2026",
   intro:
     "Prin folosirea TakeMeHome ești de acord cu termenii de mai jos.",
   sections: [
@@ -507,6 +557,7 @@ export const TERMS: LegalDocumentContent = {
             "animalul e disponibil pentru adopție sau pentru plasament temporar;",
             "informațiile despre el sunt adevărate, în limita a ceea ce cunoști, în special cele privind sănătatea și comportamentul;",
             "fotografiile îți aparțin sau ai dreptul să le folosești;",
+            "persoanele care apar în fotografii și pot fi recunoscute sunt de acord cu publicarea lor;",
             "datele de contact îți aparțin și sunt funcționale.",
           ],
         },
@@ -573,6 +624,30 @@ export const TERMS: LegalDocumentContent = {
       blocks: [
         {
           p: "Textele și fotografiile pe care le publici rămân proprietatea ta. Ne acorzi dreptul de a le afișa pe site cât timp anunțul e publicat, în scopul funcționării platformei. La ștergerea anunțului sau a contului, acest drept încetează și fotografiile sunt șterse.",
+        },
+        // La licence de republication, écrite avec les mentions qu'exige
+        // l'art. 41 de la loi roumaine 8/1996 (droits transmis, modes
+        // d'utilisation, durée, étendue, rémunération) : sans l'une d'elles,
+        // l'auteur peut demander la résiliation. Non exclusive, gratuite,
+        // sans limite territoriale (un réseau social n'en a pas), non
+        // sous-licenciable. Le nom n'est pas repris — mais l'auteur garde
+        // son droit moral d'être nommé (art. 10 c et art. 11 : inaliénable),
+        // d'où la phrase « scrie-ne » plutôt qu'une renonciation, qui serait
+        // nulle.
+        {
+          p: "Ne acorzi și dreptul de a republica fotografiile și informațiile despre animal din anunț pe conturile TakeMeHome de pe Facebook, Instagram și TikTok, precum și pe orice altă rețea socială pe care platforma și-ar deschide un cont, cu un link către anunț. Facem asta numai pentru a-i găsi animalului o familie și pentru a face cunoscută platforma. Dreptul e neexclusiv, gratuit și fără limitare teritorială. Cuprinde reproducerea, adaptarea la formatul rețelei, adică decuparea, redimensionarea și adăugarea textului anunțului, integral sau prescurtat, sau a siglei platformei, și comunicarea publică. Nu îl putem transmite altcuiva.",
+        },
+        {
+          p: "În aceste publicări apar doar informațiile despre animal. Numele tău și datele tale de contact nu sunt preluate: persoanele interesate sunt trimise la anunțul de pe site. O fotografie în care o persoană poate fi recunoscută nu e republicată, sau e decupată înainte. Dacă vrei să fii menționat ca autor al fotografiilor, scrie-ne la adresa de email de la punctul 11.",
+        },
+        // Ce que le publiant peut exiger : la fin des publications
+        // nouvelles (automatique à la suppression), le retrait de ce que
+        // NOUS avons publié (sur demande — on ne suit pas quel animal est
+        // parti sur quel réseau), et rien sur ce que d'autres ont partagé.
+        // Dire « pot rămâne » sans « le ștergem la cererea ta » serait faux
+        // au regard du droit à l'effacement et du droit d'auteur.
+        {
+          p: "Dreptul de republicare încetează la ștergerea anunțului sau a contului: de atunci nu mai facem publicări noi. Publicările făcute până atunci pe conturile noastre pot rămâne. Le ștergem la cererea ta, trimisă la adresa de email de la punctul 11. Prin aceeași cerere poți retrage oricând dreptul de republicare, și înainte de ștergerea anunțului: nu mai facem publicări noi cu animalele tale. Distribuirile, copiile și capturile de ecran făcute de alte persoane nu se află sub controlul nostru și pot rămâne.",
         },
       ],
     },
