@@ -10,6 +10,7 @@ import {
 } from "@/lib/animal-display";
 import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
 import { contactStatus } from "@/lib/contact-status";
+import { longDateRo, pendingHideDate } from "@/lib/confirmations";
 import { countyName } from "@/lib/counties";
 import { isEmailConfigured } from "@/lib/email";
 import { relativeTimeRo } from "@/lib/relative-time";
@@ -87,6 +88,9 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
         status: true,
         hidden: true,
         updatedAt: true,
+        // Le cycle de confirmation en cours, pour « E încă disponibil ».
+        confirmSentAt: true,
+        confirmReminderSentAt: true,
         photos: {
           orderBy: { position: "asc" },
           take: 1,
@@ -244,9 +248,26 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
               const name = animalDisplayName(animal);
               const group = groupLabel(animal);
               const deadline =
-                animal.status === "ADOPTED"
-                  ? null
-                  : deadlineLabel(animal.availableUntil, "short", now);
+                animal.status === "AVAILABLE"
+                  ? deadlineLabel(animal.availableUntil, "short", now)
+                  : null;
+              // Masquée faute de confirmation (lib/confirmations.ts) : c'est
+              // l'état du publiant, qu'il lève lui-même — rien à voir avec
+              // la modération (`hidden`), qu'il ne peut jamais lever.
+              const unconfirmed = animal.status === "UNCONFIRMED";
+              // Masquée AUSSI par la modération : c'est cette mention-là qui
+              // compte, et « Reactivează » promettrait un retour en ligne
+              // qui n'aurait pas lieu. Le bouton revient si l'équipe la
+              // démasque.
+              const canReactivate = unconfirmed && !suspended && !animal.hidden;
+              // Confirmation demandée par email et pas encore donnée : la
+              // même réponse que le bouton de l'email, ici — et la seule
+              // possible pour une adresse non confirmée, dont l'email n'a
+              // pas de boutons.
+              const pendingUntil =
+                animal.status === "AVAILABLE" && !animal.hidden && !suspended
+                  ? pendingHideDate(animal)
+                  : null;
               // Partager : seulement une annonce en ligne et disponible —
               // « caută o familie » serait faux pour une adoptée, et le
               // lien d'une annonce masquée mène sur un 404 pour tout le
@@ -285,6 +306,12 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                       </span>
                       {animal.status === "ADOPTED" ? (
                         <Badge>{STR.animal.adoptedBadge}</Badge>
+                      ) : unconfirmed ? (
+                        // Hors des listes publiques : la pastille encre
+                        // pleine, celle des états qui comptent.
+                        <span className="inline-flex items-center rounded-pill bg-warm-ink px-3 py-1 text-[13px] font-semibold text-white">
+                          {STR.cont.unconfirmedBadge}
+                        </span>
                       ) : (
                         <Pill>{STATUS_LABELS[animal.status]}</Pill>
                       )}
@@ -336,6 +363,21 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                         )}
                       </p>
                     )}
+                    {pendingUntil && (
+                      <p className="mt-1 max-w-[66ch] text-sm font-semibold text-warm-ink">
+                        {STR.cont.pendingHint(
+                          animal.count > 1,
+                          longDateRo(pendingUntil),
+                        )}
+                      </p>
+                    )}
+                    {canReactivate && (
+                      // Ce qui s'est passé et ce qu'il faut faire ; le bouton
+                      // est juste en dessous, en tête de la rangée d'actions.
+                      <p className="mt-1 max-w-[66ch] text-sm font-semibold text-warm-ink">
+                        {STR.cont.unconfirmedHint}
+                      </p>
+                    )}
                     {!animal.photos[0] &&
                       animal.status !== "ADOPTED" &&
                       !suspended && (
@@ -364,6 +406,32 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                           regarde ses annonces et décide de les diffuser —
                           le levier de croissance du site. Le seul bouton
                           plein de l'écran reste « Adaugă un animal ». */}
+                      {pendingUntil && (
+                        // Outline, comme la réactivation : le seul bouton
+                        // plein de l'écran reste « Adaugă un animal ».
+                        // setAnimalStatus avance updatedAt, ce qui clôt le
+                        // cycle de confirmation.
+                        <form action={setAnimalStatus}>
+                          <input type="hidden" name="id" value={animal.id} />
+                          <input type="hidden" name="status" value="AVAILABLE" />
+                          <Button variant="outline" type="submit">
+                            {STR.cont.stillAvailable}
+                          </Button>
+                        </form>
+                      )}
+                      {canReactivate && (
+                        // La réactivation en un clic : outline, parce que le
+                        // seul bouton plein de l'écran reste « Adaugă un
+                        // animal ». Elle ne lève jamais un masquage de la
+                        // modération (setAnimalStatus ne touche pas hidden).
+                        <form action={setAnimalStatus}>
+                          <input type="hidden" name="id" value={animal.id} />
+                          <input type="hidden" name="status" value="AVAILABLE" />
+                          <Button variant="outline" type="submit">
+                            {STR.cont.reactivate}
+                          </Button>
+                        </form>
+                      )}
                       {shareable && (
                         <ShareButton
                           title={name}
@@ -393,15 +461,15 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                               type="hidden"
                               name="status"
                               value={
-                                animal.status === "AVAILABLE"
-                                  ? "ADOPTED"
-                                  : "AVAILABLE"
+                                animal.status === "ADOPTED"
+                                  ? "AVAILABLE"
+                                  : "ADOPTED"
                               }
                             />
                             <Button variant="ghost" type="submit">
-                              {animal.status === "AVAILABLE"
-                                ? STR.cont.markAdopted
-                                : STR.cont.markAvailable}
+                              {animal.status === "ADOPTED"
+                                ? STR.cont.markAvailable
+                                : STR.cont.markAdopted}
                             </Button>
                           </form>
                         </>

@@ -25,8 +25,14 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const found = await prisma.animal.findMany({
     // hidden: false comme partout ailleurs : une annonce masquée ne
-    // reparaît pas par la petite porte des favoris.
-    where: { id: { in: ids }, hidden: false },
+    // reparaît pas par la petite porte des favoris. Une annonce inactive
+    // (UNCONFIRMED, faute de confirmation) non plus : elle part avec les
+    // « nu mai e publicat ».
+    where: {
+      id: { in: ids },
+      hidden: false,
+      status: { in: ["AVAILABLE", "ADOPTED"] },
+    },
     select: CARD_SELECT,
   });
   const byId = new Map(found.map((animal) => [animal.id, animal]));

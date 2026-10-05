@@ -57,10 +57,19 @@ export const SIZE_OPTIONS = Object.entries(SIZE_LABELS) as [
   AnimalSize,
   string,
 ][];
-export const STATUS_OPTIONS = Object.entries(STATUS_LABELS) as [
-  AnimalStatus,
-  string,
-][];
+/**
+ * Les statuts que le publiant choisit lui-même. UNCONFIRMED n'en fait pas
+ * partie : seule la tâche de confirmation le pose (lib/confirmations.ts),
+ * et le publiant en sort en repassant à AVAILABLE.
+ */
+export type PublisherStatus = Exclude<AnimalStatus, "UNCONFIRMED">;
+export const PUBLISHER_STATUS = {
+  AVAILABLE: "AVAILABLE",
+  ADOPTED: "ADOPTED",
+} as const satisfies Record<PublisherStatus, PublisherStatus>;
+export const STATUS_OPTIONS = Object.values(PUBLISHER_STATUS).map(
+  (status) => [status, STATUS_LABELS[status]],
+) as [PublisherStatus, string][];
 export const REPORT_REASON_OPTIONS = Object.entries(REPORT_REASON_LABELS) as [
   ReportReason,
   string,

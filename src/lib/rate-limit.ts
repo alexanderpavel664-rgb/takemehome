@@ -25,7 +25,11 @@ export async function isRateLimited(
     | "report"
     // Demande de lien ET pose du nouveau mot de passe — chaque demande
     // coûte un email Resend, chaque pose est une tentative sur un jeton.
-    | "password-reset",
+    | "password-reset"
+    // Boutons de la page /confirmare (liens signés des emails, sans session).
+    | "confirmation"
+    // « A fost deja adoptat? » sur la fiche, sans compte : seule l'IP compte.
+    | "adoption-signal",
   headers: Headers,
   /**
    * Entité comptée à la place de l'IP — l'identifiant du compte quand le

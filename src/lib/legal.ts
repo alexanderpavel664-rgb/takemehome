@@ -84,9 +84,23 @@ export const FILL = "{}";
  * Meta et TikTok au point 3 comme responsables indépendants, pas
  * sous-traitants ; la durée au point 4 ; la photo réenvoyée comme fichier
  * (jamais l'URL du store, qui contient l'identifiant du compte) au point 6 ;
- * l'opposition au point 7.
+ * l'opposition au point 7 ;
+ * « 2026-10-05 » = confirmation des annonces. Conditions : au point 4, le
+ * cycle (email après 21 jours sans mise à jour, relance à 14 jours, annonce
+ * retirée des pages publiques 14 jours plus tard, réactivable depuis le
+ * compte) ; au point 6, le bouton « A fost deja adoptat? » sans compte, qui
+ * ne change rien à l'annonce. Politique : au point 2, ces emails entrent
+ * dans le paragraphe des emails (exécution du contrat, art. 6(1)(b) — la
+ * phrase « Nu trimitem alte emailuri » devient « pas d'emails de
+ * promotion »), la réponse facultative sur l'origine de l'adoption
+ * (intérêt légitime, art. 6(1)(f)), le bouton sans compte, et la limite de
+ * débit qui couvre ces deux chemins ; au point 3, l'objet des envois
+ * Resend ; au point 4, la durée (celle de l'annonce). Message de service,
+ * sans consentement marketing : directive 2002/58, art. 13, et loi
+ * roumaine 506/2004, art. 12, ne visent que les communications
+ * commerciales (loi 365/2002, art. 1).
  */
-export const TERMS_VERSION = "2026-09-13";
+export const TERMS_VERSION = "2026-10-05";
 
 /**
  * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
@@ -176,7 +190,7 @@ export const PRIVACY: LegalDocumentContent = {
   metaTitle: "Politica de confidențialitate",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
-  updatedLabel: "Ultima actualizare: 13 septembrie 2026",
+  updatedLabel: "Ultima actualizare: 5 octombrie 2026",
   intro:
     "TakeMeHome pune în legătură persoanele care au animale de dat spre adopție cu persoanele care vor să adopte. Pentru asta prelucrează câteva date despre tine. Pagina de față arată care sunt aceste date, în ce scop sunt prelucrate, cine le mai primește și ce drepturi ai asupra lor.",
   sections: [
@@ -216,16 +230,22 @@ export const PRIVACY: LegalDocumentContent = {
           p: "Republicarea anunțurilor pe rețelele sociale. Fotografiile și informațiile despre animal din anunțul tău pot fi republicate pe conturile TakeMeHome de pe Facebook, Instagram și TikTok, cu un link către anunț, pentru a-i găsi animalului o familie și pentru a face cunoscută platforma. Numele tău și datele tale de contact nu apar în aceste publicări. O fotografie în care o persoană poate fi recunoscută nu e republicată, sau e decupată înainte. Temei: interesul legitim de a ajuta animalele din anunțuri să fie adoptate și de a face cunoscută platforma, art. 6(1)(f) GDPR. Te poți opune oricând, scriind la adresa de email de contact: nu mai facem publicări noi cu animalele tale și ștergem publicările existente de pe conturile noastre. Distribuirile și copiile făcute de alte persoane nu depind de noi. Condițiile republicării sunt la punctul 8 din termeni și condiții.",
         },
         {
-          p: "Emailurile pe care ți le trimitem. Adresa ta de email și numele tău sunt transmise către Resend, serviciul prin care trimitem emailul de confirmare a adresei și pe cel de resetare a parolei. Nu trimitem alte emailuri. Temei: executarea contractului, art. 6(1)(b) GDPR. Fără confirmarea adresei nu putem ști că emailul din cont îți aparține, iar fără el nu îți putem reseta parola.",
+          p: "Emailurile pe care ți le trimitem. Adresa ta de email și numele tău sunt transmise către Resend, serviciul prin care trimitem emailul de confirmare a adresei, pe cel de resetare a parolei și emailurile de confirmare a anunțurilor. Acestea din urmă te întreabă dacă un animal e încă disponibil, când anunțul lui nu a fost actualizat de 21 de zile sau când un vizitator ne spune că a fost deja adoptat, și conțin numele, fotografiile și linkurile de confirmare ale animalelor tale. Nu trimitem emailuri de promovare și nici informări despre site. Temei: executarea contractului, art. 6(1)(b) GDPR. Fără confirmarea adresei nu putem ști că emailul din cont îți aparține, fără ea nu îți putem reseta parola, iar fără confirmarea anunțurilor un anunț ar rămâne pe site după adopție, cu datele tale de contact afișate.",
+        },
+        {
+          p: "Răspunsul despre adopție. După ce confirmi dintr-un email că un animal a fost adoptat, te întrebăm dacă l-a adoptat cineva care l-a găsit pe takemehome.ro. Răspunsul e opțional, se păstrează împreună cu anunțul și ne servește doar ca să numărăm adopțiile pornite de pe site. Temei: interesul legitim de a afla dacă platforma își atinge scopul, art. 6(1)(f) GDPR.",
         },
         {
           p: "Sesiunile tale. La fiecare autentificare păstrăm adresa IP și tipul de browser (user-agent) al dispozitivului de pe care ai intrat. Temei: interesul legitim de a-ți proteja contul și de a putea recunoaște o autentificare care nu îți aparține, art. 6(1)(f) GDPR.",
         },
         {
-          p: "Limitarea traficului. Adresa IP e folosită și pentru a număra câte încercări de autentificare, câte publicări și câte încărcări de fotografii vin de pe aceeași conexiune, ca să oprim atacurile automate. Temei: interesul legitim de a menține site-ul în funcțiune, art. 6(1)(f) GDPR.",
+          p: "Limitarea traficului. Adresa IP e folosită și pentru a număra câte încercări de autentificare, câte publicări, câte încărcări de fotografii, câte confirmări de anunțuri și câte mesaje „A fost deja adoptat?” vin de pe aceeași conexiune, ca să oprim atacurile automate. Temei: interesul legitim de a menține site-ul în funcțiune, art. 6(1)(f) GDPR.",
         },
         {
           p: "Semnalările. Poți semnala un anunț numai din contul tău. Păstrăm motivul, mesajul scris și contul din care a venit semnalarea, pentru a identifica semnalările repetate împotriva aceluiași anunț. Contul care a semnalat nu e afișat public și nu ajunge în jurnale: îl vede doar echipa TakeMeHome. Temei: interesul legitim de a preveni utilizarea abuzivă a mecanismului de semnalare, art. 6(1)(f) GDPR.",
+        },
+        {
+          p: "Mesajul „A fost deja adoptat?”. Butonul de pe pagina unui anunț nu cere cont și nu schimbă anunțul: îi cere persoanei care l-a publicat să confirme. Păstrăm doar data cererii, nimic despre cine a apăsat. Adresa IP servește numai limitării traficului, descrisă mai sus.",
         },
         {
           p: "Erorile tehnice. Când apare o eroare pe server, raportul de eroare e trimis către Sentry: eroarea, pagina pe care a apărut, tipul browserului și limba browserului. Adresa IP și conținutul cookie-urilor sunt eliminate înainte de trimitere. Temei: interesul legitim de a remedia defecțiunile, art. 6(1)(f) GDPR.",
@@ -266,7 +286,7 @@ export const PRIVACY: LegalDocumentContent = {
             {
               term: "Resend",
               value:
-                "trimiterea emailurilor de confirmare a adresei și de resetare a parolei. Primește adresa ta de email, numele tău și conținutul mesajului. Contul nostru e în regiunea europeană: datele stau în Irlanda, în Uniunea Europeană. Resend (Plus Five Five, Inc.) e o societate din Statele Unite: transferul se face în baza clauzelor contractuale standard aprobate de Comisia Europeană. resend.com/legal/privacy-policy",
+                "trimiterea emailurilor de confirmare a adresei, de resetare a parolei și de confirmare a anunțurilor. Primește adresa ta de email, numele tău și conținutul mesajului, inclusiv numele și fotografiile animalelor din anunțurile tale. Contul nostru e în regiunea europeană: datele stau în Irlanda, în Uniunea Europeană. Resend (Plus Five Five, Inc.) e o societate din Statele Unite: transferul se face în baza clauzelor contractuale standard aprobate de Comisia Europeană. resend.com/legal/privacy-policy",
             },
           ],
         },
@@ -326,6 +346,11 @@ export const PRIVACY: LegalDocumentContent = {
               term: "Semnalările",
               value:
                 "6 luni de la trimitere, apoi sunt șterse automat. Dacă îți ștergi contul, semnalările tale dispar odată cu el.",
+            },
+            {
+              term: "Confirmarea anunțurilor",
+              value:
+                "datele emailurilor de confirmare, data ultimei cereri „A fost deja adoptat?” și răspunsul despre adopție se păstrează împreună cu anunțul și dispar odată cu el.",
             },
             {
               term: "Rapoartele de eroare",
@@ -495,7 +520,7 @@ export const TERMS: LegalDocumentContent = {
   metaTitle: "Termeni și condiții",
   metaDescription:
     "Ce face și ce nu face TakeMeHome, regulile de publicare și răspunderea fiecăruia.",
-  updatedLabel: "Ultima actualizare: 13 septembrie 2026",
+  updatedLabel: "Ultima actualizare: 5 octombrie 2026",
   intro:
     "Prin folosirea TakeMeHome ești de acord cu termenii de mai jos.",
   sections: [
@@ -564,6 +589,12 @@ export const TERMS: LegalDocumentContent = {
         {
           p: "Marchează animalul ca adoptat după ce adopția a avut loc. Un anunț rămas activ după adopție ocupă locul altui animal.",
         },
+        // Le cycle de lib/confirmations.ts, en clair : c'est ce paragraphe
+        // qui fait de ces emails une exécution du contrat (art. 6(1)(b)) et
+        // qui rend opposable le retrait d'une annonce sans réponse.
+        {
+          p: "Confirmarea anunțurilor. Când un anunț cu un animal disponibil nu a fost actualizat de 21 de zile, îți trimitem un email în care ne spui, printr-un clic, dacă animalul e încă disponibil sau a fost adoptat. Dacă nu răspunzi, îți mai scriem o dată după 14 zile. Dacă nu răspunzi nici atunci, după alte 14 zile anunțul nu mai apare în paginile publice. Rămâne în contul tău, cu toate datele lui, și îl poți reactiva oricând. Orice actualizare a anunțului face ca termenul de 21 de zile să curgă din nou.",
+        },
       ],
     },
     {
@@ -591,6 +622,9 @@ export const TERMS: LegalDocumentContent = {
         },
         {
           p: "Semnalarea unui anunț nu atrage obligația de a-l ascunde. Nu ne asumăm un termen de soluționare.",
+        },
+        {
+          p: "Separat, oricine, fără cont, ne poate spune de pe pagina unui anunț că animalul a fost deja adoptat. Asta nu schimbă anunțul: îi trimitem persoanei care l-a publicat emailul de confirmare de la punctul 4, fără să mai așteptăm 21 de zile.",
         },
       ],
     },

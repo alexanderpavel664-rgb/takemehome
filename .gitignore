@@ -48,3 +48,7 @@ next-env.d.ts
 
 # trace locale des animaux publiés sur les réseaux (npm run post:candidats)
 /social-export/publicate.json
+
+# mode à blanc et aperçu de la confirmation des annonces (npm run confirmari) :
+# noms et adresses des publiants, jamais versionnés
+/confirmari-export/

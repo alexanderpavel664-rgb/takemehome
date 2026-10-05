@@ -32,6 +32,24 @@ enum AgeGroup {
 enum AnimalStatus {
   AVAILABLE
   ADOPTED
+  // Masquée faute de confirmation (octobre 2026) : le publiant n'a répondu
+  // ni à l'email de confirmation ni à la relance (lib/confirmations.ts).
+  // Un STATUT et non une variante de `hidden` : `hidden` est la décision de
+  // la modération, que le publiant ne doit jamais pouvoir lever ; celui-ci
+  // est le sien, il le lève en un clic depuis /cont. Et comme toutes les
+  // listes publiques filtrent déjà status = AVAILABLE, l'annonce en sort
+  // sans qu'aucune requête ni aucun index ne change. La fiche reste en 200
+  // avec un message neutre.
+  UNCONFIRMED
+}
+
+// Réponse facultative à « L-a adoptat cineva care l-a găsit pe
+// takemehome.ro? », posée après « A fost adoptat » dans l'email de
+// confirmation : le seul moyen de compter les adoptions dues au site.
+enum AdoptionSource {
+  TAKEMEHOME
+  ELSEWHERE
+  UNKNOWN
 }
 
 enum AnimalSize {
@@ -168,6 +186,22 @@ model Animal {
   // Colonne scalaire sur Animal, et non un filtre sur user.suspended : les
   // listes publiques ne doivent joindre aucune table pour se filtrer.
   hidden       Boolean       @default(false)
+  // Confirmation de disponibilité (octobre 2026, lib/confirmations.ts).
+  // Un cycle commence par un email (confirmSentAt), continue par une
+  // relance (confirmReminderSentAt) et finit par le statut UNCONFIRMED. Il
+  // est EN COURS tant que confirmSentAt >= updatedAt : toute écriture du
+  // publiant (modification, statut, « Încă disponibil ») avance updatedAt
+  // et clôt donc le cycle sans qu'aucun chemin d'écriture ait à remettre
+  // ces colonnes à zéro. Corollaire : le système, lui, les écrit en SQL
+  // brut, qui ne touche pas updatedAt (Prisma pose @updatedAt côté client,
+  // la base n'a pas de trigger).
+  confirmSentAt         DateTime?
+  confirmReminderSentAt DateTime?
+  // « A fost deja adoptat? » cliqué sur la fiche, sans compte : en attente
+  // tant que confirmRequestedAt > updatedAt, envoyé par la tâche du
+  // lendemain. Aucune donnée sur qui a cliqué.
+  confirmRequestedAt    DateTime?
+  adoptionSource        AdoptionSource?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

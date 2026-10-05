@@ -77,6 +77,9 @@ export const STR = {
     status: {
       AVAILABLE: "Disponibil",
       ADOPTED: "Adoptat",
+      // Masqué faute de confirmation (lib/confirmations.ts) : jamais dans
+      // le sélecteur du formulaire, seulement dans /cont.
+      UNCONFIRMED: "Inactiv",
     } satisfies Record<AnimalStatus, string>,
     // Motifs de signalement — l'ordre du formulaire public suit celui-ci.
     reportReason: {
@@ -326,6 +329,15 @@ export const STR = {
     // Seul verbe qui change de forme au pluriel (« Rex și Nala și-au… »).
     adoptedMetaDescription: (subject: string, plural: boolean) =>
       `${subject} ${plural ? "și-au" : "și-a"} găsit deja familia. Vezi celelalte animale de adoptat.`,
+    // Annonce masquée faute de confirmation : la fiche reste en ligne pour
+    // un lien déjà partagé, avec un message neutre. On dit ce qu'on sait
+    // (personne n'a confirmé), pas ce qu'on suppose (adopté).
+    unconfirmedTitle: "Anunțul nu mai e activ",
+    unconfirmed: "Persoana care l-a publicat nu a confirmat recent că animalul e încă disponibil.",
+    unconfirmedPlural:
+      "Persoana care l-a publicat nu a confirmat recent că animalele sunt încă disponibile.",
+    unconfirmedMetaDescription:
+      "Anunțul nu mai e activ. Vezi celelalte animale de adoptat.",
     /* ——— Coordonnées en toutes lettres. Sur un ordinateur, tel: ne fait
        rien d'utile : le numéro doit se lire et se copier. ——— */
     contactTitle: "Contact",
@@ -336,6 +348,18 @@ export const STR = {
     copyFailed: "Nu s-a putut copia",
     copyPhone: "Copiază numărul de telefon",
     copyEmail: "Copiază adresa de email",
+  },
+
+  /* ——— « A fost deja adoptat? » en bas de fiche, sans compte. Ne change
+         rien à l'annonce : demande au publiant de confirmer (l'email part
+         avec la tâche du lendemain matin). ——— */
+  adoptionSignal: {
+    button: "A fost deja adoptat?",
+    pending: "Se trimite…",
+    sent: "Mulțumim. Îi cerem persoanei care l-a publicat să confirme.",
+    tooManyRequests:
+      "Prea multe cereri într-un minut. Încearcă din nou puțin mai târziu.",
+    failed: "Nu s-a putut trimite. Încearcă din nou.",
   },
 
   /* ——— Signalement d'une annonce (/animal/[id]/semnaleaza). ——— */
@@ -624,6 +648,20 @@ export const STR = {
       "Nu apare în paginile publice: echipa TakeMeHome l-a ascuns după o semnalare.",
     hiddenHintSuspended:
       "Nu apare în paginile publice cât timp contul e suspendat.",
+    // Masquée faute de confirmation : la décision du publiant, qu'il lève
+    // lui-même. Rien à voir avec la modération, donc pas de « scrie la… ».
+    unconfirmedBadge: "Inactiv",
+    unconfirmedHint:
+      "Nu mai apare în paginile publice, pentru că nu am primit răspuns la emailurile de confirmare. Dacă animalul e încă disponibil, reactivează anunțul.",
+    reactivate: "Reactivează anunțul",
+    // Cycle de confirmation en cours (lib/confirmations.ts) : la même
+    // réponse que le bouton de l'email, pour qui passe par son compte — et
+    // la seule pour une adresse non confirmée (email sans boutons).
+    pendingHint: (plural: boolean, date: string) =>
+      `Ți-am scris pe email să confirmi că ${
+        plural ? "animalele sunt încă disponibile" : "animalul e încă disponibil"
+      }. Fără răspuns, anunțul nu mai apare pe site din ${date}.`,
+    stillAvailable: "E încă disponibil",
     myAnimals: "Animalele mele",
     addAnimal: "Adaugă un animal",
     emptyTitle: "Niciun animal deocamdată",
@@ -873,7 +911,9 @@ export const STR = {
     saveFailed: "Anunțul nu s-a putut salva. Încearcă din nou.",
   },
 
-  /* ——— Emails transactionnels (texte brut, voir lib/email.ts). ——— */
+  /* ——— Emails transactionnels (texte brut, voir lib/email.ts ; la
+         confirmation des annonces a aussi une version HTML, pour les
+         photos et les boutons). ——— */
   email: {
     verify: {
       subject: "Confirmă-ți adresa de email – TakeMeHome",
@@ -907,6 +947,111 @@ export const STR = {
         `${loginUrl}\n\n` +
         "Dacă nu ai cerut tu resetarea, ignoră acest email.\n\n" +
         "TakeMeHome",
+    },
+  },
+
+  /* ——— Confirmation des annonces : l'email (lib/confirmation-email.ts)
+         et la page /confirmare/[token] où mènent ses boutons. Message de
+         SERVICE uniquement : aucun lien vers les réseaux, aucune nouvelle
+         du site, aucun appel à publier — c'est ce qui le dispense de
+         consentement (directive 2002/58, art. 13 ; loi 506/2004, art. 12).
+         La question « L-a adoptat cineva… » vit sur la page, jamais dans
+         l'email. Accords : on parle de « animalul / animalele » (neutre),
+         jamais du nom, pour ne pas accorder « disponibil » au sexe. ——— */
+  confirmari: {
+    email: {
+      subject: (count: number, reminder: boolean) =>
+        `${reminder ? "Reamintire: " : ""}${
+          count === 1
+            ? "Anunțul tău e încă valabil?"
+            : "Anunțurile tale sunt încă valabile?"
+        } – TakeMeHome`,
+      greeting: (name: string) => `Salut, ${name},`,
+      intro: (count: number) =>
+        "Ținem anunțurile de pe TakeMeHome la zi, ca oamenii să nu sune pentru animale care și-au găsit deja familia. " +
+        (count === 1
+          ? "Ne spui cum stau lucrurile cu animalul de mai jos?"
+          : "Ne spui cum stau lucrurile cu animalele de mai jos?"),
+      // Les deux libellés voulus par l'opérateur, tels quels, à poids égal :
+      // aucun des deux n'est le « bon » clic.
+      available: "Încă disponibil",
+      adopted: "A fost adoptat",
+      noteUpdated: (relative: string) => `Ultima actualizare: ${relative}.`,
+      noteRequested: (plural: boolean) =>
+        plural
+          ? "Un vizitator ne-a spus că au fost deja adoptate."
+          : "Un vizitator ne-a spus că a fost deja adoptat.",
+      noteReminder: (date: string) =>
+        `A doua întrebare: fără răspuns, anunțul nu mai apare pe site din ${date}.`,
+      links:
+        "Linkurile funcționează fără să intri în cont și sunt valabile 30 de zile.",
+      // Adresse jamais confirmée : elle est peut-être mal tapée, et l'email
+      // chez un inconnu. Pas de boutons, donc : le compte (mot de passe ou
+      // Google) est la seule porte.
+      loginToConfirm: "Intră în cont ca să confirmi",
+      unverified:
+        "Adresa ta de email nu e confirmată încă, așa că răspunsul se dă din contul tău.",
+      process:
+        "Dacă nu primim niciun răspuns, îți mai scriem o dată după două săptămâni. După alte două săptămâni fără răspuns, anunțul nu mai apare pe site. Rămâne în contul tău și îl poți reactiva oricând.",
+      why: "Primești acest email pentru că ai anunțuri publicate pe TakeMeHome. Le poți actualiza și din contul tău:",
+      signature: "TakeMeHome",
+    },
+    page: {
+      metaTitle: "Confirmă anunțul – TakeMeHome",
+      availableQuestion: (plural: boolean) =>
+        plural
+          ? "Confirmi că animalele sunt încă disponibile?"
+          : "Confirmi că animalul e încă disponibil?",
+      adoptedQuestion: (plural: boolean) =>
+        plural
+          ? "Confirmi că animalele au fost adoptate?"
+          : "Confirmi că animalul a fost adoptat?",
+      confirmAvailable: (plural: boolean) =>
+        plural ? "Da, sunt încă disponibile" : "Da, e încă disponibil",
+      confirmAdopted: (plural: boolean) =>
+        plural ? "Da, au fost adoptate" : "Da, a fost adoptat",
+      // L'autre lien, pour qui s'est trompé de bouton dans l'email.
+      switchToAdopted: (plural: boolean) =>
+        plural ? "De fapt, au fost adoptate" : "De fapt, a fost adoptat",
+      switchToAvailable: (plural: boolean) =>
+        plural ? "De fapt, sunt încă disponibile" : "De fapt, e încă disponibil",
+      // Une portée dont une partie seulement est partie : ce n'est pas une
+      // adoption de toute l'annonce.
+      groupHint:
+        "Dacă au plecat doar unele dintre ele, nu confirma aici: modifică numărul din contul tău.",
+      currentAdopted: "Acum e marcat ca adoptat.",
+      currentUnconfirmed:
+        "Acum nu mai apare pe site. Confirmarea îl readuce în pagini.",
+      pending: "Se salvează…",
+      availableDoneTitle: "Mulțumim!",
+      availableDone:
+        "Anunțul rămâne pe site. Îți scriem din nou dacă nu e actualizat timp de 3 săptămâni.",
+      // Masqué par la modération : le statut change, la visibilité non.
+      stillHidden: "Anunțul rămâne ascuns de echipa TakeMeHome.",
+      adoptedDoneTitle: "Mulțumim! Anunțul e marcat ca adoptat.",
+      // La question de l'opérateur, mot pour mot ; facultative.
+      sourceQuestion: (plural: boolean) =>
+        plural
+          ? "Le-a adoptat cineva care le-a găsit pe takemehome.ro?"
+          : "L-a adoptat cineva care l-a găsit pe takemehome.ro?",
+      sourceHint:
+        "Răspunsul e opțional. Ne ajută să aflăm câte adopții pornesc de pe site.",
+      sourceYes: "Da",
+      sourceNo: "Nu",
+      sourceUnknown: "Nu știu",
+      sourceDone: "Mulțumim pentru răspuns!",
+      seeListing: "Vezi anunțul",
+      invalidTitle: "Linkul nu mai e valabil",
+      invalid:
+        "Linkurile din emailurile noastre sunt valabile 30 de zile. Poți actualiza anunțul din contul tău.",
+      toAccount: "Mergi la contul tău",
+      missingTitle: "Anunțul nu mai există",
+      missing: "A fost șters între timp. Nu mai e nimic de confirmat.",
+      suspendedTitle: "Contul e suspendat",
+      suspended: "Anunțurile acestui cont nu mai pot fi modificate.",
+      tooManyRequests:
+        "Prea multe încercări într-un minut. Așteaptă puțin și încearcă din nou.",
+      failed: "Nu s-a putut salva. Încearcă din nou.",
     },
   },
 

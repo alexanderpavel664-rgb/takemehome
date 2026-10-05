@@ -27,6 +27,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { FavoriteButton } from "@/components/ui/favorite-button";
 import { PhotoCarousel } from "@/components/ui/photo-carousel";
 import { ShareButton } from "@/components/ui/share-button";
+import { AdoptionSignal } from "./adoption-signal";
 
 // Sans API de requête, une route à segment dynamique serait rendue puis
 // mise en cache : statut « adopté », photos et coordonnées resteraient
@@ -93,16 +94,22 @@ export async function generateMetadata(
   const title = `${name} – ${place}`;
   // Fiche adoptée : l'aperçu Facebook le dit avant le clic — un lien
   // partagé il y a trois semaines continue de circuler après l'adoption.
+  // Inactive (non confirmée) : un aperçu neutre, et hors des index — c'est
+  // un état d'attente, pas une page à faire trouver.
+  const unconfirmed = animal.status === "UNCONFIRMED";
   const description =
     animal.status === "ADOPTED"
       ? STR.animal.adoptedMetaDescription(subject, animal.count > 1)
-      : animal.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
-        `${STR.animal.metaDescription(subject)} ${animalMetaLine(animal)}.`;
+      : unconfirmed
+        ? STR.animal.unconfirmedMetaDescription
+        : animal.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+          `${STR.animal.metaDescription(subject)} ${animalMetaLine(animal)}.`;
   const photo = animal.photos[0];
 
   return {
     title: `${title} – ${STR.site.name}`,
     description,
+    ...(unconfirmed && { robots: { index: false } }),
     openGraph: {
       title,
       description,
@@ -245,6 +252,10 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   }
 
   const adopted = animal.status === "ADOPTED";
+  // Masquée faute de confirmation (lib/confirmations.ts) : la fiche reste en
+  // 200 pour les liens déjà partagés, mais sans contact ni partage — on ne
+  // sait plus si l'animal est encore là.
+  const unconfirmed = animal.status === "UNCONFIRMED";
   // Le consentement conditionne la LECTURE des coordonnées, pas seulement
   // l'affichage des boutons : sans lui, phone et email valent undefined dès
   // ici, et aucun rendu en aval — barre fixe, carte de droite, métadonnées —
@@ -254,12 +265,15 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const consented = animal.user.contactConsent;
   const phone = consented ? animal.user.phone?.trim() : undefined;
   const email = consented ? animal.user.publicEmail?.trim() : undefined;
-  const hasContact = !adopted && Boolean(phone || email);
+  const hasContact = !adopted && !unconfirmed && Boolean(phone || email);
   const name = animalDisplayName(animal);
   const group = groupLabel(animal);
   // L'échéance ne se montre que dans les derniers jours, et plus du tout
   // sur une fiche adoptée : la date n'a plus rien à presser.
-  const deadline = adopted ? null : deadlineLabel(animal.availableUntil, "long");
+  const deadline =
+    adopted || unconfirmed
+      ? null
+      : deadlineLabel(animal.availableUntil, "long");
   const url = `${SITE_URL}/animal/${animal.id}`;
 
   const health = [
@@ -388,6 +402,25 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             </div>
           )}
 
+          {unconfirmed && (
+            // Même place et même sortie que la fiche adoptée : un message
+            // neutre (ce qu'on sait : personne n'a confirmé), et LE bouton
+            // plein vers les animaux disponibles.
+            <div className="mt-4">
+              <h2 className="text-lg font-semibold text-warm-ink">
+                {STR.animal.unconfirmedTitle}
+              </h2>
+              <p className="mt-1 text-base text-warm-ink">
+                {animal.count > 1
+                  ? STR.animal.unconfirmedPlural
+                  : STR.animal.unconfirmed}
+              </p>
+              <ButtonLink href="/animale" variant="primary" className="mt-3">
+                {STR.animal.seeAvailable}
+              </ButtonLink>
+            </div>
+          )}
+
           {hasContact && (
             // Les coordonnées en toutes lettres, à toutes les largeurs :
             // numéro et email se lisent et se copient. À partir de lg, les
@@ -424,7 +457,7 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             </Card>
           )}
 
-          {!adopted && !animal.hidden && (
+          {!adopted && !unconfirmed && !animal.hidden && (
             // Le partage, juste sous le contact et jamais en concurrence
             // avec lui : outline, pleine largeur sur mobile pour tomber
             // sous le pouce, à sa taille sur ordinateur. « Sună » reste LE
@@ -486,14 +519,21 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             // non : c'est la page de signalement qui exige le compte et
             // renvoie l'anonyme vers /login (puis le ramène). La fiche ne
             // lit donc pas la session pour ce lien — elle reste à coût nul.
-            <p className="mt-6 border-t border-warm-border pt-4">
+            //
+            // « A fost deja adoptat? » à côté, aussi discret : pour
+            // l'adoptant sans compte qui a appris le départ de l'animal.
+            // Seulement sur une annonce disponible.
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 border-t border-warm-border pt-4">
+              {!adopted && !unconfirmed && (
+                <AdoptionSignal animalId={animal.id} />
+              )}
               <Link
                 href={`/animal/${animal.id}/semnaleaza`}
                 className="inline-flex min-h-11 items-center text-sm text-warm-gray underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
               >
                 {STR.animal.report}
               </Link>
-            </p>
+            </div>
           )}
         </div>
       </div>

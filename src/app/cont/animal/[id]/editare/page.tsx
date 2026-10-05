@@ -105,7 +105,12 @@ export default async function EditareAnimalPage({
             goodWithKids: animal.goodWithKids,
             goodWithDogs: animal.goodWithDogs,
             goodWithCats: animal.goodWithCats,
-            status: animal.status,
+            // Une annonce inactive (non confirmée) s'ouvre sur « Disponibil » :
+            // l'enregistrer la réactive, comme le bouton de /cont. La
+            // laisser inactive après une modification la bloquerait hors
+            // des listes, sans plus aucun email pour l'en sortir.
+            status:
+              animal.status === "UNCONFIRMED" ? "AVAILABLE" : animal.status,
           }}
         />
       </Card>

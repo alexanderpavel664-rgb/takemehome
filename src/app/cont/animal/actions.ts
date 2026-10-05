@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getViewer, type Viewer } from "@/lib/viewer";
 import { COUNTY_CODES } from "@/lib/counties";
 import { isOwnedAnimalPhotoUrl, MAX_PHOTOS } from "@/lib/animal-photo";
+import { PUBLISHER_STATUS, type PublisherStatus } from "@/lib/animal-labels";
 import { deleteBlobs } from "@/lib/blob";
 import { isRateLimited } from "@/lib/rate-limit";
 import { reportError } from "@/lib/report";
@@ -14,7 +15,6 @@ import { STR } from "@/lib/strings";
 import {
   AgeGroup,
   AnimalSize,
-  AnimalStatus,
   AnimalType,
   Sex,
   type Prisma,
@@ -98,7 +98,7 @@ type ParsedAnimal = {
   goodWithKids: boolean;
   goodWithDogs: boolean;
   goodWithCats: boolean;
-  status: AnimalStatus;
+  status: PublisherStatus;
 };
 
 // Combien d'animaux dans l'annonce. Absent (ancien formulaire, JavaScript
@@ -208,7 +208,9 @@ function parseAnimalForm(
       goodWithKids: checkbox(formData, "goodWithKids"),
       goodWithDogs: checkbox(formData, "goodWithDogs"),
       goodWithCats: checkbox(formData, "goodWithCats"),
-      status: optionalEnum(formData, "status", AnimalStatus) ?? "AVAILABLE",
+      // AVAILABLE ou ADOPTED seulement : UNCONFIRMED n'est jamais un choix
+      // du publiant (lib/confirmations.ts).
+      status: optionalEnum(formData, "status", PUBLISHER_STATUS) ?? "AVAILABLE",
     },
   };
 }
@@ -450,7 +452,15 @@ export async function updateAnimal(
   // autres.
   try {
     const operations: Prisma.PrismaPromise<unknown>[] = [
-      prisma.animal.update({ where: { id }, data: parsed.data }),
+      prisma.animal.update({
+        where: { id },
+        data: {
+          ...parsed.data,
+          // Plus adoptée : la réponse « L-a adoptat cineva care l-a găsit pe
+          // takemehome.ro? » ne vaut plus rien et fausserait le bilan.
+          ...(parsed.data.status !== "ADOPTED" && { adoptionSource: null }),
+        },
+      }),
     ];
     if (!unchanged) {
       operations.push(
@@ -505,14 +515,27 @@ export async function setAnimalStatus(formData: FormData): Promise<void> {
   const userId = viewer.id;
   const id = text(formData, "id");
 
-  const status = optionalEnum(formData, "status", AnimalStatus);
+  // AVAILABLE ou ADOPTED : c'est aussi le bouton « Reactivează anunțul »
+  // d'une annonce inactive (UNCONFIRMED → AVAILABLE).
+  const status = optionalEnum(formData, "status", PUBLISHER_STATUS);
   if (!status) {
     throw new Error(STR.upload.invalidStatus);
   }
 
+  // updatedAt explicite : c'est lui qui clôt le cycle de confirmation
+  // (lib/confirmations.ts). Sans lui, une annonce réactivée garderait son
+  // cycle échu et la tâche du lendemain la masquerait de nouveau. `hidden`
+  // n'est pas touché : une annonce masquée par la modération le reste.
+  // Remise en ligne d'une annonce adoptée : la réponse sur l'origine de
+  // l'adoption part avec le statut, sinon le bilan compterait une adoption
+  // pour un animal toujours disponible.
   const { count } = await prisma.animal.updateMany({
     where: { id, userId },
-    data: { status },
+    data: {
+      status,
+      updatedAt: new Date(),
+      ...(status !== "ADOPTED" && { adoptionSource: null }),
+    },
   });
   if (count === 0) {
     notFound();

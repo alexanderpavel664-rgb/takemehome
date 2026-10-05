@@ -13,6 +13,7 @@
     "migrare": "tsx scripts/migrare.mts",
     "dimensions:photos": "tsx scripts/dimensions-photos.mts",
     "stockage:blob": "tsx scripts/stockage-blob.mts",
+    "confirmari": "tsx scripts/confirmari.mts",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },
