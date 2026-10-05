@@ -34,6 +34,7 @@ export type PublicFilters = {
   marime?: AnimalSize;
   sterilizat: boolean;
   vaccinat: boolean;
+  deparazitat: boolean;
   cip: boolean;
   copii: boolean;
   caini: boolean;
@@ -71,6 +72,7 @@ export function parseFilters(sp: PublicSearchParams): PublicFilters {
     marime: parseEnum(first(sp.marime), SIZE_LABELS),
     sterilizat: first(sp.sterilizat) === "1",
     vaccinat: first(sp.vaccinat) === "1",
+    deparazitat: first(sp.deparazitat) === "1",
     cip: first(sp.cip) === "1",
     copii: first(sp.copii) === "1",
     caini: first(sp.caini) === "1",
@@ -89,9 +91,15 @@ export function parseCount(sp: PublicSearchParams): number {
 export function countActiveFilters(f: PublicFilters): number {
   return (
     [f.judet, f.varsta, f.sex, f.marime].filter((v) => v !== undefined).length +
-    [f.sterilizat, f.vaccinat, f.cip, f.copii, f.caini, f.pisici].filter(
-      Boolean,
-    ).length
+    [
+      f.sterilizat,
+      f.vaccinat,
+      f.deparazitat,
+      f.cip,
+      f.copii,
+      f.caini,
+      f.pisici,
+    ].filter(Boolean).length
   );
 }
 
@@ -113,6 +121,7 @@ export function serializeFilters(
   if (f.marime) params.set("marime", f.marime);
   if (f.sterilizat) params.set("sterilizat", "1");
   if (f.vaccinat) params.set("vaccinat", "1");
+  if (f.deparazitat) params.set("deparazitat", "1");
   if (f.cip) params.set("cip", "1");
   if (f.copii) params.set("copii", "1");
   if (f.caini) params.set("caini", "1");
@@ -142,6 +151,7 @@ export function publicWhere(f: PublicFilters): Prisma.AnimalWhereInput {
     ...(f.marime && { size: f.marime }),
     ...(f.sterilizat && { sterilized: true }),
     ...(f.vaccinat && { vaccinated: true }),
+    ...(f.deparazitat && { dewormed: true }),
     ...(f.cip && { microchipped: true }),
     ...(f.copii && { goodWithKids: true }),
     ...(f.caini && { goodWithDogs: true }),

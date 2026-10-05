@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { OG_SIZE } from "@/lib/og-default";
 import { STR } from "@/lib/strings";
 
 /**
@@ -12,6 +13,8 @@ import { STR } from "@/lib/strings";
  *   app/opengraph-image.tsx          -> /login, /inregistrare, /cont, /admin
  *   app/(public)/opengraph-image.tsx -> /, /despre, /adoptati, /animale,
  *                                       /confidentialitate, /termeni
+ * plus une adresse fixe, app/og/takemehome.png/route.tsx, que les pages
+ * citent elles-mêmes : fiches sans photo, pages par județ (og-default.ts).
  * Celui de (public) est indispensable : la page d'accueil déclare son propre
  * `openGraph`, et dans mergeMetadata un openGraph de configuration REMPLACE
  * celui dont on hérite — l'image de la racine était donc perdue sur l'accueil,
@@ -29,9 +32,9 @@ import { STR } from "@/lib/strings";
  * décor, pas de photo.
  */
 
-export const OG_ALT = `${STR.site.name} – ${STR.home.tagline}`;
-export const OG_SIZE = { width: 1200, height: 630 };
-export const OG_CONTENT_TYPE = "image/png";
+// Les constantes vivent dans og-default.ts (sans lecture de fichier) : les
+// pages rendues à la requête les citent sans charger ce module.
+export { OG_ALT, OG_CONTENT_TYPE, OG_SIZE } from "@/lib/og-default";
 
 /** Corps du mot ; toute la géométrie du lockup en découle, comme sur le site. */
 const WORD = 112;

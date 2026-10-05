@@ -25,6 +25,7 @@ import { STR } from "@/lib/strings";
 const BOOL_FIELDS: { key: keyof PublicFilters & string; label: string }[] = [
   { key: "sterilizat", label: STR.filters.sterilized },
   { key: "vaccinat", label: STR.filters.vaccinated },
+  { key: "deparazitat", label: STR.filters.dewormed },
   { key: "cip", label: STR.filters.microchipped },
   { key: "copii", label: STR.filters.goodWithKids },
   { key: "caini", label: STR.filters.goodWithDogs },
@@ -75,6 +76,7 @@ function FilterPanel({
       tip: filters.tip,
       sterilizat: false,
       vaccinat: false,
+      deparazitat: false,
       cip: false,
       copii: false,
       caini: false,

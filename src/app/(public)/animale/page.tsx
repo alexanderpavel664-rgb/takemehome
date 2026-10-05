@@ -10,8 +10,10 @@ import {
   publicWhere,
   serializeFilters,
 } from "@/lib/animal-filters";
+import { judetCombos } from "@/lib/judete-data";
 import { STR } from "@/lib/strings";
 import { AnimalGrid } from "../animal-grid";
+import { JudetLinks } from "../judet-links";
 import { SkeletonGrid } from "../skeleton-grid";
 import { FilterAside, FilterSheet } from "./filter-sheet";
 import { TypeTabs } from "./type-tabs";
@@ -61,10 +63,20 @@ export default async function AnimalePage(props: PageProps<"/animale">) {
               />
             </Suspense>
           </div>
+          {/* Les pages par județ, sous la grille : c'est par ces liens que
+              les moteurs de recherche les trouvent. Leur propre Suspense : la
+              grille n'attend pas ce bloc. */}
+          <Suspense fallback={null}>
+            <AnimaleJudetLinks />
+          </Suspense>
         </div>
       </div>
     </main>
   );
+}
+
+async function AnimaleJudetLinks() {
+  return <JudetLinks combos={await judetCombos()} />;
 }
 
 function EmptyList() {

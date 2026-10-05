@@ -30,10 +30,12 @@ export function AnimalCardSkeleton() {
       <div className="aspect-[4/3] animate-pulse-paper rounded-t-[19px] bg-cream-ground motion-reduce:animate-none" />
       <div className="p-3 @sm:p-4">
         {/* Nom 19px/1.2 ≈ 23px ; métadonnées 13px/1.4 ≈ 18px, puis
-            text-sm (14px/20px) en cellule large. */}
+            text-sm (14px/20px) en cellule large : type · sexe · âge, județ,
+            puis l'âge de l'annonce (« acum 3 zile »). */}
         <Skeleton className="h-[23px] w-2/3" />
         <Skeleton className="mt-1 h-[18px] w-full @sm:h-5" />
         <Skeleton className="h-[18px] w-1/3 @sm:h-5" />
+        <Skeleton className="h-[18px] w-1/4 @sm:h-5" />
       </div>
     </div>
   );

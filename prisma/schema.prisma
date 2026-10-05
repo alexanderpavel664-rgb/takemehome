@@ -137,6 +137,10 @@ model Animal {
   description  String?
   sterilized   Boolean       @default(false)
   vaccinated   Boolean       @default(false)
+  // Deparazitat (V3, octobre 2026) : les publiants l'écrivaient en texte
+  // libre dans la description faute de champ. Même règle que les trois
+  // autres : false = non renseigné, pas « non ».
+  dewormed     Boolean       @default(false)
   microchipped Boolean       @default(false)
   goodWithKids Boolean       @default(false)
   goodWithDogs Boolean       @default(false)
@@ -218,12 +222,21 @@ model AnimalPhoto {
   animalId  String
   animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
   url       String
+  // 0 à 3 (MAX_PHOTOS dans lib/animal-photo.ts), sans trou : la position 0
+  // est la photo principale — carte, Open Graph, aperçu de /cont.
   position  Int      @default(0)
+  // Dimensions du fichier stocké, en pixels : og:image:width/height (sans
+  // elles, Facebook peut ne rien afficher au tout premier partage). Mesurées
+  // par le canvas de compression à l'envoi ; les photos d'avant V3 ont été
+  // complétées par scripts/dimensions-photos.mts. NULL = inconnues.
+  width     Int?
+  height    Int?
   createdAt DateTime @default(now())
 
-  // Chaque include photos fait WHERE animalId IN (…) ORDER BY position :
-  // le composite rend la lecture pré-triée.
-  @@index([animalId, position])
+  // Unique : une seule photo principale par annonce, et un ordre sans
+  // ambiguïté. Sert aussi la lecture : chaque include photos fait
+  // WHERE animalId IN (…) ORDER BY position, pré-trié par cet index.
+  @@unique([animalId, position])
 }
 
 model Session {

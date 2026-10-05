@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { animalDisplayName, dateInputValue } from "@/lib/animal-display";
+import { MAX_PHOTOS } from "@/lib/animal-photo";
 import { contactStatus } from "@/lib/contact-status";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
@@ -43,12 +44,12 @@ export default async function EditareAnimalPage({
     prisma.animal.findFirst({
       where: { id, userId: viewer.id },
       // Le formulaire consomme presque tous les scalaires (valeurs
-      // initiales) ; des photos, seule l'URL de la première sert.
+      // initiales), et toutes les photos, dans l'ordre.
       include: {
         photos: {
           orderBy: { position: "asc" },
-          take: 1,
-          select: { url: true },
+          take: MAX_PHOTOS,
+          select: { url: true, width: true, height: true },
         },
       },
     }),
@@ -80,7 +81,7 @@ export default async function EditareAnimalPage({
           action={updateAnimal}
           animalId={animal.id}
           userId={viewer.id}
-          initialPhotoUrl={animal.photos[0]?.url}
+          initialPhotos={animal.photos}
           submitLabel={STR.animalForm.editSubmit}
           initial={{
             name: animal.name ?? "",
@@ -99,6 +100,7 @@ export default async function EditareAnimalPage({
             description: animal.description ?? "",
             sterilized: animal.sterilized,
             vaccinated: animal.vaccinated,
+            dewormed: animal.dewormed,
             microchipped: animal.microchipped,
             goodWithKids: animal.goodWithKids,
             goodWithDogs: animal.goodWithDogs,

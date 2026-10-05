@@ -1,7 +1,7 @@
 // Compression côté navigateur, obligatoire avant tout upload : Vercel plafonne
 // le corps des requêtes de fonctions à 4,5 Mo, et les bénévoles envoient des
 // photos de téléphone en 4G — 6 Mo doivent devenir ~200 Ko avant de partir
-// (1600 px de large max, WebP — ou JPEG sur Safari — à qualité dégressive).
+// (grand côté 1600 px, WebP — ou JPEG sur Safari — à qualité dégressive).
 //
 // Orientation EXIF : createImageBitmap et drawImage appliquent l'orientation
 // au décodage sur tous les navigateurs depuis ~2020 (défaut "from-image").
@@ -13,21 +13,40 @@
 
 import { STR } from "@/lib/strings";
 
-const MAX_WIDTH = 1600;
-// Qualité dégressive : 0.72 au départ, puis -0.05 par tentative tant que le
-// résultat dépasse 300 Ko. Cible ~200 Ko : les bénévoles sont en 4G roumaine.
-// Le JPEG (bascule Safari, qui ne sait pas encoder le WebP) compresse moins
-// bien à qualité égale : son plancher descend à 0.40 — la dernière marche est
-// bornée au plancher — là où le WebP s'arrête à 0.5 en 4 tentatives.
-const INITIAL_QUALITY = 0.72;
+// Dimensions (V3, octobre 2026, réglages validés sur les 175 photos de la
+// production réencodées dans Chromium et WebKit) : le GRAND côté est plafonné
+// à 1600 px, et non plus la largeur seule — 86 % des photos sont en portrait,
+// qu'un plafond en largeur ne réduisait jamais (1600×2133 = 3,4 Mpx, dont la
+// fiche n'affichait que le centre). Un 3:4 devient 1200×1600 : la fiche montre
+// la photo entière (object-contain), sans perte visible à 2× sur aucun écran.
+// Plancher de largeur à 1200 px : une photo 9:16 garde 1200 px de large au
+// lieu de tomber à 900 — c'est la largeur que Facebook recommande pour
+// og:image, et la première photo est l'aperçu de chaque partage.
+const MAX_LONG_SIDE = 1600;
+const MIN_WIDTH = 1200;
+// Qualité dégressive par pas de 0,05 tant que le résultat dépasse 300 Ko.
+// Cible ~200 Ko : les bénévoles sont en 4G roumaine. Si le plancher est
+// atteint sans y arriver, on garde la dernière version.
+//
+// WebP (Chrome, Android, Firefox) : départ à 0.72 ; avec 4 tentatives le
+// dernier essai est 0.52 — le plancher 0.5 n'est jamais atteint.
+// JPEG (bascule Safari, qui ne sait pas encoder le WebP) : départ à 0.52. Le
+// 0.72 de l'encodeur d'Apple vaut ~92 sur l'échelle JPEG standard, bien
+// au-dessus du WebP au même chiffre, pour des fichiers 1,6 fois plus lourds ;
+// 0.52 vaut ~81, et la qualité obtenue reste supérieure à celle d'avant V3
+// (où 45 % des photos d'iPhone finissaient au plancher 0.40).
 const QUALITY_STEP = 0.05;
 const TARGET_SIZE = 300 * 1024;
-const WEBP_LADDER = { minQuality: 0.5, maxRetries: 4 };
-const JPEG_LADDER = { minQuality: 0.4, maxRetries: 7 };
+type Ladder = { initialQuality: number; minQuality: number; maxRetries: number };
+const WEBP_LADDER: Ladder = { initialQuality: 0.72, minQuality: 0.5, maxRetries: 4 };
+const JPEG_LADDER: Ladder = { initialQuality: 0.52, minQuality: 0.4, maxRetries: 3 };
 
 export type CompressedPhoto = {
   blob: Blob;
   extension: "webp" | "jpg";
+  /** Dimensions du fichier produit, en pixels (og:image:width/height). */
+  width: number;
+  height: number;
 };
 
 async function decode(file: File): Promise<ImageBitmap | HTMLImageElement> {
@@ -65,13 +84,13 @@ function toBlob(
 async function encode(
   canvas: HTMLCanvasElement,
   type: "image/webp" | "image/jpeg",
-  { minQuality, maxRetries }: { minQuality: number; maxRetries: number },
+  { initialQuality, minQuality, maxRetries }: Ladder,
 ): Promise<Blob | null> {
-  let blob = await toBlob(canvas, type, INITIAL_QUALITY);
+  let blob = await toBlob(canvas, type, initialQuality);
   if (!blob || blob.type !== type) {
     return null;
   }
-  let previous = INITIAL_QUALITY;
+  let previous = initialQuality;
   for (
     let attempt = 1;
     attempt <= maxRetries && blob.size > TARGET_SIZE;
@@ -79,7 +98,7 @@ async function encode(
   ) {
     // Recalculée en centièmes à chaque tour : pas d'erreurs de flottants cumulées.
     const stepped =
-      Math.round(100 * INITIAL_QUALITY - attempt * 100 * QUALITY_STEP) / 100;
+      Math.round(100 * initialQuality - attempt * 100 * QUALITY_STEP) / 100;
     const quality = Math.max(stepped, minQuality);
     if (quality >= previous) {
       break; // le plancher a déjà été essayé
@@ -110,8 +129,15 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
     throw new Error(STR.compress.unreadable);
   }
 
-  // Jamais d'agrandissement : en dessous de 1600 px, on garde les dimensions.
-  const scale = Math.min(1, MAX_WIDTH / sourceWidth);
+  // Grand côté ramené à 1600 px, mais jamais moins de 1200 px de large, et
+  // jamais d'agrandissement : une petite photo garde ses dimensions.
+  const scale = Math.min(
+    1,
+    Math.max(
+      MAX_LONG_SIDE / Math.max(sourceWidth, sourceHeight),
+      MIN_WIDTH / sourceWidth,
+    ),
+  );
   const width = Math.round(sourceWidth * scale);
   const height = Math.round(sourceHeight * scale);
 
@@ -133,11 +159,11 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
   // avec la même stratégie de qualité dégressive.
   const webp = await encode(canvas, "image/webp", WEBP_LADDER);
   if (webp) {
-    return { blob: webp, extension: "webp" };
+    return { blob: webp, extension: "webp", width, height };
   }
   const jpeg = await encode(canvas, "image/jpeg", JPEG_LADDER);
   if (jpeg) {
-    return { blob: jpeg, extension: "jpg" };
+    return { blob: jpeg, extension: "jpg", width, height };
   }
   throw new Error(STR.compress.compressionFailed);
 }

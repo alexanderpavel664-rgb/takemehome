@@ -7,6 +7,14 @@
  *                                             ressortiront plus)
  *   npm run post:candidats -- liste           affiche ce qui a déjà été publié
  *
+ *   … -- --productie                          sur la production plutôt que la
+ *                                             dev (accepté par toutes les
+ *                                             commandes, n'importe où)
+ *
+ * Base : DATABASE_URL de .env.local (la branche dev, animaux de test), ou
+ * PRODUCTION_DATABASE_URL avec --productie. La base visée et son nombre
+ * d'annonces s'affichent en tête de sortie.
+ *
  * Critères, dans l'ordre :
  *   1. exclus : déjà publiés (trace locale dans social-export/publicate.json,
  *      jamais en base) ;
@@ -14,16 +22,25 @@
  *      fiche publique (lib/contact-status.ts), plus compte suspendu et
  *      annonce masquée, qui n'ont pas de fiche publique du tout ;
  *   3. privilégiés : avec photo ;
- *   4. privilégiés : publiés depuis longtemps ;
- *   5. variés : județe et types différents dans le tirage, et différents des
+ *   4. fortement pénalisés : description de moins de 150 caractères (rien à
+ *      raconter) — tirés seulement s'il n'y a pas assez d'autres candidats ;
+ *   5. privilégiés : publiés depuis longtemps ;
+ *   6. légèrement privilégiés : plusieurs photos ;
+ *   7. privilégiés : județe prioritaires, ceux où un groupe Facebook
+ *      d'adoption a été repéré — liste tenue à la main dans
+ *      social-export/judete-prioritare.json, tableau JSON de codes ou de
+ *      noms : ["CJ", "Iași"], ou [] ;
+ *   8. variés : județe et types différents dans le tirage, et différents des
  *      derniers tirages et des dernières publications.
  *
- * Lecture seule sur la base. Le seul fichier écrit est la trace locale.
+ * Lecture seule sur la base, imposée par Postgres lui-même : toutes les
+ * requêtes passent par une transaction READ ONLY vérifiée (withReadOnlyDb).
+ * Le seul fichier écrit est la trace locale.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseEnv } from "node:util";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { animalDisplayName } from "../src/lib/animal-display";
 import { contactStatus } from "../src/lib/contact-status";
@@ -31,7 +48,16 @@ import { COUNTIES } from "../src/lib/counties";
 import { AGE_GROUP_LABELS, SEX_LABELS, TYPE_LABELS } from "../src/lib/animal-labels";
 import { SITE_URL } from "../src/lib/site";
 
+// SITE_URL (lib/site.ts) lit NEXT_PUBLIC_SITE_URL au chargement du module :
+// en local, cette variable est absente et SITE_URL retombe sur l'URL
+// Vercel — bonne pour la dev, fausse pour des liens qu'on va publier. En
+// --productie les URL affichées doivent pointer sur le vrai domaine, quelle
+// que soit la variable locale.
+const PRODUCTION_SITE_URL = "https://takemehome.ro";
+
 const TRACE_FILE = "social-export/publicate.json";
+const PRIORITY_FILE = "social-export/judete-prioritare.json";
+const SHORT_DESCRIPTION = 150;
 const CANDIDATES = 5;
 const REMEMBERED_DRAWS = 3;
 
@@ -55,24 +81,162 @@ function writeTrace(trace: Trace) {
   writeFileSync(TRACE_FILE, JSON.stringify(trace, null, 2) + "\n");
 }
 
+// ——— Județe prioritaires ———————————————————————————————————————————————
+
+// Fichier édité à la main : une faute de frappe ne doit pas faire perdre
+// le bonus sans bruit, donc toute entrée non reconnue arrête le script.
+function readPriorityCounties(): Set<string> {
+  if (!existsSync(PRIORITY_FILE)) return new Set();
+  const text = readFileSync(PRIORITY_FILE, "utf8");
+  if (text.trim() === "") return new Set();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (e) {
+    console.error(`${PRIORITY_FILE} : JSON invalide — ${(e as Error).message}`);
+    process.exit(1);
+  }
+  if (!Array.isArray(raw)) {
+    console.error(`${PRIORITY_FILE} : attendu un tableau, par exemple ["CJ", "Iași"].`);
+    process.exit(1);
+  }
+  const codes = new Set<string>();
+  const unknown: unknown[] = [];
+  for (const entry of raw) {
+    const county = typeof entry === "string" ? findCounty(entry) : undefined;
+    if (county) codes.add(county.code);
+    else unknown.push(entry);
+  }
+  if (unknown.length > 0) {
+    console.error(
+      `${PRIORITY_FILE} : județ inconnu — ${unknown.map((u) => JSON.stringify(u)).join(", ")}.`,
+    );
+    console.error(`Codes acceptés : ${COUNTIES.map((c) => c.code).join(", ")} (ou le nom).`);
+    process.exit(1);
+  }
+  return codes;
+}
+
+/** Code ou nom, casse et diacritiques ignorées : « cj », « Iasi », « Iași ». */
+function findCounty(entry: string) {
+  const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").trim().toLowerCase();
+  const key = fold(entry);
+  return COUNTIES.find((c) => fold(c.code) === key || fold(c.name) === key);
+}
+
 // ——— Base ————————————————————————————————————————————————————————————
+
+const PRODUCTION_FLAG = "--productie";
+
+type Target = { production: boolean; variable: string; url: string };
+type Db = Prisma.TransactionClient;
 
 // .env.local fait foi, et lui seul (même raison que seed-demo.mts : un
 // DATABASE_URL resté dans le shell viserait silencieusement une autre base).
-function databaseUrl(): string {
-  let url: string | undefined;
+function resolveTarget(production: boolean): Target {
+  let env: Record<string, string | undefined>;
   try {
-    url = (parseEnv(readFileSync(".env.local", "utf8")) as Record<string, string | undefined>)
-      .DATABASE_URL;
+    env = parseEnv(readFileSync(".env.local", "utf8")) as Record<string, string | undefined>;
   } catch {
     console.error("Impossible de lire .env.local — lancer depuis la racine du repo.");
     process.exit(1);
   }
+  const variable = production ? "PRODUCTION_DATABASE_URL" : "DATABASE_URL";
+  const url = env[variable];
   if (!url) {
-    console.error("DATABASE_URL absente de .env.local.");
+    console.error(`${variable} absente de .env.local.`);
     process.exit(1);
   }
-  return url;
+  // Les deux variables sur la même base : l'étiquette DEV/PRODUCTION
+  // mentirait, donc on refuse plutôt que d'afficher une fausse cible.
+  const dev = env.DATABASE_URL;
+  const prod = env.PRODUCTION_DATABASE_URL;
+  if (dev && prod && databaseKey(dev) === databaseKey(prod)) {
+    console.error(
+      `DATABASE_URL et PRODUCTION_DATABASE_URL visent la même base (${hostLabel(dev)}) : ` +
+        `corriger .env.local.`,
+    );
+    process.exit(1);
+  }
+  return { production, variable, url };
+}
+
+/** Endpoint sans « -pooler » + nom de base : les deux chaînes Neon d'une même branche se valent. */
+function databaseKey(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.hostname.replace(/-pooler(?=\.)/, "")}/${u.pathname.slice(1)}`;
+  } catch {
+    return url;
+  }
+}
+
+/** Hôte et base, jamais les identifiants. */
+function hostLabel(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.hostname} / ${u.pathname.slice(1)}`;
+  } catch {
+    return "(URL illisible)";
+  }
+}
+
+/**
+ * Seule porte vers la base : le client Prisma ne sort pas d'ici, et tout
+ * passe par une transaction mise en READ ONLY avant la première requête,
+ * puis vérifiée auprès de Postgres. Une écriture ajoutée un jour par
+ * erreur serait refusée par la base elle-même (« cannot execute UPDATE in
+ * a read-only transaction »), en production comme en dev.
+ */
+async function withReadOnlyDb(target: Target, fn: (db: Db) => Promise<void>): Promise<void> {
+  const prisma = new PrismaClient({
+    adapter: new PrismaNeon({ connectionString: target.url }),
+  });
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SET TRANSACTION READ ONLY`;
+        const [row] = await tx.$queryRaw<{ transaction_read_only: string }[]>`SHOW transaction_read_only`;
+        if (row?.transaction_read_only !== "on") {
+          throw new Error(
+            `La base n'a pas confirmé la lecture seule (transaction_read_only = ` +
+              `${row?.transaction_read_only ?? "?"}) : arrêt avant toute lecture.`,
+          );
+        }
+        await fn(tx);
+      },
+      // Neon peut mettre quelques secondes à réveiller une branche endormie.
+      { maxWait: 30_000, timeout: 120_000 },
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// ——— Bandeau de tête ——————————————————————————————————————————————————
+
+const RULE = "═".repeat(72);
+
+// Affiché AVANT la connexion : la cible se lit même si la base tarde.
+function printTarget(target: Target) {
+  console.log(RULE);
+  console.log(
+    target.production
+      ? `BASE : PRODUCTION   (PRODUCTION_DATABASE_URL, ${PRODUCTION_FLAG})`
+      : `BASE : DEV — animaux de test   (DATABASE_URL ; vrais animaux : ${PRODUCTION_FLAG})`,
+  );
+  console.log(`Hôte : ${hostLabel(target.url)}`);
+}
+
+async function printCensus(db: Db) {
+  const total = await db.animal.count();
+  const available = await db.animal.count({ where: { status: "AVAILABLE" } });
+  console.log(
+    `Trouvé : ${total} annonce${total > 1 ? "s" : ""} en base, dont ${available} ` +
+      `disponible${available > 1 ? "s" : ""} — lecture seule confirmée par la base`,
+  );
+  console.log(RULE);
+  console.log();
 }
 
 // ——— Diacritiques ————————————————————————————————————————————————————
@@ -91,7 +255,16 @@ function cedillaWords(text: string | null | undefined): string[] {
 const DAY = 86_400_000;
 
 async function main() {
-  const [command, ...args] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  // Une faute de frappe (--production, --prod) ne doit pas retomber en
+  // silence sur la dev.
+  const unknownOption = argv.find((a) => a.startsWith("-") && a !== PRODUCTION_FLAG);
+  if (unknownOption) {
+    console.error(`Option inconnue : ${unknownOption}. Seule option : ${PRODUCTION_FLAG}.`);
+    process.exit(1);
+  }
+  const production = argv.includes(PRODUCTION_FLAG);
+  const [command, ...args] = argv.filter((a) => a !== PRODUCTION_FLAG);
   const trace = readTrace();
 
   if (command === "liste") {
@@ -105,17 +278,25 @@ async function main() {
     return;
   }
 
-  const prisma = new PrismaClient({
-    adapter: new PrismaNeon({ connectionString: databaseUrl() }),
-  });
+  // Tout ce qui peut échouer sans la base est vérifié avant de s'y connecter.
+  if (command !== undefined && command !== "publie") {
+    console.error(`Commande inconnue : ${command}. Commandes : (aucune), publie, liste.`);
+    process.exit(1);
+  }
+  if (command === "publie" && args.length === 0) {
+    console.error(`Usage : npm run post:candidats -- publie <id> [id…] [${PRODUCTION_FLAG}]`);
+    process.exit(1);
+  }
+  const priorityCounties = command === undefined ? readPriorityCounties() : new Set<string>();
 
-  try {
+  const target = resolveTarget(production);
+  printTarget(target);
+
+  await withReadOnlyDb(target, async (db) => {
+    await printCensus(db);
+
     if (command === "publie") {
-      if (args.length === 0) {
-        console.error("Usage : npm run post:candidats -- publie <id> [id…]");
-        process.exit(1);
-      }
-      const animals = await prisma.animal.findMany({
+      const animals = await db.animal.findMany({
         where: { id: { in: args } },
         select: { id: true, name: true, county: true, type: true, count: true },
       });
@@ -138,14 +319,9 @@ async function main() {
       return;
     }
 
-    if (command !== undefined) {
-      console.error(`Commande inconnue : ${command}. Commandes : (aucune), publie, liste.`);
-      process.exit(1);
-    }
-
     const publishedIds = new Set(trace.publicate.map((p) => p.id));
 
-    const animals = await prisma.animal.findMany({
+    const animals = await db.animal.findMany({
       where: {
         status: "AVAILABLE",
         hidden: false,
@@ -165,7 +341,7 @@ async function main() {
         description: true,
         createdAt: true,
         user: { select: { phone: true, publicEmail: true, contactConsent: true } },
-        photos: { select: { id: true }, take: 1 },
+        _count: { select: { photos: true } },
       },
     });
 
@@ -175,7 +351,10 @@ async function main() {
       .map((a) => ({
         ...a,
         days: Math.floor((now - a.createdAt.getTime()) / DAY),
-        hasPhoto: a.photos.length > 0,
+        photoCount: a._count.photos,
+        hasPhoto: a._count.photos > 0,
+        descriptionLength: [...(a.description?.trim() ?? "")].length,
+        priority: priorityCounties.has(a.county),
       }));
 
     if (pool.length === 0) {
@@ -196,10 +375,17 @@ async function main() {
       bump(recentTypes, p.type);
     }
 
-    // Sélection gloutonne : la photo pèse plus que tout (un post sans
-    // image ne marche pas), puis l'ancienneté en jours, moins des
-    // pénalités quand un județ/type est déjà dans la sélection ou dans
-    // les tirages récents. Les pénalités sont en « jours équivalents ».
+    // Sélection gloutonne, score en « jours équivalents » :
+    //   - photo : +10 000, pèse plus que tout (un post sans image ne
+    //     marche pas) ;
+    //   - description courte : −5 000, un palier sous toutes les
+    //     descriptions suffisantes à photo égale — elle ne sort que s'il
+    //     n'y a pas assez d'autres candidats ;
+    //   - ancienneté en jours ;
+    //   - photos en plus de la première : +10 chacune, 3 au plus ;
+    //   - județ prioritaire : +50 ;
+    //   - pénalités quand un județ/type est déjà dans la sélection ou
+    //     dans les tirages récents.
     const selected: typeof pool = [];
     const remaining = [...pool];
     while (selected.length < CANDIDATES && remaining.length > 0) {
@@ -209,8 +395,11 @@ async function main() {
         const sameCounty = selected.filter((s) => s.county === a.county).length;
         const sameType = selected.filter((s) => s.type === a.type).length;
         const score =
-          (a.hasPhoto ? 10_000 : 0) +
-          a.days -
+          (a.hasPhoto ? 10_000 : 0) -
+          (a.descriptionLength < SHORT_DESCRIPTION ? 5_000 : 0) +
+          a.days +
+          10 * Math.min(Math.max(a.photoCount - 1, 0), 3) +
+          (a.priority ? 50 : 0) -
           40 * sameCounty -
           25 * sameType -
           20 * (recentCounties.get(a.county) ?? 0) -
@@ -228,8 +417,16 @@ async function main() {
     console.log(
       `${pool.length} animaux éligibles (${animals.length} disponibles non publiés, ` +
         `${animals.length - pool.length} sans contact affichable), ` +
-        `${publishedIds.size} déjà publiés.\n`,
+        `${publishedIds.size} déjà publiés.`,
     );
+    console.log(
+      `Județe prioritaires : ${
+        priorityCounties.size === 0
+          ? `aucun (${PRIORITY_FILE})`
+          : [...priorityCounties].map(countyName).join(", ")
+      }\n`,
+    );
+    const siteUrl = target.production ? PRODUCTION_SITE_URL : SITE_URL;
     selected.forEach((a, i) => {
       const age = a.ageText?.trim() || (a.ageGroup ? AGE_GROUP_LABELS[a.ageGroup] : "—");
       const cedillas = [
@@ -244,9 +441,10 @@ async function main() {
       console.log(`Sexe        : ${a.sex ? SEX_LABELS[a.sex] : "—"}`);
       console.log(`Âge         : ${age}`);
       console.log(`Ville       : ${a.city?.trim() || "—"}`);
-      console.log(`Județ       : ${countyName(a.county)}`);
+      console.log(`Județ       : ${countyName(a.county)}${a.priority ? "   ★ prioritaire" : ""}`);
+      console.log(`Photos      : ${a.photoCount}`);
       console.log(`Publié      : depuis ${a.days} jour${a.days > 1 ? "s" : ""} (${a.createdAt.toISOString().slice(0, 10)})`);
-      console.log(`URL         : ${SITE_URL}/animal/${a.id}`);
+      console.log(`URL         : ${siteUrl}/animal/${a.id}`);
       console.log(`Id          : ${a.id}`);
       console.log(
         `Diacritiques: ${
@@ -255,7 +453,11 @@ async function main() {
             : `⚠ ş/ţ à cédille dans : ${cedillas.join(", ")}`
         }`,
       );
-      console.log(`Description :`);
+      console.log(
+        `Description : ${a.descriptionLength} caractères${
+          a.descriptionLength < SHORT_DESCRIPTION ? `   ⚠ COURTE (< ${SHORT_DESCRIPTION})` : ""
+        }`,
+      );
       console.log(indent(a.description?.trim() || "(vide)"));
       console.log();
     });
@@ -272,9 +474,7 @@ async function main() {
       },
     ];
     writeTrace(trace);
-  } finally {
-    await prisma.$disconnect();
-  }
+  });
 }
 
 function countyName(code: string): string {

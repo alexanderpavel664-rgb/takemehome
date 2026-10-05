@@ -2,19 +2,12 @@ import { Suspense, type ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import {
-  animalDisplayName,
-  animalMetaLine,
-  deadlineLabel,
-  groupLabel,
-} from "@/lib/animal-display";
-import { countyName } from "@/lib/counties";
+import { CARD_SELECT, cardData } from "@/lib/animal-card-data";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { Logo } from "@/components/logo";
-import { AnimalCard } from "@/components/ui/animal-card";
 import { ButtonLink } from "@/components/ui/button";
-import { GRID_CLASSES } from "./animal-grid";
+import { CardGrid } from "./card-grid";
 import { SkeletonGrid } from "./skeleton-grid";
 
 /** La phrase qui dit ce que c'est — descriptive, pas un slogan. */
@@ -133,24 +126,7 @@ async function RecentAnimals() {
     take: RECENT_COUNT,
     // Uniquement ce que la carte consomme — la page d'accueil est rendue
     // à chaque visite, chaque colonne en trop se paie en compute Neon.
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      sex: true,
-      ageGroup: true,
-      ageText: true,
-      county: true,
-      // V2 : un entier et une date de plus, pour les mêmes pastilles que
-      // la grille publique.
-      count: true,
-      availableUntil: true,
-      photos: {
-        orderBy: { position: "asc" },
-        take: 1,
-        select: { url: true },
-      },
-    },
+    select: CARD_SELECT,
   });
 
   if (animals.length === 0) {
@@ -161,21 +137,12 @@ async function RecentAnimals() {
 
   return (
     <RecentSection>
-      <ul className={GRID_CLASSES}>
-        {animals.map((animal) => (
-          <li key={animal.id}>
-            <AnimalCard
-              href={`/animal/${animal.id}`}
-              name={animalDisplayName(animal)}
-              meta={animalMetaLine(animal)}
-              county={countyName(animal.county)}
-              photoUrl={animal.photos[0]?.url}
-              group={groupLabel(animal)}
-              deadline={deadlineLabel(animal.availableUntil, "short", now)}
-            />
-          </li>
-        ))}
-      </ul>
+      {/* Sous le texte d'accueil : aucune photo en eager, la priorité reste
+          au-dessus de la ligne de flottaison. */}
+      <CardGrid
+        cards={animals.map((animal) => cardData(animal, now))}
+        eagerCount={0}
+      />
     </RecentSection>
   );
 }

@@ -17,10 +17,11 @@ import {
 } from "@/lib/animal-labels";
 import { COUNTIES } from "@/lib/counties";
 import { STR } from "@/lib/strings";
-import { animalPhotoPathname } from "@/lib/animal-photo";
+import { animalPhotoPathname, MAX_PHOTOS } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
 import { reportClientError } from "@/lib/client-report";
 import { requestUploadToken, UploadRefusedError } from "@/lib/upload-token";
+import { AnimalPhoto } from "@/components/ui/animal-photo";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ChipCheckbox } from "@/components/ui/chip";
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/field";
@@ -45,12 +46,39 @@ export type AnimalFormValues = {
   description: string;
   sterilized: boolean;
   vaccinated: boolean;
+  dewormed: boolean;
   microchipped: boolean;
   goodWithKids: boolean;
   goodWithDogs: boolean;
   goodWithCats: boolean;
   status: string;
 };
+
+/** Une photo déjà en ligne, telle que la base la connaît. */
+export type InitialPhoto = {
+  url: string;
+  width: number | null;
+  height: number | null;
+};
+
+/**
+ * Une vignette du formulaire : une photo déjà en ligne, ou une photo choisie
+ * ici — compressée, prévisualisée depuis la mémoire, envoyée au store
+ * seulement à la sauvegarde. `uploadedUrl` retient l'envoi déjà fait : si
+ * l'action renvoie une erreur et qu'on resoumet, rien ne repart.
+ */
+type PhotoSlot =
+  | { kind: "existing"; key: string; url: string }
+  | {
+      kind: "new";
+      key: string;
+      photo: CompressedPhoto;
+      previewUrl: string;
+      uploadedUrl: string | null;
+    };
+
+let slotSeq = 0;
+const nextKey = () => `photo-${++slotSeq}`;
 
 // Le fichier sélectionné est trop lourd pour être même décodé sereinement
 // au-delà de cette limite (photos RAW, vidéos renommées…).
@@ -98,7 +126,7 @@ const PHOTO_GROUP =
   "has-[:disabled]:pointer-events-none has-[:disabled]:opacity-50";
 
 // Formulaire partagé création/édition. Seuls name, type et county sont
-// obligatoires — tout le reste, photo comprise, peut rester vide pour une
+// obligatoires — tout le reste, photos comprises, peut rester vide pour une
 // saisie rapide au téléphone : une fiche sans photo vaut mieux qu'une fiche
 // jamais créée. /cont invite ensuite à en ajouter une.
 export function AnimalForm({
@@ -106,7 +134,7 @@ export function AnimalForm({
   initial,
   animalId,
   userId,
-  initialPhotoUrl,
+  initialPhotos = [],
   submitLabel,
 }: {
   action: (
@@ -116,24 +144,37 @@ export function AnimalForm({
   initial?: AnimalFormValues;
   animalId?: string;
   userId: string;
-  initialPhotoUrl?: string;
+  /** Les photos déjà en ligne, dans l'ordre (la première est la principale). */
+  initialPhotos?: InitialPhoto[];
   submitLabel: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
 
-  // Deux entrées pour un seul fichier : l'appareil photo (capture) et la
-  // galerie. Toutes deux sont vidées ensemble après un refus.
+  // Deux entrées pour ajouter : l'appareil photo (capture, une à la fois)
+  // et la galerie (plusieurs d'un coup). Une troisième, invisible, pour
+  // remplacer une vignette précise.
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [photo, setPhoto] = useState<CompressedPhoto | null>(null);
-  const [originalSize, setOriginalSize] = useState<number | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [preparing, setPreparing] = useState(false);
-  // URL déjà envoyée au store : évite un second upload si la server action
-  // renvoie une erreur de validation et que l'utilisateur resoumet.
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const [progress, setProgress] = useState<number | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [slots, setSlots] = useState<PhotoSlot[]>(() =>
+    initialPhotos.map((p) => ({ kind: "existing", key: nextKey(), url: p.url })),
+  );
+  // Vignette visée par « Înlocuiește », le temps que le sélecteur s'ouvre.
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  // Photos en ligne retirées : elles ne s'effacent qu'à la sauvegarde.
+  const [removedCount, setRemovedCount] = useState(0);
+  const [preparing, setPreparing] = useState<{ i: number; n: number } | null>(
+    null,
+  );
+  const [progress, setProgress] = useState<{
+    i: number;
+    n: number;
+    percent: number;
+  } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
+  // Les aperçus (URL blob: en mémoire), libérés au démontage.
+  const previewsRef = useRef(new Set<string>());
 
   // « Nu are nume » désactive le champ nom (un champ désactivé ne part pas
   // dans le FormData : l'action lit la case, pas un nom vide).
@@ -155,57 +196,48 @@ export function AnimalForm({
   }
 
   useEffect(() => {
+    const previews = previewsRef.current;
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      for (const url of previews) {
+        URL.revokeObjectURL(url);
       }
     };
-  }, [previewUrl]);
+  }, []);
 
-  function resetPhotoInputs() {
-    if (cameraInputRef.current) cameraInputRef.current.value = "";
-    if (photoInputRef.current) photoInputRef.current.value = "";
+  function releasePreview(slot: PhotoSlot) {
+    if (slot.kind === "new") {
+      URL.revokeObjectURL(slot.previewUrl);
+      previewsRef.current.delete(slot.previewUrl);
+    }
   }
 
-  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    // L'autre entrée est vidée : un seul fichier à la fois, celui qu'on
-    // vient de choisir, quelle que soit la porte.
-    if (event.target !== cameraInputRef.current && cameraInputRef.current) {
-      cameraInputRef.current.value = "";
+  function resetPhotoInputs() {
+    for (const input of [cameraInputRef, photoInputRef, replaceInputRef]) {
+      if (input.current) input.current.value = "";
     }
-    if (event.target !== photoInputRef.current && photoInputRef.current) {
-      photoInputRef.current.value = "";
-    }
-    setPhoto(null);
-    setOriginalSize(null);
-    setPreviewUrl(null);
-    setUploadedUrl(null);
-    setProgress(null);
-    setPhotoError(null);
-    if (!file) {
-      return;
-    }
+  }
 
+  /**
+   * Vérifie, décode et compresse UN fichier. Les messages d'échec sont ceux
+   * de STR (compress, animalForm) ; une exception imprévue part dans le
+   * rapport d'erreur et s'affiche sous une phrase générique.
+   */
+  async function prepare(file: File): Promise<PhotoSlot | null> {
     // file.type est parfois vide (HEIC sur certains systèmes) : dans ce cas
     // on laisse le décodage trancher plutôt que de refuser d'office.
     if (file.type && !file.type.startsWith("image/")) {
       setPhotoError(STR.animalForm.notAnImage);
-      resetPhotoInputs();
-      return;
+      return null;
     }
     if (file.size > MAX_SOURCE_SIZE) {
       setPhotoError(STR.animalForm.fileTooLarge(formatSize(file.size)));
-      resetPhotoInputs();
-      return;
+      return null;
     }
-
-    setPreparing(true);
     try {
-      const compressed = await compressPhoto(file);
-      setPhoto(compressed);
-      setOriginalSize(file.size);
-      setPreviewUrl(URL.createObjectURL(compressed.blob));
+      const photo = await compressPhoto(file);
+      const previewUrl = URL.createObjectURL(photo.blob);
+      previewsRef.current.add(previewUrl);
+      return { kind: "new", key: nextKey(), photo, previewUrl, uploadedUrl: null };
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       const known = COMPRESS_MESSAGES.includes(message);
@@ -216,61 +248,155 @@ export function AnimalForm({
         reportClientError("photo_prepare_failed", error);
       }
       setPhotoError(known ? message : STR.animalForm.preparingFailed);
-      resetPhotoInputs();
-    } finally {
-      setPreparing(false);
+      return null;
     }
   }
 
-  // La soumission est TOUJOURS interceptée, photo ou pas. Soumis par son
+  // Ajout : une photo de l'appareil, ou plusieurs de la galerie. Au-delà
+  // des places libres, on garde les premières choisies et on le dit.
+  // Compression une à une : quatre photos de 12 Mpx décodées ensemble
+  // épuisent la mémoire des petits Android.
+  async function handleAdd(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    resetPhotoInputs();
+    setPhotoError(null);
+    setPhotoNotice(null);
+    const free = MAX_PHOTOS - slots.length;
+    if (files.length === 0 || free <= 0) {
+      return;
+    }
+    const chosen = files.slice(0, free);
+    if (files.length > free) {
+      setPhotoNotice(STR.animalForm.photosTruncated(free));
+    }
+    for (const [i, file] of chosen.entries()) {
+      setPreparing({ i: i + 1, n: chosen.length });
+      const slot = await prepare(file);
+      if (slot) {
+        setSlots((current) =>
+          current.length < MAX_PHOTOS ? [...current, slot] : current,
+        );
+      }
+    }
+    setPreparing(null);
+  }
+
+  function startReplace(index: number) {
+    setReplaceIndex(index);
+    replaceInputRef.current?.click();
+  }
+
+  async function handleReplace(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const index = replaceIndex;
+    resetPhotoInputs();
+    setReplaceIndex(null);
+    setPhotoError(null);
+    setPhotoNotice(null);
+    if (!file || index === null) {
+      return;
+    }
+    setPreparing({ i: 1, n: 1 });
+    const slot = await prepare(file);
+    setPreparing(null);
+    if (!slot) {
+      return;
+    }
+    const replaced = slots[index];
+    if (!replaced) {
+      return;
+    }
+    releasePreview(replaced);
+    if (replaced.kind === "existing") {
+      setRemovedCount((n) => n + 1);
+    }
+    setSlots((current) =>
+      current.map((s) => (s.key === replaced.key ? slot : s)),
+    );
+  }
+
+  function removeSlot(index: number) {
+    const removed = slots[index];
+    if (!removed) {
+      return;
+    }
+    releasePreview(removed);
+    if (removed.kind === "existing") {
+      setRemovedCount((n) => n + 1);
+    }
+    setPhotoNotice(null);
+    setSlots((current) => current.filter((s) => s.key !== removed.key));
+  }
+
+  // La soumission est TOUJOURS interceptée, photos ou pas. Soumis par son
   // attribut action, un formulaire React 19 est réinitialisé (form.reset())
   // dès que l'action se termine — y compris quand elle rend une erreur :
   // « limite atteinte » ou « panne » s'afficheraient au-dessus de champs
   // vidés, et le sauveteur retaperait tout. Dispatchée à la main dans une
   // transition, la même action laisse le DOM tel quel. L'attribut action
-  // reste pour la soumission avant hydratation (sans JavaScript) ; la
+  // reste pour la soumission avant hydratation (sans JavaScript : sans champ
+  // `photos`, l'action laisse alors les photos telles quelles) ; la
   // validation native (required) s'exécute avant l'événement submit.
   //
-  // Avec une photo en attente : upload direct du navigateur vers Vercel
-  // Blob (progression affichée), puis dispatch avec l'URL dans photoUrl.
+  // Les photos nouvelles partent d'abord, une à une, du navigateur droit vers
+  // Vercel Blob (progression affichée) ; puis l'action reçoit la liste
+  // complète et ordonnée dans `photos` — celles déjà en ligne, les nouvelles,
+  // et l'absence de celles qu'on a retirées.
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    if (photo || uploadedUrl) {
-      void submitWithPhoto(formData);
-      return;
-    }
-    startTransition(() => {
-      formAction(formData);
-    });
+    void submitWithPhotos(new FormData(event.currentTarget));
   }
 
-  async function submitWithPhoto(formData: FormData) {
+  async function submitWithPhotos(formData: FormData) {
     setPhotoError(null);
+    const toUpload = slots.filter(
+      (s): s is Extract<PhotoSlot, { kind: "new" }> =>
+        s.kind === "new" && !s.uploadedUrl,
+    );
+    // Les URL obtenues pendant CETTE soumission (l'état React ne sera relu
+    // qu'au rendu suivant).
+    const uploaded = new Map<string, string>();
+    let current: Extract<PhotoSlot, { kind: "new" }> | null = null;
     try {
-      let url = uploadedUrl;
-      if (!url && photo) {
-        setProgress(0);
-        const pathname = animalPhotoPathname(userId, photo.extension);
+      for (const [i, slot] of toUpload.entries()) {
+        current = slot;
+        setProgress({ i: i + 1, n: toUpload.length, percent: 0 });
+        const pathname = animalPhotoPathname(userId, slot.photo.extension);
         // Deux requêtes, séparées pour lire le refus éventuel de la
         // première (voir lib/upload-token.ts) : le jeton, puis le PUT.
         const token = await requestUploadToken({
           pathname,
           clientPayload: JSON.stringify({ animalId: animalId ?? null }),
         });
-        const result = await put(pathname, photo.blob, {
+        const result = await put(pathname, slot.photo.blob, {
           access: "public",
           token,
-          contentType: photo.blob.type,
-          onUploadProgress: ({ percentage }) => setProgress(percentage),
+          contentType: slot.photo.blob.type,
+          onUploadProgress: ({ percentage }) =>
+            setProgress({ i: i + 1, n: toUpload.length, percent: percentage }),
         });
-        url = result.url;
-        setUploadedUrl(url);
+        uploaded.set(slot.key, result.url);
+        // Retenue tout de suite : si la suivante échoue, celle-ci ne
+        // repartira pas au prochain essai.
+        setSlots((all) =>
+          all.map((s) =>
+            s.key === slot.key && s.kind === "new"
+              ? { ...s, uploadedUrl: result.url }
+              : s,
+          ),
+        );
       }
-      if (!url) {
-        return;
-      }
-      formData.set("photoUrl", url);
+      current = null;
+      const photos = slots.map((s) =>
+        s.kind === "existing"
+          ? { url: s.url }
+          : {
+              url: s.uploadedUrl ?? uploaded.get(s.key),
+              width: s.photo.width,
+              height: s.photo.height,
+            },
+      );
+      formData.set("photos", JSON.stringify(photos));
       startTransition(() => {
         formAction(formData);
       });
@@ -281,8 +407,8 @@ export function AnimalForm({
       // distingue une limite atteinte (429 — la protection qui bloque
       // quelqu'un de légitime, à surveiller) d'une panne.
       reportClientError("photo_upload_failed", error, {
-        bytes: photo?.blob.size ?? 0,
-        format: photo?.extension ?? "aucun",
+        bytes: current?.photo.blob.size ?? 0,
+        format: current?.photo.extension ?? "aucun",
         editing: animalId ? "oui" : "non",
         status:
           error instanceof UploadRefusedError ? String(error.status) : "none",
@@ -293,15 +419,17 @@ export function AnimalForm({
     }
   }
 
-  const busy = pending || preparing || progress !== null;
+  const busy = pending || preparing !== null || progress !== null;
+  const newCount = slots.filter((s) => s.kind === "new" && !s.uploadedUrl).length;
+  const full = slots.length >= MAX_PHOTOS;
 
   // Erreur photo : côté client (sélection, compression, upload) ou côté
-  // serveur (validation) — un seul message affiché, relié au champ #photo.
+  // serveur (validation) — un seul message affiché, relié aux champs photo.
   const photoErrorMessage = photoError ?? state?.fieldErrors?.photo ?? null;
 
-  // Sous les boutons photo, tant qu'aucune n'est choisie ni déjà en ligne :
-  // la consigne de cadrage — une information, pas une exigence.
-  const showPhotoHint = !photo && !preparing && !initialPhotoUrl;
+  // Sous les boutons photo, tant qu'aucune n'est là : la consigne — une
+  // information, pas une exigence.
+  const showPhotoHint = slots.length === 0 && preparing === null;
   // Ne référence que ce qui est rendu : un id absent ne décrit rien.
   const photoDescribedBy = photoErrorMessage
     ? "photo-error"
@@ -312,79 +440,150 @@ export function AnimalForm({
   return (
     <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
       {animalId && <input type="hidden" name="id" value={animalId} />}
-      {/* La photo D'ABORD : le sauveteur a l'animal devant lui, et la
+      {/* Les photos D'ABORD : le sauveteur a l'animal devant lui, et la
           préparation (décodage + compression) tourne pendant qu'il remplit
           le reste — à la soumission il ne reste que l'envoi. */}
       <div>
         <p id="photo-label" className="mb-1 text-sm text-warm-ink">
           {STR.animalForm.photo}
         </p>
-        {/* Deux entrées, un seul gestionnaire. Aucune n'a d'attribut name :
-            le fichier ne doit jamais partir dans la server action (limite
-            de 1 Mo par défaut, 4,5 Mo sur Vercel) — il est envoyé au store
-            par upload() après compression. Les inputs restent dans le flux
-            en sr-only (clavier, lecteurs d'écran) ; les <label> voisins
-            portent le rendu bouton. Aucun n'est plein : le seul bouton
-            plein de l'écran est « Publică anunțul ». */}
-        <div className="flex flex-wrap gap-2">
-          {/* L'appareil photo, sur écrans tactiles seulement :
-              capture="environment" ouvre directement la caméra arrière,
-              sans passer par la galerie. Sur un ordinateur l'attribut est
-              ignoré et « Fă o poză » mentirait — le bouton n'y est pas. */}
-          <span className={`hidden pointer-coarse:block ${PHOTO_GROUP}`}>
-            <input
-              id="photo-camera"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              ref={cameraInputRef}
-              onChange={handlePhotoChange}
-              disabled={busy}
-              aria-invalid={photoErrorMessage ? true : undefined}
-              aria-describedby={photoDescribedBy}
-              className="sr-only"
-            />
-            <label
-              htmlFor="photo-camera"
-              className={buttonClasses("outline", "cursor-pointer")}
-            >
-              {STR.animalForm.takePhoto}
-            </label>
-          </span>
-          {/* La galerie (ou le disque) : la seule entrée sur ordinateur,
-              donc en outline ; la seconde sur téléphone, donc en ghost.
-              Deux labels pour le même input — HTML l'autorise — plutôt
-              qu'un libellé qui change de classe. */}
-          <span className={PHOTO_GROUP}>
-            <input
-              id="photo"
-              type="file"
-              accept="image/*"
-              ref={photoInputRef}
-              onChange={handlePhotoChange}
-              disabled={busy}
-              aria-invalid={photoErrorMessage ? true : undefined}
-              aria-describedby={photoDescribedBy}
-              className="sr-only"
-            />
-            <span className="pointer-coarse:hidden">
+        {slots.length > 0 && (
+          // Les vignettes, dans l'ordre de la fiche : la première est la
+          // principale (carte, partages). Recadrées comme sur la carte, pour
+          // que la principale se voie telle que la grille la montrera.
+          <ul className="mb-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {slots.map((slot, index) => (
+              <li key={slot.key}>
+                <div className="relative aspect-[4/3] overflow-hidden rounded-md border border-warm-border bg-cream-ground">
+                  {slot.kind === "existing" ? (
+                    <AnimalPhoto
+                      src={slot.url}
+                      name={STR.animalForm.photoAlt(index + 1)}
+                      alt={STR.animalForm.photoAlt(index + 1)}
+                      sizes="(min-width: 640px) 160px, 50vw"
+                    />
+                  ) : (
+                    // Aperçu local d'un blob : next/image ne s'applique pas ici.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={slot.previewUrl}
+                      alt={STR.animalForm.photoAlt(index + 1)}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+                {/* La ligne existe sous chaque vignette : les boutons restent
+                    alignés d'une vignette à l'autre. */}
+                <p className="mt-1 min-h-5 text-[13px]/5 font-semibold text-warm-ink">
+                  {index === 0 ? STR.animalForm.coverBadge : ""}
+                </p>
+                <div className="flex flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => startReplace(index)}
+                    disabled={busy}
+                    aria-label={STR.animalForm.replacePhotoLabel(index + 1)}
+                    className="inline-flex min-h-11 items-center px-1 text-sm text-warm-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink disabled:opacity-50"
+                  >
+                    {STR.animalForm.replacePhoto}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeSlot(index)}
+                    disabled={busy}
+                    aria-label={STR.animalForm.removePhotoLabel(index + 1)}
+                    className="inline-flex min-h-11 items-center px-1 text-sm text-warm-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink disabled:opacity-50"
+                  >
+                    {STR.animalForm.removePhoto}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {/* Le remplacement d'une vignette : invisible, ouvert par
+            « Înlocuiește ». Sans name, comme les deux autres. */}
+        <input
+          type="file"
+          accept="image/*"
+          ref={replaceInputRef}
+          onChange={handleReplace}
+          tabIndex={-1}
+          aria-hidden
+          className="sr-only"
+        />
+        {full ? (
+          <p className="text-sm text-warm-gray">{STR.animalForm.photosFull}</p>
+        ) : (
+          // Aucune entrée n'a d'attribut name : les fichiers ne doivent
+          // jamais partir dans la server action (limite de 1 Mo par défaut,
+          // 4,5 Mo sur Vercel) — ils vont au store après compression. Les
+          // inputs restent dans le flux en sr-only (clavier, lecteurs
+          // d'écran) ; les <label> voisins portent le rendu bouton. Aucun
+          // n'est plein : le seul bouton plein de l'écran est « Publică
+          // anunțul ».
+          <div className="flex flex-wrap gap-2">
+            {/* L'appareil photo, sur écrans tactiles seulement :
+                capture="environment" ouvre directement la caméra arrière,
+                sans passer par la galerie. Sur un ordinateur l'attribut est
+                ignoré et « Fă o poză » mentirait — le bouton n'y est pas. */}
+            <span className={`hidden pointer-coarse:block ${PHOTO_GROUP}`}>
+              <input
+                id="photo-camera"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={cameraInputRef}
+                onChange={handleAdd}
+                disabled={busy}
+                aria-invalid={photoErrorMessage ? true : undefined}
+                aria-describedby={photoDescribedBy}
+                className="sr-only"
+              />
               <label
-                htmlFor="photo"
+                htmlFor="photo-camera"
                 className={buttonClasses("outline", "cursor-pointer")}
               >
-                {STR.animalForm.choosePhoto}
+                {STR.animalForm.takePhoto}
               </label>
             </span>
-            <span className="hidden pointer-coarse:block">
-              <label
-                htmlFor="photo"
-                className={buttonClasses("ghost", "cursor-pointer")}
-              >
-                {STR.animalForm.chooseFromGallery}
-              </label>
+            {/* La galerie (ou le disque), plusieurs fichiers d'un coup : la
+                seule entrée sur ordinateur, donc en outline ; la seconde
+                sur téléphone, donc en ghost. Deux labels pour le même input
+                — HTML l'autorise — plutôt qu'un libellé qui change de
+                classe. */}
+            <span className={PHOTO_GROUP}>
+              <input
+                id="photo"
+                type="file"
+                accept="image/*"
+                multiple
+                ref={photoInputRef}
+                onChange={handleAdd}
+                disabled={busy}
+                aria-invalid={photoErrorMessage ? true : undefined}
+                aria-describedby={photoDescribedBy}
+                className="sr-only"
+              />
+              <span className="pointer-coarse:hidden">
+                <label
+                  htmlFor="photo"
+                  className={buttonClasses("outline", "cursor-pointer")}
+                >
+                  {STR.animalForm.choosePhoto}
+                </label>
+              </span>
+              <span className="hidden pointer-coarse:block">
+                <label
+                  htmlFor="photo"
+                  className={buttonClasses("ghost", "cursor-pointer")}
+                >
+                  {STR.animalForm.chooseFromGallery}
+                </label>
+              </span>
             </span>
-          </span>
-        </div>
+          </div>
+        )}
         {showPhotoHint && (
           <p id="photo-hint" className="mt-2 max-w-[60ch] text-sm text-warm-gray">
             {STR.animalForm.photoHint}
@@ -392,48 +591,33 @@ export function AnimalForm({
         )}
         {preparing && (
           <p role="status" className="mt-2 text-sm text-warm-ink">
-            {STR.animalForm.preparing}
+            {preparing.n > 1
+              ? STR.animalForm.preparingCount(preparing.i, preparing.n)
+              : STR.animalForm.preparing}
           </p>
         )}
-        {photo && previewUrl && (
-          <div className="mt-2">
-            {/* Aperçu local d'un blob : next/image ne s'applique pas ici. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt={STR.animalForm.previewAlt}
-              width={240}
-              className="rounded-md border border-warm-border"
-            />
-            <p className="mt-1 text-sm text-warm-gray">
-              {/* Le format affiché dit si la bascule Safari (pas d'encodage WebP)
-                  s'est déclenchée : WebP = voie normale, JPEG = bascule. */}
-              {STR.animalForm.photoReady(
-                photo.extension === "webp" ? "WebP" : "JPEG",
-                originalSize !== null && photo.blob.size < originalSize
-                  ? `, ${formatSize(originalSize)} → ${formatSize(photo.blob.size)}`
-                  : `, ${formatSize(photo.blob.size)}`,
-              )}
-            </p>
-          </div>
+        {photoNotice && (
+          <p role="status" className="mt-2 max-w-[60ch] text-sm text-warm-ink">
+            {photoNotice}
+          </p>
         )}
-        {!photo && !preparing && initialPhotoUrl && (
-          <div className="mt-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={initialPhotoUrl}
-              alt={STR.animalForm.currentPhotoAlt}
-              width={240}
-              className="rounded-md border border-warm-border"
-            />
-            <p className="mt-1 text-sm text-warm-gray">
-              {STR.animalForm.currentPhotoHint}
-            </p>
-          </div>
+        {progress === null && preparing === null && newCount > 0 && (
+          <p className="mt-2 text-sm text-warm-gray">
+            {STR.animalForm.photosPending(newCount)}
+          </p>
+        )}
+        {removedCount > 0 && (
+          <p className="mt-2 text-sm text-warm-gray">
+            {STR.animalForm.photosRemoved(removedCount)}
+          </p>
         )}
         {progress !== null && (
           <p role="status" className="mt-2 text-sm text-warm-ink">
-            {STR.animalForm.uploading(Math.round(progress))}
+            {STR.animalForm.uploading(
+              progress.i,
+              progress.n,
+              Math.round(progress.percent),
+            )}
           </p>
         )}
         {photoErrorMessage && (
@@ -605,6 +789,11 @@ export function AnimalForm({
             defaultChecked={initial?.vaccinated}
           />
           <ChipCheckbox
+            label={STR.animalForm.dewormed}
+            name="dewormed"
+            defaultChecked={initial?.dewormed}
+          />
+          <ChipCheckbox
             label={STR.animalForm.microchipped}
             name="microchipped"
             defaultChecked={initial?.microchipped}
@@ -690,7 +879,7 @@ export function AnimalForm({
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="primary" disabled={busy}>
           {progress !== null
-            ? STR.animalForm.uploadingLabel
+            ? STR.animalForm.uploadingLabel(progress.n)
             : preparing
               ? STR.animalForm.preparing
               : pending

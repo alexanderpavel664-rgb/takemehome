@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getViewer, type Viewer } from "@/lib/viewer";
 import { COUNTY_CODES } from "@/lib/counties";
-import { isOwnedAnimalPhotoUrl } from "@/lib/animal-photo";
+import { isOwnedAnimalPhotoUrl, MAX_PHOTOS } from "@/lib/animal-photo";
 import { deleteBlobs } from "@/lib/blob";
 import { isRateLimited } from "@/lib/rate-limit";
 import { reportError } from "@/lib/report";
@@ -93,6 +93,7 @@ type ParsedAnimal = {
   description: string | null;
   sterilized: boolean;
   vaccinated: boolean;
+  dewormed: boolean;
   microchipped: boolean;
   goodWithKids: boolean;
   goodWithDogs: boolean;
@@ -202,6 +203,7 @@ function parseAnimalForm(
       description: optionalText(formData, "description"),
       sterilized: checkbox(formData, "sterilized"),
       vaccinated: checkbox(formData, "vaccinated"),
+      dewormed: checkbox(formData, "dewormed"),
       microchipped: checkbox(formData, "microchipped"),
       goodWithKids: checkbox(formData, "goodWithKids"),
       goodWithDogs: checkbox(formData, "goodWithDogs"),
@@ -211,21 +213,67 @@ function parseAnimalForm(
   };
 }
 
-// photoUrl est renseigné par le formulaire après l'upload client vers Vercel
-// Blob. La valeur vient du navigateur : on n'accepte que des URLs du store,
-// dans l'espace animale/<userId>/ du refuge connecté (voir animal-photo.ts).
-function parsePhotoUrl(
+/** Une photo de la liste envoyée par le formulaire, dans l'ordre voulu. */
+type PhotoInput = { url: string; width: number | null; height: number | null };
+
+// Dimension mesurée par le canvas de compression : un entier plausible, ou
+// rien. Elle ne sert qu'à og:image:width/height — une valeur forgée ne
+// fausserait que l'aperçu de sa propre annonce.
+function dimension(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 10_000
+    ? value
+    : null;
+}
+
+// `photos` : la liste COMPLÈTE et ordonnée des photos de l'annonce, en JSON —
+// celles déjà en ligne et les nouvelles, que le navigateur vient d'envoyer à
+// Vercel Blob. La première est la principale. Absente (formulaire soumis sans
+// JavaScript, qui ne peut de toute façon rien envoyer au store) : null, et
+// les photos restent telles quelles — jamais « aucune photo ».
+//
+// Ici, seulement la forme : au plus MAX_PHOTOS, des URL, sans doublon.
+// L'appartenance de chaque URL se vérifie dans l'action, qui seule sait
+// quelles photos l'annonce a déjà.
+function parsePhotos(
   formData: FormData,
-  userId: string,
-): { ok: true; url: string | null } | { ok: false; error: string } {
-  const url = text(formData, "photoUrl");
-  if (!url) {
-    return { ok: true, url: null };
+): { ok: true; photos: PhotoInput[] | null } | { ok: false; error: string } {
+  const raw = formData.get("photos");
+  if (typeof raw !== "string") {
+    return { ok: true, photos: null };
   }
-  if (!isOwnedAnimalPhotoUrl(url, userId)) {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
     return { ok: false, error: STR.animalForm.photoUrlInvalid };
   }
-  return { ok: true, url };
+  if (!Array.isArray(value)) {
+    return { ok: false, error: STR.animalForm.photoUrlInvalid };
+  }
+  if (value.length > MAX_PHOTOS) {
+    return { ok: false, error: STR.animalForm.photosTooMany };
+  }
+  const photos: PhotoInput[] = [];
+  for (const item of value as unknown[]) {
+    if (
+      item === null ||
+      typeof item !== "object" ||
+      !("url" in item) ||
+      typeof item.url !== "string" ||
+      photos.some((p) => p.url === item.url)
+    ) {
+      return { ok: false, error: STR.animalForm.photoUrlInvalid };
+    }
+    photos.push({
+      url: item.url,
+      width: "width" in item ? dimension(item.width) : null,
+      height: "height" in item ? dimension(item.height) : null,
+    });
+  }
+  return { ok: true, photos };
 }
 
 export async function createAnimal(
@@ -255,16 +303,24 @@ export async function createAnimal(
   // depuis un ordinateur sans les photos sous la main, un upload qui échoue
   // en 4G — aucun ne doit être empêché de publier. Une fiche sans photo
   // vaut mieux qu'une fiche jamais créée ; /cont invite à en ajouter une.
-  const photo = parsePhotoUrl(formData, userId);
-  if (!parsed.ok || !photo.ok) {
-    // Erreurs des champs et de la photo réunies en une seule réponse.
+  const photos = parsePhotos(formData);
+  // À la création, toutes les photos sont nouvelles : chacune doit venir de
+  // l'espace animale/<userId>/ du compte connecté (voir animal-photo.ts).
+  const photoError = !photos.ok
+    ? photos.error
+    : photos.photos?.some((p) => !isOwnedAnimalPhotoUrl(p.url, userId))
+      ? STR.animalForm.photoUrlInvalid
+      : null;
+  if (!parsed.ok || photoError) {
+    // Erreurs des champs et des photos réunies en une seule réponse.
     return {
       fieldErrors: {
         ...(parsed.ok ? {} : parsed.fieldErrors),
-        ...(photo.ok ? {} : { photo: photo.error }),
+        ...(photoError ? { photo: photoError } : {}),
       },
     };
   }
+  const newPhotos = (photos.ok && photos.photos) || [];
 
   // Un plantage ici est l'échec silencieux à ne pas rater : le sauveteur a
   // tout saisi, tout envoyé, et n'obtiendrait rien. On alerte, et on rend la
@@ -276,8 +332,14 @@ export async function createAnimal(
       data: {
         ...parsed.data,
         userId,
-        ...(photo.url
-          ? { photos: { create: { url: photo.url, position: 0 } } }
+        // Positions 0, 1, 2… dans l'ordre du formulaire : la 0 est la
+        // principale.
+        ...(newPhotos.length > 0
+          ? {
+              photos: {
+                create: newPhotos.map((p, position) => ({ ...p, position })),
+              },
+            }
           : {}),
       },
     });
@@ -285,7 +347,7 @@ export async function createAnimal(
     await reportError("animal.create_failed", error, {
       userId,
       county: parsed.data.county,
-      withPhoto: photo.url !== null,
+      photos: newPhotos.length,
     });
     return { formError: STR.animalForm.saveFailed };
   }
@@ -315,74 +377,117 @@ export async function updateAnimal(
   const id = text(formData, "id");
 
   const parsed = parseAnimalForm(formData);
-  const photo = parsePhotoUrl(formData, userId);
-  if (!parsed.ok || !photo.ok) {
-    // Erreurs des champs et de la photo réunies en une seule réponse.
+  const photos = parsePhotos(formData);
+  if (!parsed.ok || !photos.ok) {
+    // Erreurs des champs et des photos réunies en une seule réponse.
     return {
       fieldErrors: {
         ...(parsed.ok ? {} : parsed.fieldErrors),
-        ...(photo.ok ? {} : { photo: photo.error }),
+        ...(photos.ok ? {} : { photo: photos.error }),
       },
     };
   }
 
   // Isolation : le filtre { id, userId } rend l'animal d'un autre refuge
-  // indistinguable d'un animal inexistant → 404, jamais 403.
+  // indistinguable d'un animal inexistant → 404, jamais 403. Ses photos
+  // actuelles viennent avec la même lecture.
   // notFound() reste HORS du try, comme redirect() : il lève lui aussi.
-  let count: number;
+  let owned: {
+    photos: {
+      url: string;
+      width: number | null;
+      height: number | null;
+      createdAt: Date;
+    }[];
+  } | null;
   try {
-    ({ count } = await prisma.animal.updateMany({
+    owned = await prisma.animal.findFirst({
       where: { id, userId },
-      data: parsed.data,
-    }));
+      select: {
+        photos: {
+          orderBy: { position: "asc" },
+          select: { url: true, width: true, height: true, createdAt: true },
+        },
+      },
+    });
   } catch (error) {
     await reportError("animal.update_failed", error, { userId, animalId: id });
     return { formError: STR.animalForm.saveFailed };
   }
-  if (count === 0) {
+  if (!owned) {
     notFound();
   }
 
-  // Remplacement de photo : nouvelle ligne en base, puis suppression des
-  // anciennes du store (jamais d'écrasement de blob — les URLs sont
-  // immuables, le cache CDN d'un overwrite mettrait jusqu'à 60 s à expirer).
-  if (photo.url) {
-    // La photo est déjà dans le store à ce stade : si le rattachement en
-    // base échoue, l'annonce reste avec l'ancienne image sans que personne ne
-    // le sache. Réessayer est sans danger, les deux opérations convergent.
-    try {
-      const photos = await prisma.animalPhoto.findMany({
-        where: { animalId: id },
-        select: { id: true, url: true },
-      });
-      const obsolete = photos.filter((p) => p.url !== photo.url);
-      const operations: Prisma.PrismaPromise<unknown>[] = [];
-      if (obsolete.length > 0) {
-        operations.push(
-          prisma.animalPhoto.deleteMany({
-            where: { id: { in: obsolete.map((p) => p.id) } },
-          }),
-        );
-      }
-      if (!photos.some((p) => p.url === photo.url)) {
-        operations.push(
-          prisma.animalPhoto.create({
-            data: { animalId: id, url: photo.url, position: 0 },
-          }),
-        );
-      }
-      if (operations.length > 0) {
-        await prisma.$transaction(operations);
-      }
-      await deleteBlobs(obsolete.map((p) => p.url));
-    } catch (error) {
-      await reportError("animal.photo_attach_failed", error, {
-        userId,
-        animalId: id,
-      });
-      return { formError: STR.animalForm.saveFailed };
-    }
+  // Chaque URL envoyée est soit une photo que l'annonce a déjà, soit une
+  // nouvelle photo de l'espace animale/<userId>/ du compte connecté (voir
+  // animal-photo.ts) — jamais celle d'un autre refuge.
+  const existing = new Map(owned.photos.map((p) => [p.url, p]));
+  const wanted = photos.photos;
+  if (
+    wanted?.some(
+      (p) => !existing.has(p.url) && !isOwnedAnimalPhotoUrl(p.url, userId),
+    )
+  ) {
+    return { fieldErrors: { photo: STR.animalForm.photoUrlInvalid } };
   }
+  // Rien à écrire côté photos : formulaire sans JavaScript (null), ou même
+  // liste dans le même ordre.
+  const unchanged =
+    wanted === null ||
+    (wanted.length === owned.photos.length &&
+      wanted.every((p, i) => p.url === owned.photos[i].url));
+  const removed = unchanged
+    ? []
+    : owned.photos.filter((p) => !wanted.some((w) => w.url === p.url));
+
+  // Les champs et les photos dans UNE transaction : l'annonce n'est jamais à
+  // moitié enregistrée. Les photos sont réécrites en bloc — effacées puis
+  // recréées aux positions 0, 1, 2… — : avec une position unique par
+  // annonce, renuméroter ligne à ligne heurterait l'index à mi-chemin. Une
+  // photo gardée garde ses dimensions et sa date ; une nouvelle prend celles
+  // que le canvas a mesurées. Seules les photos RETIRÉES quittent le store,
+  // après la transaction : remplacer la principale ne touche plus aux
+  // autres.
+  try {
+    const operations: Prisma.PrismaPromise<unknown>[] = [
+      prisma.animal.update({ where: { id }, data: parsed.data }),
+    ];
+    if (!unchanged) {
+      operations.push(
+        prisma.animalPhoto.deleteMany({ where: { animalId: id } }),
+        prisma.animalPhoto.createMany({
+          data: wanted.map((p, position) => {
+            const kept = existing.get(p.url);
+            return kept
+              ? {
+                  animalId: id,
+                  url: p.url,
+                  position,
+                  width: kept.width,
+                  height: kept.height,
+                  createdAt: kept.createdAt,
+                }
+              : { animalId: id, url: p.url, position, width: p.width, height: p.height };
+          }),
+        }),
+      );
+    }
+    await prisma.$transaction(operations);
+  } catch (error) {
+    // Les nouvelles photos sont déjà dans le store : resoumettre est sans
+    // danger, le formulaire réutilise les URL déjà obtenues.
+    await reportError("animal.update_failed", error, {
+      userId,
+      animalId: id,
+      photos: wanted?.length ?? -1,
+    });
+    return { formError: STR.animalForm.saveFailed };
+  }
+
+  // Jamais d'écrasement de blob — les URL sont immuables, le cache CDN d'un
+  // overwrite mettrait jusqu'à 60 s à expirer : une photo remplacée est une
+  // nouvelle URL, l'ancienne s'efface ici.
+  await deleteBlobs(removed.map((p) => p.url));
 
   revalidatePath("/cont");
   redirect("/cont?confirmation=modification");

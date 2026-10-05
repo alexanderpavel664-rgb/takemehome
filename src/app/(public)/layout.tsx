@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { getSessionCookie } from "better-auth/cookies";
+import { FavoriteLink } from "@/components/favorite-link";
 import { SiteHeader } from "@/components/site-header";
 import { FooterLink, SiteFooter } from "@/components/site-footer";
 import { STR } from "@/lib/strings";
@@ -22,17 +23,25 @@ export default async function PublicLayout({
   // session, sans appel en base — il ne s'agit que du libellé du lien, la
   // vraie vérification reste dans les pages /cont. Un cookie périmé mène à
   // « Mon compte », qui redirige vers /login : rien ne fuit.
+  //
+  // Les pages par județ sont statiques (force-static) : headers() y est
+  // vide, et le lien y dit toujours « Intră în cont ».
   const connected = Boolean(getSessionCookie(await headers()));
 
   return (
     <>
       <SiteHeader>
-        <Link
-          href={connected ? "/cont" : "/login"}
-          className="flex min-h-11 items-center rounded-md px-2 text-sm text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
-        >
-          {connected ? STR.header.myAccount : STR.header.signIn}
-        </Link>
+        {/* Les favoris d'abord : ils servent l'adoptant, qui n'a pas de
+            compte. Les deux restent des liens gris chaud. */}
+        <div className="flex items-center gap-1">
+          <FavoriteLink />
+          <Link
+            href={connected ? "/cont" : "/login"}
+            className="flex min-h-11 items-center rounded-md px-2 text-sm text-warm-gray focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+          >
+            {connected ? STR.header.myAccount : STR.header.signIn}
+          </Link>
+        </div>
       </SiteHeader>
       {children}
       {/* Les deux liens propres aux pages publiques passent avant les liens

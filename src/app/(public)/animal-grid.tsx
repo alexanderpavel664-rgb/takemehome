@@ -1,29 +1,14 @@
 import type { ReactNode } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import {
-  animalDisplayName,
-  animalMetaLine,
-  deadlineLabel,
-  groupLabel,
-} from "@/lib/animal-display";
-import { countyName } from "@/lib/counties";
-import { AnimalCard } from "@/components/ui/animal-card";
+import { CARD_SELECT, cardData } from "@/lib/animal-card-data";
+import { CardGrid } from "./card-grid";
 import { LoadMore } from "./load-more";
 
 /**
  * Grille publique partagée par /animale et /adoptati. Récupère count + 1
- * éléments pour savoir s'il reste des animaux sans count() séparé. Les
- * 4 premières photos (au-dessus de la ligne de flottaison) chargent en
- * eager, les autres en lazy (défaut de next/image).
- *
- * Mise en page : 2 colonnes sur mobile, puis auto-fill dès md — des cartes
- * d'au moins 260px quelle que soit la largeur disponible (avec ou sans
- * colonne de filtres), sans variante lg:/xl: à maintenir par page.
+ * éléments pour savoir s'il reste des animaux sans count() séparé.
  */
-export const GRID_CLASSES =
-  "grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] md:gap-4";
-
 export async function AnimalGrid({
   where,
   count,
@@ -37,31 +22,11 @@ export async function AnimalGrid({
 }) {
   const animals = await prisma.animal.findMany({
     where,
-    // Tri stable : updatedAt décroissant, id en départage des ex æquo.
+    // Tri stable : updatedAt décroissant, id en départage des ex æquo — le
+    // plus récemment mis à jour d'abord.
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     take: count + 1,
-    // La requête la plus chaude du site : uniquement ce que la carte
-    // consomme — sans select, les 21 colonnes partiraient de Neon,
-    // description comprise.
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      sex: true,
-      ageGroup: true,
-      ageText: true,
-      county: true,
-      status: true,
-      // V2 : deux colonnes de plus, un entier et une date — le nom sans nom,
-      // la pastille « 3 pui » et l'échéance. Toujours pas de description.
-      count: true,
-      availableUntil: true,
-      photos: {
-        orderBy: { position: "asc" },
-        take: 1,
-        select: { url: true },
-      },
-    },
+    select: CARD_SELECT,
   });
   const hasMore = animals.length > count;
   const shown = hasMore ? animals.slice(0, count) : animals;
@@ -75,29 +40,7 @@ export async function AnimalGrid({
 
   return (
     <>
-      <ul className={GRID_CLASSES}>
-        {shown.map((animal, i) => (
-          <li key={animal.id}>
-            <AnimalCard
-              href={`/animal/${animal.id}`}
-              name={animalDisplayName(animal)}
-              meta={animalMetaLine(animal)}
-              county={countyName(animal.county)}
-              photoUrl={animal.photos[0]?.url}
-              // Sur /adoptati, chaque carte porte la pastille « Adoptat ».
-              adopted={animal.status === "ADOPTED"}
-              group={groupLabel(animal)}
-              // Une fiche adoptée n'a plus d'échéance à montrer.
-              deadline={
-                animal.status === "ADOPTED"
-                  ? null
-                  : deadlineLabel(animal.availableUntil, "short", now)
-              }
-              eager={i < 4}
-            />
-          </li>
-        ))}
-      </ul>
+      <CardGrid cards={shown.map((animal) => cardData(animal, now))} />
       {hasMore && <LoadMore href={moreHref} />}
     </>
   );

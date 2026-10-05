@@ -173,6 +173,8 @@ Pilule, fond ivoire, hairline chaude, libellé encre chaude. Sélectionné : fon
 - **Border:** hairline 1 px #EAE1D2 — la seule séparation
 - **Shadow Strategy:** aucune au repos (La Règle du Plat)
 - **Photo:** format fixe, `object-fit: cover`, recadrage centré ; **sans photo : aplat crème + nom de l'animal en Display 600** — jamais d'image de remplacement
+- **Fiche (V3, octobre 2026, validé par l'utilisateur) :** jusqu'à 4 photos dans le même cadre 4:3, en carrousel (défilement natif, boutons précédent / suivant **sous** le cadre, jamais dessus). Chaque photo y est **entière** (`object-contain`) sur l'aplat crème : un portrait garde la tête et les pattes, avec des bandes de fond. Les cartes de grille restent en `cover`.
+- **Favoris :** un cœur en encre chaude (contour, plein une fois enregistré) à droite du nom — sur la carte comme sur la fiche, jamais sur la photo. Ni terracotta (ce n'est pas l'action de l'écran), ni rouge.
 
 ### Inputs / Fields
 Fond ivoire, hairline chaude, 20 px, texte 16 px (évite le zoom iOS). Focus : bordure encre chaude épaissie. Erreur : message en toutes lettres sous le champ — pas seulement une couleur.
@@ -200,7 +202,7 @@ Les écrans vides, d'attente et d'erreur sont des écrans à part entière, dess
 - **Do** garder un seul bouton plein terracotta par écran ; toutes les autres actions en outline ou en encre.
 - **Do** valider toute évolution du bouton d'appel à côté d'une photo de chien fauve, pas sur fond blanc.
 - **Do** utiliser ș/ț à virgule souscrite (U+0219/U+021B) et déclarer `lang="ro"` sur `<html>`.
-- **Do** servir les vraies photos des publiants en format fixe, `object-fit: cover`, recadrage centré — et l'aplat crème + nom en grand quand il n'y en a pas.
+- **Do** servir les vraies photos des publiants en format fixe, `object-fit: cover`, recadrage centré sur les cartes, entières (`object-contain`) dans le carrousel de la fiche — et l'aplat crème + nom en grand quand il n'y en a pas.
 - **Do** garder les libellés des boutons pleins en 600 et ≥ 19 px tant que la terracotta reste à 4,49:1 sous le blanc — s'ils déçoivent, monter la taille, pas la graisse.
 - **Do** rester sur une seule police variable (Plus Jakarta Sans via next/font) et des pages légères en 4G.
 

@@ -10,6 +10,9 @@
     "seed:demo:clean": "tsx scripts/seed-demo.mts clean",
     "post:candidats": "tsx scripts/post-candidats.mts",
     "nume:lipsa": "tsx scripts/nume-lipsa.mts",
+    "migrare": "tsx scripts/migrare.mts",
+    "dimensions:photos": "tsx scripts/dimensions-photos.mts",
+    "stockage:blob": "tsx scripts/stockage-blob.mts",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },

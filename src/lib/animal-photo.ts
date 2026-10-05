@@ -24,3 +24,8 @@ export function isOwnedAnimalPhotoUrl(url: string, userId: string): boolean {
     parsed.pathname.startsWith(`/animale/${userId}/`)
   );
 }
+
+// Photos par annonce (V3). La première — position 0 — est la principale :
+// la carte de la grille, l'Open Graph des partages, l'aperçu de /cont. Le
+// formulaire n'en propose pas plus, l'action en refuse davantage.
+export const MAX_PHOTOS = 4;

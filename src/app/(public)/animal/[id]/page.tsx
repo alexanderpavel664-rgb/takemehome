@@ -10,18 +10,22 @@ import {
   groupLabel,
   shareText,
 } from "@/lib/animal-display";
+import { MAX_PHOTOS } from "@/lib/animal-photo";
 import { countyName } from "@/lib/counties";
+import { SITE_OG_IMAGE } from "@/lib/og-default";
 import { prisma } from "@/lib/prisma";
 import { relativeTimeRo } from "@/lib/relative-time";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { getViewer } from "@/lib/viewer";
 import { ContactEmailLink } from "@/components/contact-email-link";
-import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
+import { PhotoFallback } from "@/components/ui/animal-photo";
 import { Badge, DeadlineBadge } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { FavoriteButton } from "@/components/ui/favorite-button";
+import { PhotoCarousel } from "@/components/ui/photo-carousel";
 import { ShareButton } from "@/components/ui/share-button";
 
 // Sans API de requête, une route à segment dynamique serait rendue puis
@@ -33,10 +37,15 @@ export const dynamic = "force-dynamic";
 const getAnimal = cache(async (id: string) =>
   prisma.animal.findUnique({
     where: { id },
-    // La fiche consomme presque tous les scalaires d'Animal ; des photos,
-    // seule l'URL de la première sert (page + Open Graph).
+    // La fiche consomme presque tous les scalaires d'Animal, et toutes les
+    // photos : le carrousel, et la première pour l'Open Graph (avec ses
+    // dimensions, pour og:image:width/height).
     include: {
-      photos: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+      photos: {
+        orderBy: { position: "asc" },
+        take: MAX_PHOTOS,
+        select: { url: true, width: true, height: true },
+      },
       user: {
         select: {
           name: true,
@@ -57,6 +66,13 @@ const getAnimal = cache(async (id: string) =>
 // Partage Facebook : og:title, og:description, og:image, og:type, og:url.
 // Les URL sont absolues (photos Vercel Blob + SITE_URL), donc pas besoin
 // de metadataBase.
+//
+// og:image = la photo en position 0, toujours UNE seule (plusieurs balises
+// og:image laisseraient Facebook choisir), avec ses dimensions : sans
+// og:image:width/height, Facebook peut ne rien afficher au tout premier
+// partage, le temps de télécharger l'image pour la mesurer. Sans photo, la
+// carte du site (1200×630) : un openGraph déclaré ici remplace celui du
+// segment, la carte des opengraph-image.tsx n'arriverait jamais jusqu'ici.
 export async function generateMetadata(
   props: PageProps<"/animal/[id]">,
 ): Promise<Metadata> {
@@ -93,9 +109,17 @@ export async function generateMetadata(
       type: "website",
       url: `${SITE_URL}/animal/${animal.id}`,
       siteName: STR.site.name,
-      ...(photo && {
-        images: [{ url: photo.url, alt: STR.animal.photoAlt(name) }],
-      }),
+      images: [
+        photo
+          ? {
+              url: photo.url,
+              alt: STR.animal.photoAlt(name),
+              ...(photo.width &&
+                photo.height && { width: photo.width, height: photo.height }),
+              type: photo.url.endsWith(".webp") ? "image/webp" : "image/jpeg",
+            }
+          : SITE_OG_IMAGE,
+      ],
     },
   };
 }
@@ -231,7 +255,6 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const phone = consented ? animal.user.phone?.trim() : undefined;
   const email = consented ? animal.user.publicEmail?.trim() : undefined;
   const hasContact = !adopted && Boolean(phone || email);
-  const photo = animal.photos[0];
   const name = animalDisplayName(animal);
   const group = groupLabel(animal);
   // L'échéance ne se montre que dans les derniers jours, et plus du tout
@@ -242,6 +265,7 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const health = [
     animal.sterilized && STR.animal.sterilized,
     animal.vaccinated && STR.animal.vaccinated,
+    animal.dewormed && STR.animal.dewormed,
     animal.microchipped && STR.animal.microchipped,
   ].filter(Boolean) as string[];
   const goodWith = [
@@ -293,18 +317,13 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
           photo + description à gauche, identité + contact à droite. */}
       <div className="mt-2 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-8">
         <div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-md border border-warm-border">
-            {photo ? (
-              <AnimalPhoto
-                src={photo.url}
-                name={name}
-                sizes="(min-width: 1152px) 640px, (min-width: 1024px) 60vw, (min-width: 768px) 720px, 100vw"
-                preload
-              />
-            ) : (
+          {animal.photos.length > 0 ? (
+            <PhotoCarousel photos={animal.photos} name={name} />
+          ) : (
+            <div className="relative aspect-[4/3] overflow-hidden rounded-md border border-warm-border">
               <PhotoFallback name={name} />
-            )}
-          </div>
+            </div>
+          )}
 
           {animal.description && (
             <DescriptionSection
@@ -318,13 +337,21 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
         {/* Colonne droite sticky : la carte de contact reste visible pendant
             le défilement d'une longue description. */}
         <div className="lg:sticky lg:top-4 lg:self-start">
-          <h1 className="mt-3 flex flex-wrap items-center gap-3 text-[32px]/[1.05] font-semibold text-warm-ink lg:mt-0">
-            {name}
-            {adopted && <Badge>{STR.animal.adoptedBadge}</Badge>}
-            {/* L'échéance à côté du nom, jamais sur la photo : c'est la
-                première chose à lire après le nom. */}
-            {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
-          </h1>
+          <div className="mt-3 flex items-start gap-2 lg:mt-0">
+            <h1 className="flex min-w-0 flex-1 flex-wrap items-center gap-3 text-[32px]/[1.05] font-semibold break-words text-warm-ink">
+              {name}
+              {adopted && <Badge>{STR.animal.adoptedBadge}</Badge>}
+              {/* L'échéance à côté du nom, jamais sur la photo : c'est la
+                  première chose à lire après le nom. */}
+              {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
+            </h1>
+            {!animal.hidden && (
+              // Le cœur des favoris à droite du nom, jamais sur la photo. Une
+              // annonce adoptée le garde : c'est là qu'on la retire de ses
+              // favoris. Les marges négatives gardent la hauteur du titre.
+              <FavoriteButton id={animal.id} className="-my-[5.2px] -mr-2" />
+            )}
+          </div>
           <p className="mt-1 text-base text-warm-ink">
             {animalMetaLine(animal)}
           </p>

@@ -19,19 +19,26 @@ export function PhotoFallback({ name }: { name: string }) {
 
 /**
  * Photo d'animal en recadrage centré (fill + object-cover ; le parent doit
- * être `relative` avec un ratio fixe). Client uniquement pour onError :
- * une photo qui ne charge pas retombe sur l'aplat crème.
+ * être `relative` avec un ratio fixe), ou entière (object-contain) dans le
+ * carrousel de la fiche. Client uniquement pour onError : une photo qui ne
+ * charge pas retombe sur l'aplat crème.
  */
 export function AnimalPhoto({
   src,
   name,
   sizes,
+  fit = "cover",
+  alt,
   eager = false,
   preload = false,
 }: {
   src: string;
   name: string;
   sizes: string;
+  /** cover : cartes et vignettes ; contain : la photo entière, sur l'aplat. */
+  fit?: "cover" | "contain";
+  /** Par défaut « Fotografie cu <nom> ». */
+  alt?: string;
   /** Premières cartes de la grille : chargement immédiat. */
   eager?: boolean;
   /** Photo principale de la fiche : image LCP, préchargée. */
@@ -62,10 +69,10 @@ export function AnimalPhoto({
     <Image
       ref={ref}
       src={src}
-      alt={STR.animal.photoAlt(name)}
+      alt={alt ?? STR.animal.photoAlt(name)}
       fill
       sizes={sizes}
-      className="object-cover"
+      className={fit === "contain" ? "object-contain" : "object-cover"}
       onError={() => setFailed(true)}
       {...priorityProps}
     />

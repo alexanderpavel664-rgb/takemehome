@@ -150,6 +150,54 @@ export const STR = {
     },
   },
 
+  /* ——— Pages par județ (SEO) : /caini-de-adoptat/[judet] et
+         /pisici-de-adoptie/[judet]. Les titres reprennent les mots que les
+         gens tapent (« câini de adoptat Cluj », « pisici de adopție »), avec
+         les diacritiques : Google les rapproche des recherches sans. ——— */
+  judet: {
+    title: {
+      DOG: (place: string) => `Câini de adoptat în ${place}`,
+      CAT: (place: string) => `Pisici de adopție în ${place}`,
+    },
+    // `n` = nombre d'animaux (somme des fratries), jamais d'annonces.
+    description: {
+      DOG: (n: number, place: string) =>
+        `${countRo(n, "câine", "câini")} din ${place} își caută o familie. Vezi fotografiile și sună direct persoana care are animalul în grijă.`,
+      CAT: (n: number, place: string) =>
+        `${countRo(n, "pisică", "pisici")} din ${place} își caută o familie. Vezi fotografiile și sună direct persoana care are animalul în grijă.`,
+    },
+    seeAllCounty: (place: string) => `Toate animalele din ${place} →`,
+    // Le bloc de liens sous la grille de /animale et des pages județ.
+    navLabel: "Animale de adoptat pe județe",
+    linksTitle: {
+      DOG: "Câini de adoptat pe județe",
+      CAT: "Pisici de adopție pe județe",
+    },
+    link: (county: string, n: number) => `${county} (${n})`,
+  },
+
+  /* ——— Favoris : stockés dans le navigateur seulement (localStorage),
+         sans compte ni donnée en base. ——— */
+  favorite: {
+    // Libellé constant + aria-pressed : un bouton bascule ne change pas de
+    // nom, c'est son état qui dit s'il est enfoncé.
+    toggle: "Salvează la favorite",
+    toggleNamed: (name: string) => `Salvează la favorite: ${name}`,
+    headerLink: (n: number) => (n > 0 ? `Favorite (${n})` : "Favorite"),
+    metaTitle: "Favorite – TakeMeHome",
+    title: "Favorite",
+    intro: "Animalele pe care le-ai salvat. Rămân doar în acest browser, fără cont.",
+    emptyTitle: "Niciun animal salvat",
+    emptyDescription: "Apasă inima de pe un anunț și îl găsești aici.",
+    // Annonce supprimée ou retirée : elle sort des favoris, et on le dit —
+    // sinon la personne cherche l'animal qu'elle avait gardé.
+    removed: (n: number) =>
+      n === 1
+        ? "Un anunț salvat nu mai e publicat și a fost scos din favorite."
+        : `${countRo(n, "anunț salvat", "anunțuri salvate")} nu mai sunt publicate și au fost scoase din favorite.`,
+    loadFailed: "Favoritele nu s-au putut încărca. Verifică internetul și încearcă din nou.",
+  },
+
   /* ——— Panneau de filtres (sheet mobile + colonne desktop). ——— */
   filters: {
     title: "Filtre",
@@ -171,6 +219,7 @@ export const STR = {
     otherCriteria: "Alte criterii",
     sterilized: "Sterilizat",
     vaccinated: "Vaccinat",
+    dewormed: "Deparazitat",
     microchipped: "Microcipat",
     // Forme verbale, invariable en genre — les annonces réelles disent
     // « se înțelege cu alți câini », jamais « cu câinii ». Une seule forme
@@ -242,6 +291,7 @@ export const STR = {
     goodWithCats: "pisicile",
     sterilized: "Sterilizat",
     vaccinated: "Vaccinat",
+    dewormed: "Deparazitat",
     microchipped: "Microcipat",
     // false en base = non renseigné, pas « non » : la fiche n'affiche que
     // les certitudes, et le dit avec chaleur.
@@ -249,6 +299,12 @@ export const STR = {
     publishedBy: (name: string) => `Publicat de ${name}`,
     updated: (relative: string) => `Actualizat ${relative}`,
     photoAlt: (name: string) => `Fotografie cu ${name}`,
+    /* ——— Carrousel de la fiche (plusieurs photos). ——— */
+    photosLabel: (name: string) => `Fotografii cu ${name}`,
+    photoPosition: (i: number, n: number) => `Fotografia ${i} din ${n}`,
+    photoCounter: (i: number, n: number) => `${i} / ${n}`,
+    previousPhoto: "Fotografia anterioară",
+    nextPhoto: "Fotografia următoare",
     notFoundTitle: "Animalul nu a fost găsit",
     notFoundDescription: "Anunțul nu mai există sau a fost retras.",
     // Lien discret en bas de fiche : pas un bouton, pas une alerte — juste
@@ -720,22 +776,47 @@ export const STR = {
     countyPlaceholder: "Alege județul",
     city: "Localitate",
     description: "Descriere",
-    // Sans astérisque : la photo est facultative, à la création comme à
+    // Sans astérisque : les photos sont facultatives, à la création comme à
     // l'édition. Une fiche sans photo se publie et s'affiche (aplat crème).
-    photo: "Fotografie",
+    photo: "Fotografii",
     // Les deux entrées : l'appareil photo (écrans tactiles seulement —
     // sur un ordinateur, capture est ignoré et « Fă o poză » mentirait)
     // et la galerie / le disque.
     takePhoto: "Fă o poză",
-    choosePhoto: "Alege o fotografie",
+    // Plusieurs fichiers d'un coup depuis la galerie ou le disque.
+    choosePhoto: "Alege fotografii",
     chooseFromGallery: "Alege din galerie",
-    // La consigne de cadrage, tant qu'aucune photo n'est choisie — une
-    // information, jamais une exigence.
+    // La consigne, tant qu'aucune photo n'est là — une information, jamais
+    // une exigence. Elle dit ce que la première devient.
     photoHint:
-      "O singură poză, cu animalul în prim-plan. Se pregătește în timp ce completezi restul.",
+      "Până la 4 fotografii, cu animalul în prim-plan. Prima apare pe card și când distribui anunțul. Se pregătesc în timp ce completezi restul.",
+    /* ——— Les photos déjà là ou choisies : une vignette chacune. ——— */
+    coverBadge: "Principală",
+    photoAlt: (i: number) => `Fotografia ${i}`,
+    replacePhoto: "Înlocuiește",
+    replacePhotoLabel: (i: number) => `Înlocuiește fotografia ${i}`,
+    // « Scoate » et non « Șterge » : rien n'est supprimé avant la sauvegarde.
+    removePhoto: "Scoate",
+    removePhotoLabel: (i: number) => `Scoate fotografia ${i}`,
+    photosFull: "Ai pus 4 fotografii, cât se poate. Ca să adaugi alta, scoate una.",
+    photosTruncated: (kept: number) =>
+      kept === 1
+        ? "Mai era loc pentru o singură fotografie: am păstrat-o pe prima aleasă."
+        : `Mai era loc pentru ${kept} fotografii: le-am păstrat pe primele ${kept} alese.`,
+    photosPending: (n: number) =>
+      n === 1
+        ? "O fotografie nouă e gata. Se trimite când salvezi."
+        : `${n} fotografii noi sunt gata. Se trimit când salvezi.`,
+    photosRemoved: (n: number) =>
+      n === 1
+        ? "Fotografia scoasă se șterge când salvezi."
+        : `Cele ${n} fotografii scoase se șterg când salvezi.`,
+    preparingCount: (i: number, n: number) =>
+      `Se pregătește fotografia ${i} din ${n}…`,
     health: "Sănătate",
     sterilized: "Sterilizat",
     vaccinated: "Vaccinat",
+    dewormed: "Deparazitat",
     microchipped: "Microcipat",
     goodWith: "Se înțelege cu",
     // La légende se termine par « cu » : les puces la continuent, article
@@ -752,19 +833,19 @@ export const STR = {
     typeRequired: "Tipul animalului e obligatoriu.",
     countyRequired: "Județul e obligatoriu.",
     photoUrlInvalid: "Adresa fotografiei nu e validă.",
+    photosTooMany: "Cel mult 4 fotografii pentru un anunț.",
     // Photo : sélection, préparation, envoi.
     notAnImage: "Fișierul nu e o imagine. Alege o fotografie.",
     fileTooLarge: (size: string) =>
       `Fișierul e prea mare (${size}, cel mult 25 MB). Alege altă fotografie.`,
     preparingFailed: "Fotografia nu s-a putut pregăti.",
     preparing: "Se pregătește fotografia…",
-    previewAlt: "Previzualizarea fotografiei alese",
-    photoReady: (format: string, sizes: string) =>
-      `Fotografia e gata (${format}${sizes}). Se trimite când salvezi.`,
-    currentPhotoAlt: "Fotografia actuală",
-    currentPhotoHint: "Fotografia actuală. Dacă alegi alt fișier, o înlocuiește.",
-    uploading: (percent: number) => `Se trimite fotografia… ${percent}%`,
-    uploadingLabel: "Se trimite fotografia…",
+    uploading: (i: number, n: number, percent: number) =>
+      n === 1
+        ? `Se trimite fotografia… ${percent}%`
+        : `Se trimite fotografia ${i} din ${n}… ${percent}%`,
+    uploadingLabel: (n: number) =>
+      n === 1 ? "Se trimite fotografia…" : "Se trimit fotografiile…",
     uploadNetworkError: "Fotografia nu s-a trimis: problemă de rețea. Încearcă din nou.",
     // Jamais le message brut de l'erreur : il arrive en anglais, du client
     // blob ou du réseau, et ne dit rien d'actionnable à un sauveteur. Le
