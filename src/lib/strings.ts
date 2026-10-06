@@ -332,7 +332,13 @@ export const STR = {
     // Annonce masquée faute de confirmation : la fiche reste en ligne pour
     // un lien déjà partagé, avec un message neutre. On dit ce qu'on sait
     // (personne n'a confirmé), pas ce qu'on suppose (adopté).
+    //
+    // Le titre de la fiche et la pastille d'un favori inactif sur /favorite
+    // disent la même chose, l'une en court : la pastille doit tenir sur une
+    // ligne dans une carte de 360 px (grille 2 colonnes). Jamais « Inactiv »,
+    // un mot de publiant. Changer l'un, c'est changer l'autre.
     unconfirmedTitle: "Anunțul nu mai e activ",
+    unconfirmedBadge: "Nu mai e activ",
     unconfirmed: "Persoana care l-a publicat nu a confirmat recent că animalul e încă disponibil.",
     unconfirmedPlural:
       "Persoana care l-a publicat nu a confirmat recent că animalele sunt încă disponibile.",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { STR } from "@/lib/strings";
-import { Badge, DeadlineBadge, Pill } from "./badge";
+import { Badge, DeadlineBadge, InkBadge, Pill } from "./badge";
 import { AnimalPhoto, PhotoFallback } from "./animal-photo";
 import { FavoriteButton } from "./favorite-button";
 
@@ -14,7 +14,11 @@ const DEFAULT_SIZES = "(min-width: 768px) 410px, 50vw";
 
 export type AnimalCardProps = {
   href: ComponentProps<typeof Link>["href"];
-  /** L'id de l'annonce : le cœur des favoris. Sans lui, pas de cœur. */
+  /**
+   * L'id de l'annonce : le cœur des favoris. Sans lui, pas de cœur — et
+   * seulement sur un animal disponible : les favoris servent à retrouver
+   * un animal qu'on pourrait adopter.
+   */
   id?: string;
   /** Le nom, ou ce qui en tient lieu (animalDisplayName). */
   name: string;
@@ -26,6 +30,13 @@ export type AnimalCardProps = {
   updated?: { label: string; iso: string };
   photoUrl?: string | null;
   adopted?: boolean;
+  /** Inactive faute de confirmation — /favorite seulement. */
+  inactive?: boolean;
+  /**
+   * /favorite seulement : le cœur reste sur une carte adoptée ou inactive,
+   * c'est là qu'on la retire de ses favoris.
+   */
+  keepHeart?: boolean;
   /** « 3 pui » — la pastille discrète des fratries (groupLabel). */
   group?: string | null;
   /** « Până la 15 sept. » — la pastille terracotta des derniers jours (deadlineLabel). */
@@ -52,9 +63,9 @@ export type AnimalCardProps = {
  * celle de l'écran. Cellule large (@sm, 24rem) : padding et métadonnées
  * respirent ; le nom reste à 19 px/600 (échelle DESIGN.md).
  *
- * Les pastilles d'échéance et de fratrie vivent dans la zone de texte,
- * sous les métadonnées, comme le cœur : seule « Adoptat » a le droit de
- * recouvrir la photo.
+ * Les pastilles d'échéance, d'annonce inactive et de fratrie vivent dans la
+ * zone de texte, sous les métadonnées, comme le cœur : seule « Adoptat » a
+ * le droit de recouvrir la photo.
  */
 export function AnimalCard({
   href,
@@ -65,6 +76,8 @@ export function AnimalCard({
   updated,
   photoUrl,
   adopted = false,
+  inactive = false,
+  keepHeart = false,
   group,
   deadline,
   sizes = DEFAULT_SIZES,
@@ -93,7 +106,7 @@ export function AnimalCard({
           >
             {name}
           </Link>
-          {id && (
+          {id && ((!adopted && !inactive) || keepHeart) && (
             // 44 px de cible pour une ligne de 23 px : les marges négatives
             // gardent la hauteur de la ligne du nom (et celle du squelette).
             <FavoriteButton
@@ -120,9 +133,13 @@ export function AnimalCard({
             <time dateTime={updated.iso}>{updated.label}</time>
           </p>
         )}
-        {(deadline || group) && (
+        {(deadline || inactive || group) && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
+            {inactive && (
+              // Le titre de la fiche inactive, en court (strings.ts).
+              <InkBadge>{STR.animal.unconfirmedBadge}</InkBadge>
+            )}
             {group && <Pill>{group}</Pill>}
           </div>
         )}

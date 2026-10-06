@@ -359,10 +359,12 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
                   première chose à lire après le nom. */}
               {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
             </h1>
-            {!animal.hidden && (
-              // Le cœur des favoris à droite du nom, jamais sur la photo. Une
-              // annonce adoptée le garde : c'est là qu'on la retire de ses
-              // favoris. Les marges négatives gardent la hauteur du titre.
+            {!adopted && !unconfirmed && !animal.hidden && (
+              // Le cœur des favoris à droite du nom, jamais sur la photo.
+              // Seulement sur un animal disponible : les favoris servent à
+              // retrouver un animal qu'on pourrait adopter. Une annonce
+              // adoptée ou inactive se retire de ses favoris sur /favorite.
+              // Les marges négatives gardent la hauteur du titre.
               <FavoriteButton id={animal.id} className="-my-[5.2px] -mr-2" />
             )}
           </div>

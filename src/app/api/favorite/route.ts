@@ -11,8 +11,11 @@ import { prisma } from "@/lib/prisma";
  *
  * Aucune donnée personnelle : la liste d'ids vient du navigateur, ne laisse
  * aucune trace en base, et la réponse ne contient que ce que montrent déjà
- * les grilles publiques. Les annonces adoptées reviennent avec leur statut :
- * la page les range sous « Și-au găsit familia ».
+ * les grilles publiques et les fiches. Les annonces adoptées reviennent
+ * avec leur statut : la page les range sous « Și-au găsit familia ». Les
+ * inactives (UNCONFIRMED, faute de confirmation) aussi : leur fiche reste
+ * publique, et la page les garde avec leur pastille — réactivées, elles
+ * redeviennent des favoris disponibles.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const raw = new URL(request.url).searchParams.get("ids") ?? "";
@@ -25,13 +28,11 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const found = await prisma.animal.findMany({
     // hidden: false comme partout ailleurs : une annonce masquée ne
-    // reparaît pas par la petite porte des favoris. Une annonce inactive
-    // (UNCONFIRMED, faute de confirmation) non plus : elle part avec les
-    // « nu mai e publicat ».
+    // reparaît pas par la petite porte des favoris.
     where: {
       id: { in: ids },
       hidden: false,
-      status: { in: ["AVAILABLE", "ADOPTED"] },
+      status: { in: ["AVAILABLE", "ADOPTED", "UNCONFIRMED"] },
     },
     select: CARD_SELECT,
   });

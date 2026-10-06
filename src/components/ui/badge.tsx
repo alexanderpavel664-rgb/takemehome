@@ -40,6 +40,20 @@ export function DeadlineBadge({
 }
 
 /**
+ * Pastille encre pleine, texte blanc 600 : une annonce sortie des listes
+ * publiques — « Nu mai e activ » sur la carte d'un favori inactif.
+ * Le même dessin que la pastille « Inactiv » de /cont. Jamais sur la photo.
+ */
+export function InkBadge({ className = "", ...props }: ComponentProps<"span">) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-pill bg-warm-ink px-3 py-1 text-[13px]/[1.2] font-semibold text-white ${className}`}
+      {...props}
+    />
+  );
+}
+
+/**
  * Pastille discrète — hairline sur ivoire, encre 400 : une information
  * (« 3 pui »), pas un état. Le même dessin que la pastille de statut de
  * /cont ; jamais sur la photo.

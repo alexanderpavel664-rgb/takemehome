@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { CardData } from "@/lib/animal-card-data";
-import { readFavoriteIds, removeFavorites, useFavoriteIds } from "@/lib/favorites";
+import {
+  fetchFavorites,
+  readFavoriteIds,
+  removeFavorites,
+  useFavoriteIds,
+} from "@/lib/favorites";
 import { STR } from "@/lib/strings";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,6 +31,9 @@ function useHydrated() {
  * devenue :
  * - adoptée : elle reste, rangée sous « Și-au găsit familia », avec sa
  *   pastille ; le cœur sert à la retirer ;
+ * - inactive (faute de confirmation) : elle reste, après les disponibles,
+ *   avec la pastille « Nu mai e activ » — le titre de sa fiche, en court ; le
+ *   cœur sert à la retirer, et réactivée elle redevient disponible ;
  * - supprimée ou masquée : elle sort des favoris, et la page le dit — sinon
  *   on cherche l'animal qu'on avait gardé.
  *
@@ -46,10 +54,8 @@ export function FavoriteList() {
     const snapshot = readFavoriteIds();
     if (!hydrated || snapshot.length === 0) return;
     const controller = new AbortController();
-    fetch(`/api/favorite?ids=${snapshot.join(",")}`, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`favorite ${response.status}`);
-        const data = (await response.json()) as { animals: CardData[]; missing: string[] };
+    fetchFavorites(snapshot, controller.signal)
+      .then((data) => {
         removeFavorites(data.missing);
         setResult({ status: "ready", cards: data.animals, removed: data.missing.length });
       })
@@ -88,7 +94,11 @@ export function FavoriteList() {
     return <EmptyFavorites />;
   }
 
-  const available = result.cards.filter((card) => !card.adopted);
+  // Les disponibles d'abord, puis les inactives : elles peuvent revenir.
+  const current = [
+    ...result.cards.filter((card) => !card.adopted && !card.inactive),
+    ...result.cards.filter((card) => card.inactive),
+  ];
   const adopted = result.cards.filter((card) => card.adopted);
 
   return (
@@ -102,13 +112,13 @@ export function FavoriteList() {
         <EmptyFavorites />
       ) : (
         <>
-          {available.length > 0 && <CardGrid cards={available} />}
+          {current.length > 0 && <CardGrid cards={current} keepHeart />}
           {adopted.length > 0 && (
-            <section className={available.length > 0 ? "mt-10" : ""}>
+            <section className={current.length > 0 ? "mt-10" : ""}>
               <h2 className="mb-4 text-xl font-semibold text-warm-ink">
                 {STR.adoptati.title}
               </h2>
-              <CardGrid cards={adopted} eagerCount={0} />
+              <CardGrid cards={adopted} eagerCount={0} keepHeart />
             </section>
           )}
         </>

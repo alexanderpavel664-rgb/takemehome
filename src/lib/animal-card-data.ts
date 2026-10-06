@@ -46,6 +46,8 @@ export type CardData = {
   updated: { label: string; iso: string };
   photoUrl: string | null;
   adopted: boolean;
+  /** Inactive faute de confirmation : n'apparaît que sur /favorite. */
+  inactive: boolean;
   group: string | null;
   deadline: string | null;
 };
@@ -53,6 +55,7 @@ export type CardData = {
 /** `now` : une seule lecture de l'horloge pour toute une grille. */
 export function cardData(animal: CardAnimal, now: Date): CardData {
   const adopted = animal.status === "ADOPTED";
+  const inactive = animal.status === "UNCONFIRMED";
   return {
     href: `/animal/${animal.id}`,
     id: animal.id,
@@ -65,8 +68,10 @@ export function cardData(animal: CardAnimal, now: Date): CardData {
     },
     photoUrl: animal.photos[0]?.url ?? null,
     adopted,
+    inactive,
     group: groupLabel(animal),
-    // Une fiche adoptée n'a plus d'échéance à montrer.
-    deadline: adopted ? null : deadlineLabel(animal.availableUntil, "short", now),
+    // Une fiche adoptée ou inactive n'a plus d'échéance à montrer.
+    deadline:
+      adopted || inactive ? null : deadlineLabel(animal.availableUntil, "short", now),
   };
 }

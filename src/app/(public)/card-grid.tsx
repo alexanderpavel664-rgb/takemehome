@@ -21,16 +21,23 @@ export const GRID_CLASSES =
 export function CardGrid({
   cards,
   eagerCount = 4,
+  keepHeart = false,
 }: {
   cards: CardData[];
   /** 0 quand la grille est sous la ligne de flottaison (accueil). */
   eagerCount?: number;
+  /** /favorite seulement (voir AnimalCard). */
+  keepHeart?: boolean;
 }) {
   return (
     <ul className={GRID_CLASSES}>
       {cards.map((card, i) => (
         <li key={card.id}>
-          <AnimalCard {...card} eager={i < eagerCount} />
+          <AnimalCard
+            {...card}
+            eager={i < eagerCount}
+            keepHeart={keepHeart}
+          />
         </li>
       ))}
     </ul>

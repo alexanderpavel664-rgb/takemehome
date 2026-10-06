@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { useFavoriteIds } from "@/lib/favorites";
+import { refreshFavoriteStatus, useAvailableFavoriteCount } from "@/lib/favorites";
 import { STR } from "@/lib/strings";
 import { HeartIcon } from "@/components/ui/favorite-button";
 
@@ -10,9 +11,22 @@ import { HeartIcon } from "@/components/ui/favorite-button";
  * y en a un. Gris chaud comme l'accès au compte — discret, jamais un bouton.
  * Le nombre n'existe qu'après l'hydratation (le serveur ne connaît pas le
  * localStorage) : avant, le lien est le même, sans chiffre.
+ *
+ * Il ne compte que les favoris disponibles, ceux qu'on peut encore adopter :
+ * les adoptés et les inactifs restent sur /favorite, hors du compte. Le
+ * statut vient de la dernière réponse du serveur, redemandée au chargement
+ * si elle date de plus de 10 minutes (lib/favorites.ts).
  */
 export function FavoriteLink() {
-  const count = useFavoriteIds().length;
+  const count = useAvailableFavoriteCount();
+
+  useEffect(() => {
+    const controller = new AbortController();
+    // Hors ligne ou erreur : le dernier compte connu reste, rien à dire.
+    refreshFavoriteStatus(controller.signal).catch(() => {});
+    return () => controller.abort();
+  }, []);
+
   return (
     <Link
       href="/favorite"
