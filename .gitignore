@@ -52,3 +52,7 @@ next-env.d.ts
 # mode à blanc et aperçu de la confirmation des annonces (npm run confirmari) :
 # noms et adresses des publiants, jamais versionnés
 /confirmari-export/
+
+# captures d'écran pour les réseaux et crédits des photos (npm run seed:captures,
+# npm run captures) : régénérables, jamais versionnées
+/social-export/captures/
