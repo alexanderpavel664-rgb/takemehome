@@ -347,6 +347,11 @@ export const STR = {
     /* ——— Coordonnées en toutes lettres. Sur un ordinateur, tel: ne fait
        rien d'utile : le numéro doit se lire et se copier. ——— */
     contactTitle: "Contact",
+    // Publiant sans contact affiché (lib/contact-status.ts) : à la place de
+    // la carte Contact, sous le même titre. On dit ce qu'on sait, sans
+    // reproche ; « încă » parce que ça peut changer — la fiche redevient
+    // joignable dès que le profil est complété.
+    noContact: "Persoana care a publicat anunțul nu a lăsat încă date de contact.",
     phoneLabel: "Telefon",
     emailLabel: "Email",
     copy: "Copiază",
@@ -600,23 +605,25 @@ export const STR = {
     notFilled: "necompletat",
     /* ——— Profil incomplet : le bloc en haut de /cont, de /cont/animal/nou
        et de /cont/animal/[id]/editare. ——— */
-    // Le titre dit ce qui se passe, pas ce qu'il faut ressentir. Dessous,
-    // le seul fait utile : ce qui manque — trois cas, trois phrases, jamais
-    // fusionnées (« complète tes coordonnées » à quelqu'un qui les a déjà
-    // remplies l'enverrait chercher un problème qui n'existe pas). Ni
-    // phrase rassurante, ni justification : le lien suffit.
+    // Le titre dit ce qui se passe (depuis octobre 2026, une annonce sans
+    // contact sort des listes publiques), pas ce qu'il faut ressentir.
+    // Dessous, le seul fait utile : ce qui la fera revenir — trois cas,
+    // trois phrases, jamais fusionnées (« complète tes coordonnées » à
+    // quelqu'un qui les a déjà remplies l'enverrait chercher un problème
+    // qui n'existe pas). Ni phrase rassurante, ni justification : le lien,
+    // qui mène droit à la section Date de contact du profil, suffit.
     contactWarning: {
-      title: "Anunțurile tale nu pot fi contactate",
+      title: "Anunțurile tale nu sunt vizibile pe site",
       // Le cas le plus fréquent : inscription, publication, et rien d'autre.
       noContactNoConsent:
-        "Nu ai completat telefonul sau emailul public și nu ai bifat afișarea lor publică.",
-      noContact: "Nu ai completat nici telefonul, nici emailul public.",
-      noConsent: "Nu ai bifat afișarea publică a datelor de contact.",
+        "Devin vizibile imediat ce completezi telefonul sau emailul public și bifezi afișarea lor publică.",
+      noContact: "Devin vizibile imediat ce completezi telefonul sau emailul public.",
+      noConsent: "Devin vizibile imediat ce bifezi afișarea publică a datelor de contact.",
       action: "Completează profilul",
     },
     // Sur chaque fiche de la publiante, tant que le profil est incomplet :
     // la pastille encre pleine, celle des états qui comptent.
-    noContactBadge: "Fără contact",
+    noContactBadge: "Nevizibil: lipsesc datele de contact",
     // Fiche sans photo : une invitation, avec le fait qui la motive —
     // informative, jamais culpabilisante. La fiche est en ligne telle quelle.
     noPhotoHint:
@@ -1034,6 +1041,10 @@ export const STR = {
       availableDoneTitle: "Mulțumim!",
       availableDone:
         "Anunțul rămâne pe site. Îți scriem din nou dacă nu e actualizat timp de 3 săptămâni.",
+      // Sans contact affiché : « rămâne pe site » serait faux. La réponse
+      // est enregistrée, le bloc au-dessus de la carte dit le reste.
+      availableDoneNoContact:
+        "Am salvat răspunsul tău. Îți scriem din nou dacă anunțul nu e actualizat timp de 3 săptămâni.",
       // Masqué par la modération : le statut change, la visibilité non.
       stillHidden: "Anunțul rămâne ascuns de echipa TakeMeHome.",
       adoptedDoneTitle: "Mulțumim! Anunțul e marcat ca adoptat.",

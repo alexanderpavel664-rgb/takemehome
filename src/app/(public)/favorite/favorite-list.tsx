@@ -31,9 +31,10 @@ function useHydrated() {
  * devenue :
  * - adoptée : elle reste, rangée sous « Și-au găsit familia », avec sa
  *   pastille ; le cœur sert à la retirer ;
- * - inactive (faute de confirmation) : elle reste, après les disponibles,
- *   avec la pastille « Nu mai e activ » — le titre de sa fiche, en court ; le
- *   cœur sert à la retirer, et réactivée elle redevient disponible ;
+ * - inactive (faute de confirmation, ou publiant sans contact affiché) :
+ *   elle reste, après les disponibles, avec la pastille « Nu mai e activ »
+ *   — le titre de sa fiche, en court ; le cœur sert à la retirer, et
+ *   réactivée (ou le contact complété) elle redevient disponible ;
  * - supprimée ou masquée : elle sort des favoris, et la page le dit — sinon
  *   on cherche l'animal qu'on avait gardé.
  *

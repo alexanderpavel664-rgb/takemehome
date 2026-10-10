@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { CARD_SELECT, cardData } from "@/lib/animal-card-data";
+import { contactStatus } from "@/lib/contact-status";
 import { isAnimalId, MAX_FAVORITES } from "@/lib/favorite-ids";
 import { prisma } from "@/lib/prisma";
 
@@ -15,7 +16,9 @@ import { prisma } from "@/lib/prisma";
  * avec leur statut : la page les range sous « Și-au găsit familia ». Les
  * inactives (UNCONFIRMED, faute de confirmation) aussi : leur fiche reste
  * publique, et la page les garde avec leur pastille — réactivées, elles
- * redeviennent des favoris disponibles.
+ * redeviennent des favoris disponibles. Une annonce disponible dont le
+ * publiant n'affiche pas de contact (lib/contact-status.ts) revient de même
+ * comme inactive, et redevient disponible quand le profil est complété.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const raw = new URL(request.url).searchParams.get("ids") ?? "";
@@ -34,7 +37,12 @@ export async function GET(request: Request): Promise<NextResponse> {
       hidden: false,
       status: { in: ["AVAILABLE", "ADOPTED", "UNCONFIRMED"] },
     },
-    select: CARD_SELECT,
+    // Le contact du publiant, pour la seule règle de contactStatus : il ne
+    // sort pas de cette route, la carte n'en garde qu'un booléen.
+    select: {
+      ...CARD_SELECT,
+      user: { select: { phone: true, publicEmail: true, contactConsent: true } },
+    },
   });
   const byId = new Map(found.map((animal) => [animal.id, animal]));
   const now = new Date();
@@ -43,7 +51,9 @@ export async function GET(request: Request): Promise<NextResponse> {
     {
       animals: ids.flatMap((id) => {
         const animal = byId.get(id);
-        return animal ? [cardData(animal, now)] : [];
+        return animal
+          ? [cardData(animal, now, contactStatus(animal.user).contactable)]
+          : [];
       }),
       missing: ids.filter((id) => !byId.has(id)),
     },

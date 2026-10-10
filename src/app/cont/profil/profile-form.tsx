@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { CONTACT_SECTION } from "@/lib/contact-status";
 import { COUNTIES } from "@/lib/counties";
 import { STR } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,9 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           et la seule chose qui rend un animal joignable. Téléphone, email
           public, puis la case — le nom, le județ et la description viennent
           après la hairline, ce sont des champs secondaires. */}
-      <fieldset>
+      {/* L'ancre du bloc « Anunțurile tale nu sunt vizibile » (/cont,
+          components/contact-warning.tsx) : son bouton mène droit ici. */}
+      <fieldset id={CONTACT_SECTION} className="scroll-mt-4">
         <legend className="text-lg font-semibold text-warm-ink">
           {STR.profil.contactSection}
         </legend>

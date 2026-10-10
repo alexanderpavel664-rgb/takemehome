@@ -7,7 +7,7 @@ import { getViewer } from "@/lib/viewer";
 import { Card } from "@/components/ui/card";
 import { createAnimal } from "../actions";
 import { AnimalForm } from "../animal-form";
-import { ContactWarning } from "../../contact-warning";
+import { ContactWarning } from "@/components/contact-warning";
 
 export const metadata: Metadata = {
   title: STR.animalForm.newMetaTitle,

@@ -34,6 +34,7 @@ export function ConfirmForm({
   groupHint,
   alternateHref,
   listingHref,
+  noContact,
 }: {
   token: string;
   action: ConfirmAction;
@@ -45,6 +46,11 @@ export function ConfirmForm({
   alternateHref: string;
   /** null quand la fiche n'est pas publique (masquée par la modération). */
   listingHref: string | null;
+  /**
+   * Publiant sans contact affiché : l'annonce n'est pas « sur le site »,
+   * l'avertissement au-dessus de la carte dit pourquoi (page.tsx).
+   */
+  noContact: boolean;
 }) {
   const s = STR.confirmari.page;
   const [state, formAction, pending] = useActionState<ConfirmState, FormData>(
@@ -73,7 +79,9 @@ export function ConfirmForm({
         <h1 className="text-2xl font-semibold text-warm-ink">
           {s.availableDoneTitle}
         </h1>
-        <p className="mt-2 text-base text-warm-ink">{s.availableDone}</p>
+        <p className="mt-2 text-base text-warm-ink">
+          {noContact ? s.availableDoneNoContact : s.availableDone}
+        </p>
         {state.stillHidden && (
           <p className="mt-2 text-base text-warm-ink">{s.stillHidden}</p>
         )}

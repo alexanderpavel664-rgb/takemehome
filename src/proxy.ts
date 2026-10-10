@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { neon } from "@neondatabase/serverless";
+import { contactStatus } from "@/lib/contact-status";
 
 /**
  * Deux rôles, deux préfixes :
@@ -16,14 +17,14 @@ import { neon } from "@neondatabase/serverless";
  * changer le statut (doc Next, loading.js → Status Codes). Un lien Facebook
  * mort renvoyait donc 200 avec le contenu « nu a fost găsit ». La seule
  * place où décider AVANT le streaming, c'est ici. Le coût est tenu : rien
- * pour les navigations internes (RSC, préchargements), un SELECT d'une
- * colonne par chargement HTML, via le pilote HTTP Neon (une requête, pas de
+ * pour les navigations internes (RSC, préchargements), un SELECT par clé
+ * primaire par chargement HTML, via le pilote HTTP Neon (une requête, pas de
  * connexion à ouvrir) ; en cas de panne du contrôle, la fiche passe — la
  * page reste seule juge du contenu.
  *
- * La même lecture pose le noindex des fiches adoptées ou inactives, en
- * en-tête HTTP (X-Robots-Tag), en plus de la balise de la fiche : lu avant
- * le HTML, il ne dépend pas de la façon dont Next rend les métadonnées
+ * La même lecture pose le noindex des fiches adoptées, inactives ou sans
+ * contact (lib/contact-status.ts), en en-tête HTTP (X-Robots-Tag), en plus
+ * de la balise de la fiche : lu avant le HTML, il ne dépend pas de la façon dont Next rend les métadonnées
  * (dans le <head> pour les robots de htmlLimitedBots, en streaming dans le
  * <body> pour les autres — voir next.config.ts).
  */
@@ -77,9 +78,17 @@ async function animalGate(request: NextRequest) {
   }
   let indexable = true;
   try {
-    const rows = (await db()`SELECT "hidden", "status" FROM "Animal" WHERE "id" = ${id}`) as {
+    // Le contact du publiant sur la même requête (jointure par clé
+    // primaire) : lu pour la règle, jamais renvoyé ni journalisé.
+    const rows = (await db()`
+      SELECT a."hidden", a."status", u."phone", u."publicEmail", u."contactConsent"
+      FROM "Animal" a JOIN "user" u ON u."id" = a."userId"
+      WHERE a."id" = ${id}`) as {
       hidden: boolean;
       status: string;
+      phone: string | null;
+      publicEmail: string | null;
+      contactConsent: boolean;
     }[];
     if (rows.length === 0) {
       return notFound();
@@ -91,10 +100,15 @@ async function animalGate(request: NextRequest) {
     if (rows[0].hidden && !getSessionCookie(request)) {
       return notFound();
     }
-    // Adoptée ou inactive : la fiche reste en 200 pour un lien déjà
-    // partagé, mais hors des index — un adoptant qui arrive de Google sur
-    // un animal déjà parti repart déçu. Les liens restent suivis.
-    indexable = !rows[0].hidden && rows[0].status === "AVAILABLE";
+    // Adoptée, inactive ou sans contact : la fiche reste en 200 pour un
+    // lien déjà partagé, mais hors des index — un adoptant qui arrive de
+    // Google sur un animal déjà parti, ou qu'il ne peut pas joindre,
+    // repart déçu. Les liens restent suivis. La règle du contact est celle
+    // de la fiche et des listes (contactStatus), pas une copie en SQL.
+    indexable =
+      !rows[0].hidden &&
+      rows[0].status === "AVAILABLE" &&
+      contactStatus(rows[0]).contactable;
   } catch (error) {
     // Jamais bloquer une fiche parce que le contrôle a échoué : la page
     // fera sa propre requête et dira ce qu'il y a à dire (son noindex

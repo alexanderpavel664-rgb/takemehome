@@ -12,6 +12,7 @@ import {
   shareText,
 } from "@/lib/animal-display";
 import { MAX_PHOTOS } from "@/lib/animal-photo";
+import { contactStatus } from "@/lib/contact-status";
 import { countyName } from "@/lib/counties";
 import { SITE_OG_IMAGE } from "@/lib/og-default";
 import { prisma } from "@/lib/prisma";
@@ -103,9 +104,13 @@ export async function generateMetadata(
   // partagé il y a trois semaines continue de circuler après l'adoption.
   // Inactive (non confirmée) : un aperçu neutre. Les deux sortent des
   // index : un adoptant qui tombe sur un animal déjà parti repart déçu.
-  // Le même noindex part aussi en en-tête HTTP depuis proxy.ts, lu avant
-  // le HTML et indépendant du rendu des métadonnées.
+  // Sans contact (lib/contact-status.ts) : hors des index aussi, l'aperçu
+  // reste celui de l'animal — il redevient joignable dès que le profil est
+  // complété. Le même noindex part aussi en en-tête HTTP depuis proxy.ts,
+  // lu avant le HTML et indépendant du rendu des métadonnées.
   const unconfirmed = animal.status === "UNCONFIRMED";
+  const indexable =
+    animal.status === "AVAILABLE" && contactStatus(animal.user).contactable;
   const url = `${SITE_URL}/animal/${animal.id}`;
   const description =
     animal.status === "ADOPTED"
@@ -119,7 +124,7 @@ export async function generateMetadata(
   return {
     title: `${pageTitle} – ${STR.site.name}`,
     description,
-    ...(animal.status !== "AVAILABLE" && { robots: { index: false } }),
+    ...(!indexable && { robots: { index: false } }),
     alternates: { canonical: url },
     openGraph: {
       title,
@@ -276,15 +281,24 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const consented = animal.user.contactConsent;
   const phone = consented ? animal.user.phone?.trim() : undefined;
   const email = consented ? animal.user.publicEmail?.trim() : undefined;
-  const hasContact = !adopted && !unconfirmed && Boolean(phone || email);
+  // Disponible mais sans contact affiché (lib/contact-status.ts, la règle
+  // qui la retire aussi des listes) : la fiche reste accessible par lien,
+  // avec un message à la place du contact, et se traite comme une fiche
+  // inactive — ni cœur, ni partage, ni échéance. Tout revient tel quel dès
+  // que le profil du publiant est complet.
+  const reachable = contactStatus(animal.user).contactable;
+  const noContact = !adopted && !unconfirmed && !reachable;
+  const hasContact = !adopted && !unconfirmed && reachable;
+  // Les états où l'on ne peut rien faire pour cet animal depuis la fiche.
+  const inactive = adopted || unconfirmed || noContact;
   const name = animalDisplayName(animal);
   const group = groupLabel(animal);
   // L'échéance ne se montre que dans les derniers jours, et plus du tout
-  // sur une fiche adoptée : la date n'a plus rien à presser.
-  const deadline =
-    adopted || unconfirmed
-      ? null
-      : deadlineLabel(animal.availableUntil, "long");
+  // sur une fiche adoptée, inactive ou sans contact : la date n'a plus
+  // rien à presser, ou personne à joindre pour y répondre.
+  const deadline = inactive
+    ? null
+    : deadlineLabel(animal.availableUntil, "long");
   const url = `${SITE_URL}/animal/${animal.id}`;
 
   const health = [
@@ -370,11 +384,12 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
                   première chose à lire après le nom. */}
               {deadline && <DeadlineBadge>{deadline}</DeadlineBadge>}
             </h1>
-            {!adopted && !unconfirmed && !animal.hidden && (
+            {!inactive && !animal.hidden && (
               // Le cœur des favoris à droite du nom, jamais sur la photo.
-              // Seulement sur un animal disponible : les favoris servent à
-              // retrouver un animal qu'on pourrait adopter. Une annonce
-              // adoptée ou inactive se retire de ses favoris sur /favorite.
+              // Seulement sur un animal disponible et joignable : les
+              // favoris servent à retrouver un animal qu'on pourrait
+              // adopter. Une annonce adoptée, inactive ou sans contact se
+              // retire de ses favoris sur /favorite.
               // Les marges négatives gardent la hauteur du titre.
               <FavoriteButton id={animal.id} className="-my-[5.2px] -mr-2" />
             )}
@@ -434,6 +449,23 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             </div>
           )}
 
+          {noContact && (
+            // À la place de la carte Contact, sous le même titre : ce qu'on
+            // sait, et la même sortie que les fiches adoptée et inactive —
+            // LE bouton plein vers les animaux qu'on peut joindre.
+            <div className="mt-4">
+              <h2 className="text-lg font-semibold text-warm-ink">
+                {STR.animal.contactTitle}
+              </h2>
+              <p className="mt-1 text-base text-warm-ink">
+                {STR.animal.noContact}
+              </p>
+              <ButtonLink href="/animale" variant="primary" className="mt-3">
+                {STR.animal.seeAvailable}
+              </ButtonLink>
+            </div>
+          )}
+
           {hasContact && (
             // Les coordonnées en toutes lettres, à toutes les largeurs :
             // numéro et email se lisent et se copient. À partir de lg, les
@@ -470,13 +502,14 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             </Card>
           )}
 
-          {!adopted && !unconfirmed && !animal.hidden && (
+          {!inactive && !animal.hidden && (
             // Le partage, juste sous le contact et jamais en concurrence
             // avec lui : outline, pleine largeur sur mobile pour tomber
             // sous le pouce, à sa taille sur ordinateur. « Sună » reste LE
             // bouton plein (barre fixe en bas, carte à partir de lg). Pas
-            // sur une fiche adoptée (« caută o familie » serait faux) ni
-            // masquée (le lien mènerait sur un 404 pour tout le monde).
+            // sur une fiche adoptée (« caută o familie » serait faux), sans
+            // contact (on enverrait du monde vers une impasse) ni masquée
+            // (le lien mènerait sur un 404 pour tout le monde).
             <div className="mt-4">
               <ShareButton
                 title={name}

@@ -26,7 +26,7 @@ import { ShareButton } from "@/components/ui/share-button";
 import { setAnimalStatus } from "./animal/actions";
 import { DeleteAnimalButton } from "./animal/delete-animal-button";
 import { ContactEmailLink } from "@/components/contact-email-link";
-import { ContactWarning } from "./contact-warning";
+import { ContactWarning } from "@/components/contact-warning";
 import { InstallBanner } from "./install-banner";
 import { SignOutButton } from "./sign-out-button";
 import { VerifyEmailNotice } from "./verify-email-notice";
@@ -187,7 +187,8 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
 
       {/* Profil incomplet : le bloc vient AVANT la carte Profil, pas dedans —
           c'est le scénario le plus probable (inscription, publication, et
-          rien d'autre), et il doit être impossible à manquer. Le chemin de
+          rien d'autre), ses annonces sont alors absentes des listes
+          publiques, et il doit être impossible à manquer. Le chemin de
           sortie est dans le bloc. Après la suspension, qui commande tout le
           reste ; persistant tant que la règle dit « injoignable ». */}
       <ContactWarning status={contact} className="mt-4" />
@@ -268,11 +269,15 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                 animal.status === "AVAILABLE" && !animal.hidden && !suspended
                   ? pendingHideDate(animal)
                   : null;
-              // Partager : seulement une annonce en ligne et disponible —
-              // « caută o familie » serait faux pour une adoptée, et le
-              // lien d'une annonce masquée mène sur un 404 pour tout le
-              // monde sauf sa propriétaire.
-              const shareable = animal.status === "AVAILABLE" && !animal.hidden;
+              // Partager : seulement une annonce en ligne, disponible et
+              // joignable — « caută o familie » serait faux pour une
+              // adoptée, le lien d'une annonce masquée mène sur un 404 pour
+              // tout le monde sauf sa propriétaire, et celui d'une annonce
+              // sans contact sur une fiche qui ne mène nulle part.
+              const shareable =
+                animal.status === "AVAILABLE" &&
+                !animal.hidden &&
+                contact.contactable;
               return (
               // La cellule est le conteneur : à la largeur de lecture la carte
               // passe en rangée (photo 160×120 à gauche) dès que la place le
@@ -329,13 +334,13 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                         </span>
                       )}
                       {!contact.contactable && animal.status !== "ADOPTED" && (
-                        // Sans bouton de contact sur sa fiche publique : la
-                        // même pastille, même poids — l'animal est en ligne
-                        // et injoignable. Le contact est celui du compte,
-                        // donc toutes les fiches disponibles la portent ;
-                        // une fiche adoptée n'en a pas besoin, elle n'affiche
-                        // plus de contact par construction. Seule la
-                        // propriétaire lit ceci : /cont est derrière la session.
+                        // Sans contact affiché, l'annonce sort des listes
+                        // publiques (LISTED_WHERE) : la même pastille, même
+                        // poids. Le contact est celui du compte, donc toutes
+                        // les fiches non adoptées la portent ; une fiche
+                        // adoptée n'en a pas besoin, elle n'affiche plus de
+                        // contact par construction. Seule la propriétaire
+                        // lit ceci : /cont est derrière la session.
                         <span className="inline-flex items-center rounded-pill bg-warm-ink px-3 py-1 text-[13px] font-semibold text-white">
                           {STR.cont.noContactBadge}
                         </span>

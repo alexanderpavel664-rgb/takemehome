@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { LISTED_WHERE } from "@/lib/animal-filters";
 import { judetPath } from "@/lib/judete";
 import { judetCombos } from "@/lib/judete-data";
 import { prisma } from "@/lib/prisma";
@@ -6,15 +7,17 @@ import { SITE_URL } from "@/lib/site";
 
 // Régénéré au plus une fois par heure : une page județ qui naît (premier
 // animal d'un type dans un județ) ou une nouvelle annonce y entre dans
-// l'heure, une annonce adoptée ou masquée en sort dans l'heure.
+// l'heure, une annonce adoptée, masquée ou devenue injoignable en sort
+// dans l'heure — et y revient dans l'heure quand le contact est complété.
 export const revalidate = 3600;
 
 /**
  * /sitemap.xml — les pages publiques stables, toutes les pages par județ
  * qui ont au moins un animal (les mêmes que generateStaticParams : jamais
- * une page vide), puis les fiches des animaux disponibles et visibles — le
- * filtre des listes publiques. Une fiche adoptée, inactive (UNCONFIRMED) ou
- * masquée n'y est pas : elle répond noindex (voir proxy.ts et la fiche).
+ * une page vide), puis les fiches des animaux listés — le filtre des
+ * listes publiques (LISTED_WHERE). Une fiche adoptée, inactive
+ * (UNCONFIRMED), masquée ou sans contact n'y est pas : elle répond noindex
+ * (voir proxy.ts et la fiche).
  * lastmod d'une fiche = son updatedAt ; d'une page județ, la dernière mise
  * à jour d'une de ses annonces.
  *
@@ -25,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [combos, animals] = await Promise.all([
     judetCombos(),
     prisma.animal.findMany({
-      where: { status: "AVAILABLE", hidden: false },
+      where: LISTED_WHERE,
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       select: { id: true, updatedAt: true },
     }),

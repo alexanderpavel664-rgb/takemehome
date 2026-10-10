@@ -11,6 +11,7 @@ import {
   TYPE_LABELS,
   type FilterSex,
 } from "@/lib/animal-labels";
+import { CONTACTABLE_USER } from "@/lib/contact-status";
 import { COUNTY_CODES, type CountyCode } from "@/lib/counties";
 
 export const PAGE_SIZE = 20;
@@ -131,16 +132,24 @@ export function serializeFilters(
 }
 
 /**
- * Clause where publique : uniquement les animaux disponibles, non masqués,
- * plus les filtres. `hidden: false` est une colonne d'Animal et non un
- * filtre sur user.suspended : les listes publiques ne joignent aucune table
- * pour se filtrer, et l'index (status, hidden, updatedAt, id) sert les deux
- * égalités puis le tri d'un seul parcours.
+ * Ce qui fait entrer une annonce dans une liste publique — /animale,
+ * l'accueil, les pages județ et le sitemap : disponible, non masquée, et
+ * joignable (le publiant a un contact affiché, lib/contact-status.ts).
+ * `hidden: false` est une colonne d'Animal et non un filtre sur
+ * user.suspended ; l'index (status, hidden, updatedAt, id) sert les deux
+ * égalités puis le tri d'un seul parcours. Le contact, lui, se lit sur le
+ * compte : une sous-requête sur la table user, une ligne par publiant.
  */
+export const LISTED_WHERE = {
+  status: "AVAILABLE",
+  hidden: false,
+  user: CONTACTABLE_USER,
+} satisfies Prisma.AnimalWhereInput;
+
+/** Clause where de /animale : les annonces listées, plus les filtres. */
 export function publicWhere(f: PublicFilters): Prisma.AnimalWhereInput {
   return {
-    status: "AVAILABLE",
-    hidden: false,
+    ...LISTED_WHERE,
     ...(f.tip && { type: f.tip }),
     ...(f.judet && { county: f.judet }),
     ...(f.varsta && { ageGroup: f.varsta }),

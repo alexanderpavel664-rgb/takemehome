@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { CARD_SELECT, cardData } from "@/lib/animal-card-data";
+import { LISTED_WHERE } from "@/lib/animal-filters";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { Logo } from "@/components/logo";
@@ -118,9 +119,9 @@ function RecentSection({ children }: { children: ReactNode }) {
  */
 async function RecentAnimals() {
   const animals = await prisma.animal.findMany({
-    // Même clause que les listes publiques : masquée veut dire masquée,
-    // y compris sur la vitrine de la page d'accueil.
-    where: { status: "AVAILABLE", hidden: false },
+    // Même clause que les listes publiques : masquée ou injoignable veut
+    // dire absente, y compris de la vitrine de la page d'accueil.
+    where: LISTED_WHERE,
     // Même tri stable que la grille publique : updatedAt décroissant,
     // id en départage des ex æquo.
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],

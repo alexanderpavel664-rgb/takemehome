@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CARD_SELECT, cardData } from "@/lib/animal-card-data";
+import { LISTED_WHERE } from "@/lib/animal-filters";
 import { countyFromSlug, judetPath, judetSlug, type SeoType } from "@/lib/judete";
 import { judetCombos } from "@/lib/judete-data";
 import { SITE_OG_IMAGE } from "@/lib/og-default";
@@ -40,7 +41,7 @@ const getJudet = cache(async (type: SeoType, slug: string) => {
     return null;
   }
   const animals = await prisma.animal.findMany({
-    where: { status: "AVAILABLE", hidden: false, type, county: county.code },
+    where: { ...LISTED_WHERE, type, county: county.code },
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     take: JUDET_MAX,
     select: CARD_SELECT,

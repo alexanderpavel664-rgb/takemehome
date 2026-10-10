@@ -46,16 +46,34 @@ export type CardData = {
   updated: { label: string; iso: string };
   photoUrl: string | null;
   adopted: boolean;
-  /** Inactive faute de confirmation : n'apparaît que sur /favorite. */
+  /**
+   * Inactive faute de confirmation, ou disponible mais sans contact
+   * affiché : n'apparaît que sur /favorite, les listes publiques excluent
+   * les deux.
+   */
   inactive: boolean;
   group: string | null;
   deadline: string | null;
 };
 
-/** `now` : une seule lecture de l'horloge pour toute une grille. */
-export function cardData(animal: CardAnimal, now: Date): CardData {
+/**
+ * `now` : une seule lecture de l'horloge pour toute une grille.
+ * `contactable` : le contact du publiant (lib/contact-status.ts). Vrai par
+ * défaut, parce que les listes publiques ne contiennent que des annonces
+ * joignables (LISTED_WHERE) ; seule l'API des favoris le lit et le passe.
+ */
+export function cardData(
+  animal: CardAnimal,
+  now: Date,
+  contactable = true,
+): CardData {
   const adopted = animal.status === "ADOPTED";
-  const inactive = animal.status === "UNCONFIRMED";
+  // Sans contact, une annonce disponible se range avec les inactives :
+  // même pastille, même place, hors du compteur de l'en-tête. Une adoptée
+  // reste adoptée — elle n'affiche plus de contact de toute façon.
+  const inactive =
+    animal.status === "UNCONFIRMED" ||
+    (animal.status === "AVAILABLE" && !contactable);
   return {
     href: `/animal/${animal.id}`,
     id: animal.id,

@@ -1,3 +1,4 @@
+import { LISTED_WHERE } from "@/lib/animal-filters";
 import { COUNTY_CODES, countyName, type CountyCode } from "@/lib/counties";
 import { isSeoType, SEO_TYPES, type SeoType } from "@/lib/judete";
 import { prisma } from "@/lib/prisma";
@@ -12,19 +13,15 @@ export type JudetCombo = {
 };
 
 /**
- * Les combinaisons type × județ qui ont au moins un animal disponible et
- * visible — exactement celles qui méritent une page : une page vide nuit au
- * référencement. Une seule requête groupée, servie par les index existants.
+ * Les combinaisons type × județ qui ont au moins un animal listé
+ * (LISTED_WHERE : disponible, visible et joignable) — exactement celles
+ * qui méritent une page : une page vide nuit au référencement. Une seule requête groupée, servie par les index existants.
  * Triées par nom de județ (ordre roumain), chiens puis chats.
  */
 export async function judetCombos(): Promise<JudetCombo[]> {
   const rows = await prisma.animal.groupBy({
     by: ["type", "county"],
-    where: {
-      status: "AVAILABLE",
-      hidden: false,
-      type: { in: [...SEO_TYPES] },
-    },
+    where: { ...LISTED_WHERE, type: { in: [...SEO_TYPES] } },
     _sum: { count: true },
     _max: { updatedAt: true },
   });

@@ -5,10 +5,12 @@ import {
   confirmationToken,
   verifyConfirmationToken,
 } from "@/lib/confirmation-token";
+import { contactStatus } from "@/lib/contact-status";
 import { countyName } from "@/lib/counties";
 import { prisma } from "@/lib/prisma";
 import { STR } from "@/lib/strings";
 import { ContactEmailLink } from "@/components/contact-email-link";
+import { ContactWarning } from "@/components/contact-warning";
 import { AnimalPhoto, PhotoFallback } from "@/components/ui/animal-photo";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,10 +27,21 @@ export const metadata: Metadata = {
 // une confirmation doit montrer l'état nouveau.
 export const dynamic = "force-dynamic";
 
-/** Carte centrée sur le papier, la posture des formulaires courts du site. */
-function Shell({ children }: { children: ReactNode }) {
+/**
+ * Carte centrée sur le papier, la posture des formulaires courts du site.
+ * `notice` : un avertissement posé au-dessus, à la même largeur — comme en
+ * haut de /cont, sur le papier et non dans la carte.
+ */
+function Shell({
+  children,
+  notice,
+}: {
+  children: ReactNode;
+  notice?: ReactNode;
+}) {
   return (
     <main className="px-4 pt-10 pb-10 md:px-6 md:pt-16 lg:px-8">
+      {notice && <div className="mx-auto mb-4 w-full max-w-lg">{notice}</div>}
       <Card className="mx-auto w-full max-w-lg p-6">{children}</Card>
     </main>
   );
@@ -90,7 +103,16 @@ export default async function ConfirmarePage({
       hidden: true,
       adoptionSource: true,
       photos: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-      user: { select: { suspended: true } },
+      // Le contact du publiant, pour la seule règle de contactStatus : rien
+      // n'en est affiché.
+      user: {
+        select: {
+          suspended: true,
+          phone: true,
+          publicEmail: true,
+          contactConsent: true,
+        },
+      },
     },
   });
   if (!animal) {
@@ -124,17 +146,26 @@ export default async function ConfirmarePage({
         ? "source-done"
         : "source"
       : "ask";
+  // « Încă disponibil » d'un publiant sans contact affiché : l'annonce
+  // redevient disponible mais reste hors des listes publiques
+  // (lib/contact-status.ts). Sans le dire, la page le laisserait croire
+  // son annonce en ligne. Le même bloc qu'en haut de /cont, lu à
+  // l'ouverture du lien : il reste au-dessus de la carte après le clic.
+  const contact = contactStatus(animal.user);
+  const noContact = action === "available" && !contact.contactable;
   const currentNote =
     action !== "available"
       ? null
       : animal.status === "ADOPTED"
         ? s.currentAdopted
-        : animal.status === "UNCONFIRMED"
+        : // « Confirmarea îl readuce în pagini » serait faux sans contact :
+          // l'avertissement au-dessus dit ce qui l'y ramènera.
+          animal.status === "UNCONFIRMED" && !noContact
           ? s.currentUnconfirmed
           : null;
 
   return (
-    <Shell>
+    <Shell notice={noContact && <ContactWarning status={contact} />}>
       <div className="mb-6 flex items-center gap-4">
         <span className="relative block h-24 w-32 shrink-0 overflow-hidden rounded-md border border-warm-border">
           {animal.photos[0] ? (
@@ -166,6 +197,7 @@ export default async function ConfirmarePage({
           action === "available" ? "adopted" : "available",
         )}`}
         listingHref={animal.hidden ? null : `/animal/${animal.id}`}
+        noContact={noContact}
       />
     </Shell>
   );

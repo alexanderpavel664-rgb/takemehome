@@ -183,8 +183,10 @@ model Animal {
   status       AnimalStatus  @default(AVAILABLE)
   // Masquage par la modération : l'annonce sort de toutes les pages
   // publiques mais reste lisible par son propriétaire (et par un ADMIN).
-  // Colonne scalaire sur Animal, et non un filtre sur user.suspended : les
-  // listes publiques ne doivent joindre aucune table pour se filtrer.
+  // Colonne scalaire sur Animal, et non un filtre sur user.suspended : la
+  // modération ne doit dépendre d'aucune jointure. (Les listes publiques
+  // lisent bien le compte depuis octobre 2026, mais pour le contact du
+  // publiant seulement — LISTED_WHERE dans lib/animal-filters.ts.)
   hidden       Boolean       @default(false)
   // Confirmation de disponibilité (octobre 2026, lib/confirmations.ts).
   // Un cycle commence par un email (confirmSentAt), continue par une
