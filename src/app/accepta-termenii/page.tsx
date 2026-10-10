@@ -9,6 +9,9 @@ import { AcceptTermsForm } from "./accept-terms-form";
 
 export const metadata: Metadata = {
   title: STR.auth.acceptTerms.metaTitle,
+  // Rien à chercher ici. Pas bloqué dans robots.txt : Google doit pouvoir
+  // lire ce noindex.
+  robots: { index: false },
 };
 
 /**

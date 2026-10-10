@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button";
+import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 
 export const metadata: Metadata = {
   title: STR.despre.metaTitle,
   description: STR.despre.metaDescription,
+  alternates: { canonical: `${SITE_URL}/despre` },
 };
 
 /**

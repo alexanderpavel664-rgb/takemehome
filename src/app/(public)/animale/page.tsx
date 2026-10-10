@@ -11,6 +11,7 @@ import {
   serializeFilters,
 } from "@/lib/animal-filters";
 import { judetCombos } from "@/lib/judete-data";
+import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { AnimalGrid } from "../animal-grid";
 import { JudetLinks } from "../judet-links";
@@ -21,6 +22,9 @@ import { TypeTabs } from "./type-tabs";
 export const metadata: Metadata = {
   title: STR.animale.metaTitle,
   description: STR.animale.metaDescription,
+  // Une seule URL à indexer, quels que soient les filtres et ?n= : les
+  // filtres type × județ ont leurs propres pages (caini-de-adoptat/…).
+  alternates: { canonical: `${SITE_URL}/animale` },
 };
 
 // La page lit searchParams (filtres + pagination) : rendu dynamique à

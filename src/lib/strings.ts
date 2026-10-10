@@ -438,8 +438,10 @@ export const STR = {
   /* ——— /despre. ——— */
   despre: {
     metaTitle: "Despre – TakeMeHome",
+    // Propre à la page : la description du layout racine, que reprennent
+    // toutes les pages sans description, était aussi celle-ci.
     metaDescription:
-      "Anunțuri de adopție pentru animale salvate din România. Filtrezi după județ, vârstă sau talie și suni direct persoana care are animalul în grijă.",
+      "Cine publică anunțurile pe TakeMeHome și câteva sfaturi ca să adopți în siguranță.",
     title: "Despre",
     p1: "TakeMeHome adună anunțurile de adopție ale animalelor salvate din România. Le poți filtra după tip, județ, vârstă sau talie, și rămân la zi: un animal adoptat e marcat ca atare.",
     // L'énumération est complète (bénévole, association, refuge) : elle ne

@@ -6,6 +6,7 @@ import {
   animalDisplayName,
   animalMetaLine,
   animalSubject,
+  animalTitleAge,
   deadlineLabel,
   groupLabel,
   shareText,
@@ -83,7 +84,7 @@ export async function generateMetadata(
   // Open Graph. Un partage Facebook déjà en circulation ne doit pas
   // continuer à afficher un aperçu de ce qu'on a retiré des pages publiques.
   if (!animal || animal.hidden) {
-    return { title: STR.animal.notFoundMetaTitle };
+    return { title: STR.animal.notFoundMetaTitle, robots: { index: false } };
   }
 
   const place = animal.city?.trim() || countyName(animal.county);
@@ -92,11 +93,20 @@ export async function generateMetadata(
   const name = animalDisplayName(animal);
   const subject = animalSubject(animal);
   const title = `${name} – ${place}`;
+  // L'onglet et le résultat de recherche ajoutent l'âge, pour distinguer
+  // deux « Cățel – Apahida » : « Cățel, 2 luni – Apahida – TakeMeHome ».
+  // Sans âge, le titre reste sans. La tranche d'âge y est en minuscule
+  // (« Rex, adult »). L'aperçu Facebook (og:title) garde la forme courte.
+  const age = animalTitleAge(animal);
+  const pageTitle = `${age ? `${name}, ${age}` : name} – ${place}`;
   // Fiche adoptée : l'aperçu Facebook le dit avant le clic — un lien
   // partagé il y a trois semaines continue de circuler après l'adoption.
-  // Inactive (non confirmée) : un aperçu neutre, et hors des index — c'est
-  // un état d'attente, pas une page à faire trouver.
+  // Inactive (non confirmée) : un aperçu neutre. Les deux sortent des
+  // index : un adoptant qui tombe sur un animal déjà parti repart déçu.
+  // Le même noindex part aussi en en-tête HTTP depuis proxy.ts, lu avant
+  // le HTML et indépendant du rendu des métadonnées.
   const unconfirmed = animal.status === "UNCONFIRMED";
+  const url = `${SITE_URL}/animal/${animal.id}`;
   const description =
     animal.status === "ADOPTED"
       ? STR.animal.adoptedMetaDescription(subject, animal.count > 1)
@@ -107,14 +117,15 @@ export async function generateMetadata(
   const photo = animal.photos[0];
 
   return {
-    title: `${title} – ${STR.site.name}`,
+    title: `${pageTitle} – ${STR.site.name}`,
     description,
-    ...(unconfirmed && { robots: { index: false } }),
+    ...(animal.status !== "AVAILABLE" && { robots: { index: false } }),
+    alternates: { canonical: url },
     openGraph: {
       title,
       description,
       type: "website",
-      url: `${SITE_URL}/animal/${animal.id}`,
+      url,
       siteName: STR.site.name,
       images: [
         photo

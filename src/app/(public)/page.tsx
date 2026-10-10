@@ -16,6 +16,7 @@ const TAGLINE = STR.home.tagline;
 export const metadata: Metadata = {
   title: STR.home.metaTitle,
   description: `${TAGLINE} ${STR.home.metaDescriptionSuffix}`,
+  alternates: { canonical: SITE_URL },
   openGraph: {
     title: STR.site.name,
     description: TAGLINE,

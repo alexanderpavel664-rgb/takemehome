@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/viewer";
 import { SiteHeader } from "@/components/site-header";
@@ -20,6 +21,13 @@ import { SiteFooter } from "@/components/site-footer";
  * getSession mis en cache, que la page réutilise : aucune requête de plus.
  * L'absence de session reste l'affaire de chaque page (redirect /login).
  */
+
+// Toutes les pages de l'espace en héritent (fusion des métadonnées). Pas
+// bloqué dans robots.txt : Google doit pouvoir lire ce noindex.
+export const metadata: Metadata = {
+  robots: { index: false },
+};
+
 export default async function ContLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
   if (session && !session.user.termsAcceptedAt) {

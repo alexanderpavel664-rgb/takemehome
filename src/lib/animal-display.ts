@@ -7,6 +7,37 @@ import {
 import { countRo, STR } from "@/lib/strings";
 
 /**
+ * L'âge tel que la fiche l'affiche : l'âge libre (« 2 luni ») s'il est
+ * renseigné, sinon la tranche d'âge (« Pui ») ; null si ni l'un ni l'autre.
+ */
+export function animalAge(animal: {
+  ageGroup: AgeGroup | null;
+  ageText: string | null;
+}): string | null {
+  return (
+    animal.ageText?.trim() ||
+    (animal.ageGroup ? AGE_GROUP_LABELS[animal.ageGroup] : null)
+  );
+}
+
+/**
+ * L'âge dans le titre d'une fiche (« Rex, adult – Turda ») : au milieu de
+ * la phrase, la tranche d'âge perd sa majuscule ; l'âge libre reste tel que
+ * saisi. La fiche et les cartes gardent la majuscule (animalAge).
+ */
+export function animalTitleAge(animal: {
+  ageGroup: AgeGroup | null;
+  ageText: string | null;
+}): string | null {
+  return (
+    animal.ageText?.trim() ||
+    (animal.ageGroup
+      ? AGE_GROUP_LABELS[animal.ageGroup].toLocaleLowerCase("ro")
+      : null)
+  );
+}
+
+/**
  * « Chien · Mâle · 3 ans » — la ligne des cartes et de la fiche.
  * Les champs non renseignés sont omis ; l'âge libre (ageText) prime sur
  * la tranche d'âge.
@@ -17,13 +48,10 @@ export function animalMetaLine(animal: {
   ageGroup: AgeGroup | null;
   ageText: string | null;
 }): string {
-  const age =
-    animal.ageText?.trim() ||
-    (animal.ageGroup ? AGE_GROUP_LABELS[animal.ageGroup] : null);
   return [
     TYPE_LABELS[animal.type],
     animal.sex ? SEX_LABELS[animal.sex] : null,
-    age,
+    animalAge(animal),
   ]
     .filter(Boolean)
     .join(" · ");

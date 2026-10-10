@@ -187,7 +187,7 @@ export type LegalDocumentContent = {
 
 export const PRIVACY: LegalDocumentContent = {
   title: "Politica de confidențialitate",
-  metaTitle: "Politica de confidențialitate",
+  metaTitle: "Politica de confidențialitate – TakeMeHome",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
   updatedLabel: "Ultima actualizare: 5 octombrie 2026",
@@ -517,7 +517,7 @@ export const PRIVACY: LegalDocumentContent = {
 
 export const TERMS: LegalDocumentContent = {
   title: "Termeni și condiții",
-  metaTitle: "Termeni și condiții",
+  metaTitle: "Termeni și condiții – TakeMeHome",
   metaDescription:
     "Ce face și ce nu face TakeMeHome, regulile de publicare și răspunderea fiecăruia.",
   updatedLabel: "Ultima actualizare: 5 octombrie 2026",

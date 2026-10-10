@@ -20,6 +20,12 @@ import { neon } from "@neondatabase/serverless";
  * colonne par chargement HTML, via le pilote HTTP Neon (une requête, pas de
  * connexion à ouvrir) ; en cas de panne du contrôle, la fiche passe — la
  * page reste seule juge du contenu.
+ *
+ * La même lecture pose le noindex des fiches adoptées ou inactives, en
+ * en-tête HTTP (X-Robots-Tag), en plus de la balise de la fiche : lu avant
+ * le HTML, il ne dépend pas de la façon dont Next rend les métadonnées
+ * (dans le <head> pour les robots de htmlLimitedBots, en streaming dans le
+ * <body> pour les autres — voir next.config.ts).
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -69,9 +75,11 @@ async function animalGate(request: NextRequest) {
   if (!id || !CUID.test(id)) {
     return notFound();
   }
+  let indexable = true;
   try {
-    const rows = (await db()`SELECT "hidden" FROM "Animal" WHERE "id" = ${id}`) as {
+    const rows = (await db()`SELECT "hidden", "status" FROM "Animal" WHERE "id" = ${id}`) as {
       hidden: boolean;
+      status: string;
     }[];
     if (rows.length === 0) {
       return notFound();
@@ -83,12 +91,21 @@ async function animalGate(request: NextRequest) {
     if (rows[0].hidden && !getSessionCookie(request)) {
       return notFound();
     }
+    // Adoptée ou inactive : la fiche reste en 200 pour un lien déjà
+    // partagé, mais hors des index — un adoptant qui arrive de Google sur
+    // un animal déjà parti repart déçu. Les liens restent suivis.
+    indexable = !rows[0].hidden && rows[0].status === "AVAILABLE";
   } catch (error) {
     // Jamais bloquer une fiche parce que le contrôle a échoué : la page
-    // fera sa propre requête et dira ce qu'il y a à dire.
+    // fera sa propre requête et dira ce qu'il y a à dire (son noindex
+    // compris, dans ses métadonnées).
     console.error("proxy.animal_gate_failed", error);
   }
-  return NextResponse.next();
+  const response = NextResponse.next();
+  if (!indexable) {
+    response.headers.set("X-Robots-Tag", "noindex");
+  }
+  return response;
 }
 
 export const config = {

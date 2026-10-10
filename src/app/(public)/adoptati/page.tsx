@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PAGE_SIZE, parseCount } from "@/lib/animal-filters";
+import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,6 +11,8 @@ import { SkeletonGrid } from "../skeleton-grid";
 export const metadata: Metadata = {
   title: STR.adoptati.metaTitle,
   description: STR.adoptati.metaDescription,
+  // ?n= (« Vezi mai multe ») ne fait pas une autre page.
+  alternates: { canonical: `${SITE_URL}/adoptati` },
 };
 
 // Même grille que /animale, sans filtres ni contact — la fiche masque

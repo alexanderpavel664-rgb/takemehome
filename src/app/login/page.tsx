@@ -7,6 +7,9 @@ import { STR } from "@/lib/strings";
 
 export const metadata: Metadata = {
   title: STR.auth.login.metaTitle,
+  // Rien à chercher ici. Pas bloqué dans robots.txt : Google doit pouvoir
+  // lire ce noindex.
+  robots: { index: false },
 };
 
 // Server Component : lit le paramètre d'erreur renvoyé par le callback OAuth

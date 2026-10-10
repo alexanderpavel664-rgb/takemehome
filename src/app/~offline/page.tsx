@@ -3,6 +3,8 @@ import { STR } from "@/lib/strings";
 
 export const metadata: Metadata = {
   title: STR.offline.metaTitle,
+  // Un écran du service worker, pas une page : rien à indexer.
+  robots: { index: false },
 };
 
 /**
