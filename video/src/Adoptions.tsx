@@ -107,7 +107,7 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, sa
       ))}
       {/* Le voile crème monte pendant la rafale et finit plein au premier temps de la mesure 10. */}
       <Sequence name="Fin, voile crème" from={f(t.veil.from)} premountFor={fps}>
-        <Veil open={t.veil.lastCut - t.veil.from} duration={t.veil.to - t.veil.from} />
+        <Veil open={t.veil.closeFrom - t.veil.from} duration={t.veil.to - t.veil.from} />
       </Sequence>
 
       {/* ——— Mesure 1 : la question, déjà là à la première image ——— */}
@@ -162,10 +162,14 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, sa
         );
       })}
 
-      {/* ——— Mesure 10 : l'appel ; mesure 11 : le logo, net jusqu'à la dernière image ——— */}
+      {/* ——— Mesure 10 : « Poate » sur le premier temps, « pe tine. » sur l'accord du 3e ; mesure 11 : le logo ——— */}
       <div style={{ position: "absolute", left: SAFE.side, right: SAFE.side, top: 360, textAlign: "center" }}>
-        <Phrase lines={["Poate acasă", "la tine."]} lineIn={[t.appeal.line1, t.appeal.line2]} m={mp} inAt={t.appeal.line1} align="center" />
-        <div style={{ height: 110 }} />
+        <div style={{ display: "flex", justifyContent: "center", gap: "0.27em", fontSize: 76 }}>
+          <Phrase lines={["Poate"]} m={mp} inAt={t.appeal.line1} />
+          <Phrase lines={["pe tine."]} m={mp} inAt={t.appeal.line2} />
+        </div>
+        {/* Une ligne de moins qu'avant : l'écart compense, le logo garde sa place. */}
+        <div style={{ height: 190 }} />
         <Logo inAt={t.logo} size={92} m={ml} />
         <div style={{ height: 20 }} />
         <Detail text="takemehome.ro" color={COLORS.ink} m={ml} inAt={t.logo + ml.cascade} style={{ textAlign: "center" }} />
@@ -180,10 +184,10 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, sa
 /**
  * Le fondu de la rafale vers l'écran de fin, en deux parties (temps locaux
  * à sa Sequence) :
- * - jusqu'à la dernière coupe (`open`), il monte vite puis ralentit (sinus)
- *   jusqu'à VEIL_OPEN : la rafale reste visible et chaque coupe se voit ;
- * - pendant la dernière photo, il se ferme en douceur (smoothstep) et
- *   devient plein à `duration`, quand la rafale s'arrête.
+ * - jusqu'au 4e temps de la mesure 9 (`open`), il monte vite puis ralentit
+ *   (sinus) jusqu'à VEIL_OPEN : la rafale reste visible et chaque coupe se voit ;
+ * - sur le 4e temps, il se ferme en douceur (smoothstep) pendant que la
+ *   rafale continue de couper, et devient plein à `duration`.
  */
 const VEIL_OPEN = 0.72;
 
