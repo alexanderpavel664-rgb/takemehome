@@ -7,24 +7,14 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Folder name="Video">
         <Composition
-          id="Adoptions-A"
+          id="Adoptions"
           component={Adoptions}
           calculateMetadata={calculateMetadata}
           durationInFrames={711}
           fps={30}
           width={1080}
           height={1920}
-          defaultProps={{ track: "soul-damage", variant: "A", mockup: false, safeZones: false }}
-        />
-        <Composition
-          id="Adoptions-B"
-          component={Adoptions}
-          calculateMetadata={calculateMetadata}
-          durationInFrames={711}
-          fps={30}
-          width={1080}
-          height={1920}
-          defaultProps={{ track: "soul-damage", variant: "B", mockup: false, safeZones: false }}
+          defaultProps={{ track: "soul-damage", mockup: false, safeZones: false }}
         />
       </Folder>
       <Folder name="Maquette">
@@ -36,7 +26,7 @@ export const RemotionRoot: React.FC = () => {
           fps={30}
           width={1080}
           height={1920}
-          defaultProps={{ track: "soul-damage", variant: "A", mockup: true, safeZones: false }}
+          defaultProps={{ track: "soul-damage", mockup: true, safeZones: false }}
         />
       </Folder>
     </>

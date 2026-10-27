@@ -21,7 +21,7 @@ Depuis `video/`, après `npm install` :
    onze mesures et un temps, −14 LUFS) depuis `audio-sources/soul-damage.mp3`.
    En cas de perte, la retélécharger depuis l'URL donnée dans `LICENCES.md`
    et vérifier son empreinte.
-4. **Rendu** : `npm run rendu`. Rend les variantes A et B dans `out/`, puis
+4. **Rendu** : `npm run rendu`. Rend `out/takemehome-adoptii.mp4`, puis
    vérifie automatiquement :
    - le format : 1080 × 1920, 30 i/s, H.264, au moins 10 Mb/s ;
    - le son : sonie autour de −14 LUFS, crête vraie sous −1 dBTP ;
@@ -49,6 +49,7 @@ musique Mixkit et les photos : voir `LICENCES.md`.
 - Au plus 3 flashs par seconde (WCAG 2.3.1). La rafale ne dépasse jamais
   6 photos par seconde, et `scripts/verifie-flashs.mjs` le mesure à chaque
   rendu.
-- Toujours « de pe takemehome.ro », jamais « prin ».
+- Ne jamais attribuer une adoption au site : ni « prin », ni « grâce à »
+  takemehome.ro.
 - Rien de tout cela n'entre dans git : `data/`, `public/photos/`,
   `public/audio/`, `audio-sources/`, `out/`.

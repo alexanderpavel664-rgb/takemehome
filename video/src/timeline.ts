@@ -5,15 +5,15 @@
  * premier temps d'une phrase de la piste.
  *
  *  1      photo 1, la question — déjà là à la première image ; pas de beat
- *  2      le beat entre : un adopté, « Unele ajung acasă. », la pastille
+ *  2      le beat entre : un adopté, « Unele își găsesc o casă. », la pastille
  *  3–5    les adoptés, un par demi-mesure ; prénoms et pastille en mesure 3
  *         seulement ; le compteur, seul grand moment, mesures 4 et 5
- *  6      respiration : le beat s'efface, crème, « Altele încă așteaptă. »
+ *  6      respiration : le beat s'efface, crème, « Altele încă își așteaptă familia. »
  *  7–8    le beat revient : trois disponibles
  *  9      la rafale : dix photos d'adoptés de plus en plus vite (croches,
  *         puis triolets de croches ; 6 photos par seconde au plus), qui se
  *         fond peu à peu dans le crème
- *  10     « Poate pe tine. »
+ *  10     « Poate ești tu. »
  *  11     le logo et takemehome.ro ; une fois le logo apparu (un temps),
  *         seule la musique s'éteint en fondu, sur une mesure — l'image reste
  *         nette jusqu'à la dernière image
@@ -26,8 +26,8 @@
  *  - les accents de Soul Damage (mesurés sur le fichier préparé) : l'accord
  *    du 3e temps de chaque mesure (+10 à +20 dB dans le médium) et la
  *    caisse sur les 2e et 4e temps portent les entrées secondaires —
- *    « acasă. » et le 2e prénom sur le 3e temps, la pastille sur le 4e,
- *    « pe tine. » sur le 3e temps de la mesure 10 ; jamais un effet visuel.
+ *    « o casă. » et le 2e prénom sur le 3e temps, la pastille sur le 4e,
+ *    « ești tu. » sur le 3e temps de la mesure 10 ; jamais un effet visuel.
  *  - tout instant est arrondi à l'image d'avant (`snap`) : une image en
  *    avance sur le son passe inaperçue, une image en retard se remarque.
  *
@@ -87,8 +87,8 @@ export const buildTimeline = (seconds: number, fps: number, bpm: number) => {
     answer: { line1: at(2), line2: at(2, 3), by: at(3) },
     /**
      * La pastille accompagne les prénoms et sort avec eux : pendant le
-     * compteur (mesures 4 et 5), il est seul — il dit déjà « și-au găsit
-     * familia ».
+     * compteur (mesures 4 et 5), il est seul — il dit déjà « au fost deja
+     * adoptate. ».
      */
     pill: { in: at(2, 4), by: at(4) },
     scroll,

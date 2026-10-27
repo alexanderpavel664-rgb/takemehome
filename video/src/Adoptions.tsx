@@ -14,8 +14,6 @@ import { TRACKS, trackFrames, type TrackId } from "./tracks";
 
 export type AdoptionsProps = {
   track: TrackId;
-  /** A : « Unde ajung… » ; B : « Ce se întâmplă cu… ». */
-  variant: "A" | "B";
   /** Maquette : des blocs gris à la place des photos. */
   mockup: boolean;
   safeZones: boolean;
@@ -26,10 +24,9 @@ export const calculateMetadata: CalculateMetadataFunction<AdoptionsProps> = ({ p
   durationInFrames: trackFrames(props.track, 30),
 });
 
-const QUESTION = {
-  A: ["Unde ajung", "animalele salvate?"],
-  B: ["Ce se întâmplă cu", "animalele salvate?"],
-} as const;
+const QUESTION = ["Ce se întâmplă cu", "animalele salvate?"] as const;
+/** Coupée pour ne jamais laisser un mot seul sur la dernière ligne, et tenir dans 840 px. */
+const BREATH = ["Altele încă își", "așteaptă familia."] as const;
 
 const SHADES = ["#8C8782", "#6E6964", "#A19B95", "#7B7671", "#948E88", "#66615C", "#86807A", "#5F5A55", "#8F8984", "#77726D", "#9A948E"];
 
@@ -51,7 +48,7 @@ const CREAM_LEAD = 0.35;
 /** Rafale : le zoom garde la vitesse d'un plan de deux secondes, même sur un plan de 0,12 s. */
 const MONTAGE_ZOOM_SPAN = 2;
 
-export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, safeZones }) => {
+export const Adoptions: React.FC<AdoptionsProps> = ({ track, mockup, safeZones }) => {
   const { fps, durationInFrames } = useVideoConfig();
   const t = buildTimeline(durationInFrames / fps, fps, TRACKS[track].bpm);
   const f = (s: number) => Math.round(s * fps);
@@ -112,15 +109,12 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, sa
 
       {/* ——— Mesure 1 : la question, déjà là à la première image ——— */}
       <Plate m={mq} inAt={0} present outBy={t.question.by} style={PHRASE_POS}>
-        <Phrase lines={QUESTION[variant]} m={mq} inAt={0} present outBy={t.question.by} />
+        <Phrase lines={QUESTION} m={mq} inAt={0} present outBy={t.question.by} />
       </Plate>
 
-      {/* ——— Mesure 2 : la réponse ; « acasă. » sur l'accord du 3e temps ——— */}
+      {/* ——— Mesure 2 : « Unele își găsesc » sur le premier temps, « o casă. » sur l'accord du 3e ——— */}
       <Plate m={ma} inAt={t.answer.line1} outBy={t.answer.by} style={PHRASE_POS}>
-        <div style={{ display: "flex", gap: "0.27em", fontSize: 76 }}>
-          <Phrase lines={["Unele ajung"]} m={ma} inAt={t.answer.line1} outBy={t.answer.by} />
-          <Phrase lines={["acasă."]} m={ma} inAt={t.answer.line2} outBy={t.answer.by} />
-        </div>
+        <Phrase lines={["Unele își găsesc", "o casă."]} lineIn={[t.answer.line1, t.answer.line2]} m={ma} inAt={t.answer.line1} outBy={t.answer.by} />
       </Plate>
 
       {/* La pastille, sur la caisse du 4e temps, reste en place jusqu'au compteur. */}
@@ -146,7 +140,7 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, sa
 
       {/* ——— Mesure 6 : respiration ——— */}
       <div style={{ position: "absolute", left: SAFE.side, right: SAFE.side, top: 600 }}>
-        <Phrase lines={["Altele", "încă așteaptă."]} m={mb} inAt={t.breath.text} outBy={t.breath.by} align="center" />
+        <Phrase lines={BREATH} m={mb} inAt={t.breath.text} outBy={t.breath.by} align="center" />
       </div>
 
       {/* ——— Mesures 7 et 8 : les disponibles ——— */}
@@ -162,11 +156,11 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, variant, mockup, sa
         );
       })}
 
-      {/* ——— Mesure 10 : « Poate » sur le premier temps, « pe tine. » sur l'accord du 3e ; mesure 11 : le logo ——— */}
+      {/* ——— Mesure 10 : « Poate » sur le premier temps, « ești tu. » sur l'accord du 3e ; mesure 11 : le logo ——— */}
       <div style={{ position: "absolute", left: SAFE.side, right: SAFE.side, top: 360, textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: "0.27em", fontSize: 76 }}>
           <Phrase lines={["Poate"]} m={mp} inAt={t.appeal.line1} />
-          <Phrase lines={["pe tine."]} m={mp} inAt={t.appeal.line2} />
+          <Phrase lines={["ești tu."]} m={mp} inAt={t.appeal.line2} />
         </div>
         {/* Une ligne de moins qu'avant : l'écart compense, le logo garde sa place. */}
         <div style={{ height: 190 }} />
