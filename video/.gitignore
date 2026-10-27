@@ -1,0 +1,26 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Données de production et photos (npm run export) : jamais versionnées
+/data/
+/public/photos/
+/public/graded/
+/public/grain/
+# Photos « après adoption » déposées à la main : celles des adoptants
+/public/apres/*
+!/public/apres/.gitkeep
+# Musique et effets Mixkit : la licence interdit de redistribuer les
+# fichiers seuls ; leurs sources sont dans LICENCES.md. audio-sources/ :
+# les fichiers téléchargés ; public/audio/ : ce qu'en fait
+# scripts/prepare-audio.mjs
+/audio-sources/
+/public/audio/
+
+# Skills Remotion installés (npx skills add remotion-dev/skills) :
+# réinstallables depuis skills-lock.json, pas versionnés
+/.claude/skills/

@@ -1,0 +1,46 @@
+{
+  "name": "takemehome-video",
+  "version": "1.0.0",
+  "description": "Vidéo d'adoptions TakeMeHome (Remotion)",
+  "repository": {},
+  "license": "UNLICENSED",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/effects": "4.0.539",
+    "@remotion/google-fonts": "4.0.539",
+    "@remotion/layout-utils": "4.0.539",
+    "@remotion/media": "4.0.539",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.539",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "10.12.0",
+    "ffmpeg-static": "5.2.0",
+    "prettier": "3.8.1",
+    "sharp": "^0.35.5",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "export": "cd .. && npx tsx scripts/export-video.mts",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc",
+    "audio": "node scripts/prepare-audio.mjs",
+    "photos": "node scripts/photo-metrics.mjs && node scripts/select-photos.mjs",
+    "rendu": "remotion render Adoptions-A out/takemehome-adoptii.mp4 --codec=h264 --video-bitrate=16M --audio-bitrate=320k && remotion render Adoptions-B out/takemehome-adoptii-B.mp4 --codec=h264 --video-bitrate=16M --audio-bitrate=320k && node scripts/verifie-rendu.mjs out/takemehome-adoptii.mp4 out/takemehome-adoptii-B.mp4 && node scripts/verifie-flashs.mjs out/takemehome-adoptii.mp4 out/takemehome-adoptii-B.mp4",
+    "mensuel": "npm run export && npm run photos && npm run audio && npm run rendu"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "ffmpeg-static": true
+  }
+}

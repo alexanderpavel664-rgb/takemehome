@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Client Prisma généré (régénéré via `prisma generate`).
     "src/generated/**",
+    // Projet Remotion à part (video/), avec ses propres dépendances et son lint.
+    "video/**",
   ]),
 ]);
 
