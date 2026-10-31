@@ -805,6 +805,10 @@ export const STR = {
     // affiche « Cățel » / « Pisică ». Avant elle, les sauveteurs écrivaient
     // « - » ou « Nu are » dans un champ qui les y forçait.
     noName: "Nu are nume",
+    // Sous le champ, jamais bloquants (lib/animal-name-check.ts).
+    nameAccountWarning:
+      "Pare a fi numele contului tău, nu al animalului. Dacă animalul nu are nume, bifează „Nu are nume”.",
+    namePlaceholderWarning: "Dacă animalul nu are nume, bifează „Nu are nume”.",
     type: "Tip *",
     typePlaceholder: "Alege",
     /* ——— Fratries. Deux champs distincts, exprès : le nombre, et

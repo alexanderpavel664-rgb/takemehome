@@ -30,7 +30,7 @@ export default async function NouAnimalPage() {
   // affichera qu'on annonce ici.
   const account = await prisma.user.findUnique({
     where: { id: viewer.id },
-    select: { phone: true, publicEmail: true, contactConsent: true },
+    select: { name: true, phone: true, publicEmail: true, contactConsent: true },
   });
   const contact = contactStatus(account ?? {});
 
@@ -52,6 +52,7 @@ export default async function NouAnimalPage() {
         <AnimalForm
           action={createAnimal}
           userId={viewer.id}
+          accountName={account?.name ?? ""}
           submitLabel={STR.animalForm.newSubmit}
         />
       </Card>

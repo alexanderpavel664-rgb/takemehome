@@ -17,6 +17,7 @@ import {
 } from "@/lib/animal-labels";
 import { COUNTIES } from "@/lib/counties";
 import { STR } from "@/lib/strings";
+import { animalNameWarning } from "@/lib/animal-name-check";
 import { animalPhotoPathname, MAX_PHOTOS } from "@/lib/animal-photo";
 import { compressPhoto, type CompressedPhoto } from "@/lib/compress-image";
 import { reportClientError } from "@/lib/client-report";
@@ -134,6 +135,7 @@ export function AnimalForm({
   initial,
   animalId,
   userId,
+  accountName,
   initialPhotos = [],
   submitLabel,
 }: {
@@ -144,6 +146,8 @@ export function AnimalForm({
   initial?: AnimalFormValues;
   animalId?: string;
   userId: string;
+  /** Le nom du compte : comparé au nom saisi, jamais envoyé ni affiché. */
+  accountName: string;
   /** Les photos déjà en ligne, dans l'ordre (la première est la principale). */
   initialPhotos?: InitialPhoto[];
   submitLabel: string;
@@ -179,6 +183,9 @@ export function AnimalForm({
   // « Nu are nume » désactive le champ nom (un champ désactivé ne part pas
   // dans le FormData : l'action lit la case, pas un nom vide).
   const [noName, setNoName] = useState(initial?.noName ?? false);
+  // Lu pour l'avertissement seulement : le champ reste non contrôlé.
+  const [nameValue, setNameValue] = useState(initial?.name ?? "");
+  const nameWarning = noName ? null : animalNameWarning(nameValue, accountName);
   // Le nombre commande deux choses : « Se adoptă împreună » n'apparaît
   // qu'à partir de 2, et « Mixt » n'est proposé qu'à partir de 2 — s'il
   // était choisi et que le nombre redescend à 1, le sexe se vide.
@@ -643,8 +650,22 @@ export function AnimalForm({
           defaultValue={initial?.name}
           required={!noName}
           disabled={noName}
+          // Le champ s'appelle `name` : sans ceci, le navigateur propose le
+          // nom de la personne. Certains passent outre, d'où l'avertissement.
+          autoComplete="off"
+          onChange={(e) => setNameValue(e.target.value)}
           error={state?.fieldErrors?.name}
         />
+        {/* Un conseil, pas une erreur : la publication reste possible. */}
+        <div role="status">
+          {nameWarning && (
+            <p className="mt-1 text-sm text-warm-ink">
+              {nameWarning === "account"
+                ? STR.animalForm.nameAccountWarning
+                : STR.animalForm.namePlaceholderWarning}
+            </p>
+          )}
+        </div>
         <Checkbox
           label={STR.animalForm.noName}
           name="noName"
