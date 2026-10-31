@@ -49,7 +49,7 @@ musique Mixkit et les photos : voir `LICENCES.md`.
 - Au plus 3 flashs par seconde (WCAG 2.3.1). La rafale ne dépasse jamais
   6 photos par seconde, et `scripts/verifie-flashs.mjs` le mesure à chaque
   rendu.
-- Ne jamais attribuer une adoption au site : ni « prin », ni « grâce à »
-  takemehome.ro.
+- Toujours « de pe takemehome.ro », jamais « prin » : le site ne prétend
+  pas avoir causé l'adoption.
 - Rien de tout cela n'entre dans git : `data/`, `public/photos/`,
   `public/audio/`, `audio-sources/`, `out/`.

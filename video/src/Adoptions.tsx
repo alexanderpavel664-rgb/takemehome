@@ -156,14 +156,13 @@ export const Adoptions: React.FC<AdoptionsProps> = ({ track, mockup, safeZones }
         );
       })}
 
-      {/* ——— Mesure 10 : « Poate » sur le premier temps, « ești tu. » sur l'accord du 3e ; mesure 11 : le logo ——— */}
+      {/*
+        ——— Mesure 10 : une phrase entière, qui se comprend seule — « Dă-i o casă »
+        sur le premier temps, « unui animal salvat. » sur l'accord du 3e ; mesure 11 : le logo ———
+      */}
       <div style={{ position: "absolute", left: SAFE.side, right: SAFE.side, top: 360, textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "center", gap: "0.27em", fontSize: 76 }}>
-          <Phrase lines={["Poate"]} m={mp} inAt={t.appeal.line1} />
-          <Phrase lines={["ești tu."]} m={mp} inAt={t.appeal.line2} />
-        </div>
-        {/* Une ligne de moins qu'avant : l'écart compense, le logo garde sa place. */}
-        <div style={{ height: 190 }} />
+        <Phrase lines={["Dă-i o casă", "unui animal salvat."]} lineIn={[t.appeal.line1, t.appeal.line2]} m={mp} inAt={t.appeal.line1} align="center" />
+        <div style={{ height: 110 }} />
         <Logo inAt={t.logo} size={92} m={ml} />
         <div style={{ height: 20 }} />
         <Detail text="takemehome.ro" color={COLORS.ink} m={ml} inAt={t.logo + ml.cascade} style={{ textAlign: "center" }} />

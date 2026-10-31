@@ -5,7 +5,18 @@ import { textMotion, type Motion } from "../motion";
 import { Phrase } from "./Text";
 
 /**
- * Le nombre seul, puis « au fost deja adoptate. » quand il est posé.
+ * L'accord roumain du nom après un nombre : « de » quand les deux derniers
+ * chiffres valent 00 ou 20 et plus (20 de, 43 de, 100 de, 120 de), sans
+ * « de » de 1 à 19 et de 101 à 119 (3 animale, 112 animale).
+ */
+export const countNoun = (n: number, noun: string) => {
+  const r = Math.abs(n) % 100;
+  return n !== 0 && (r === 0 || r >= 20) ? `de ${noun}` : noun;
+};
+
+/**
+ * « 43 / de animale / de pe takemehome.ro », puis « și-au găsit familia ».
+ * L'accord suit le nombre final (le texte ne change pas pendant le compte).
  * Registre expressif. Le nombre monte de 0 à N sur `countFor` secondes, de
  * plus en plus lentement : la valeur suit 1 − (1 − u)^2,5, arrondie à
  * l'entier inférieur — les premiers chiffres défilent, les derniers se
@@ -40,8 +51,10 @@ export const Counter: React.FC<{
       >
         {shown}
       </div>
-      <div style={{ height: 14 }} />
-      <Phrase lines={[value === 1 ? "a fost deja adoptat." : "au fost deja adoptate."]} inAt={line2At} outBy={outBy} m={m2} align="center" size={TYPE.counterLine.size} />
+      <div style={{ height: 10 }} />
+      <Phrase lines={[countNoun(value, "animale"), "de pe takemehome.ro"]} inAt={inAt + 2 * m.cascade} outBy={outBy} m={m} align="center" size={TYPE.counterLine.size} />
+      <div style={{ height: 8 }} />
+      <Phrase lines={["și-au găsit familia"]} inAt={line2At} outBy={outBy} m={m2} align="center" size={TYPE.counterLine.size} />
     </div>
   );
 };
