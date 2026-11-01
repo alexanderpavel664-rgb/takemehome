@@ -1,8 +1,8 @@
 // URL publique canonique — les métadonnées Open Graph exigent des URL
-// absolues et Next 16 n'a plus de metadataBase implicite. À surcharger via
-// NEXT_PUBLIC_SITE_URL quand takemehome.ro sera acheté.
+// absolues et Next 16 n'a plus de metadataBase implicite. Surchargée par
+// NEXT_PUBLIC_SITE_URL ; le repli est le domaine de production.
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://takemehome-hazel.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://takemehome.ro";
 
 // L'adresse de contact du site — la même partout : documents juridiques
 // (lib/legal.ts), compte suspendu, annonce masquée. Une seule source : le
