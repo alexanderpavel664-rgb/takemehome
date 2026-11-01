@@ -170,6 +170,11 @@ export const STR = {
         `${countRo(n, "pisică", "pisici")} din ${place} își caută o familie. Vezi fotografiile și sună direct persoana care are animalul în grijă.`,
     },
     seeAllCounty: (place: string) => `Toate animalele din ${place} →`,
+    // Page sans animal pour l'instant : elle reste en ligne, en noindex.
+    empty: {
+      DOG: (place: string) => `Acum nu sunt câini de adoptat în ${place}.`,
+      CAT: (place: string) => `Acum nu sunt pisici de adopție în ${place}.`,
+    },
     // Le bloc de liens sous la grille de /animale et des pages județ.
     navLabel: "Animale de adoptat pe județe",
     linksTitle: {
@@ -302,6 +307,17 @@ export const STR = {
     publishedBy: (name: string) => `Publicat de ${name}`,
     updated: (relative: string) => `Actualizat ${relative}`,
     photoAlt: (name: string) => `Fotografie cu ${name}`,
+    // Fiche et cartes (animalPhotoAlt) : le type et le lieu, ce que cherche
+    // quelqu'un qui ne voit pas la photo, et Google Images.
+    photoAltAdoptable: (subject: string, place: string) =>
+      `${subject} de adoptat în ${place}`,
+    photoAltPlace: (subject: string, place: string) => `${subject} din ${place}`,
+    // Le lien de la fiche vers sa page județ (lib/judete-data.ts) : les mots
+    // du titre de cette page.
+    moreInCounty: {
+      DOG: (place: string) => `Alți câini de adoptat în ${place}`,
+      CAT: (place: string) => `Alte pisici de adopție în ${place}`,
+    },
     /* ——— Carrousel de la fiche (plusieurs photos). ——— */
     photosLabel: (name: string) => `Fotografii cu ${name}`,
     photoPosition: (i: number, n: number) => `Fotografia ${i} din ${n}`,

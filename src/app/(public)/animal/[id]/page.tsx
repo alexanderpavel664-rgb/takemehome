@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import {
   animalDisplayName,
   animalMetaLine,
+  animalPhotoAlt,
   animalSubject,
   animalTitleAge,
   deadlineLabel,
@@ -14,6 +15,7 @@ import {
 import { MAX_PHOTOS } from "@/lib/animal-photo";
 import { contactStatus } from "@/lib/contact-status";
 import { countyName } from "@/lib/counties";
+import { moreInCountyLink } from "@/lib/judete-data";
 import { SITE_OG_IMAGE } from "@/lib/og-default";
 import { prisma } from "@/lib/prisma";
 import { relativeTimeRo } from "@/lib/relative-time";
@@ -136,7 +138,7 @@ export async function generateMetadata(
         photo
           ? {
               url: photo.url,
-              alt: STR.animal.photoAlt(name),
+              alt: animalPhotoAlt(animal, indexable),
               ...(photo.width &&
                 photo.height && { width: photo.width, height: photo.height }),
               type: photo.url.endsWith(".webp") ? "image/webp" : "image/jpeg",
@@ -293,6 +295,10 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
   const inactive = adopted || unconfirmed || noContact;
   const name = animalDisplayName(animal);
   const group = groupLabel(animal);
+  // Aussi sur une fiche adoptée ou inactive : c'est là que le visiteur a le
+  // plus besoin d'une autre piste. Pas sur une annonce masquée, que seule sa
+  // propriétaire lit.
+  const moreInCounty = animal.hidden ? null : await moreInCountyLink(animal);
   // L'échéance ne se montre que dans les derniers jours, et plus du tout
   // sur une fiche adoptée, inactive ou sans contact : la date n'a plus
   // rien à presser, ou personne à joindre pour y répondre.
@@ -357,7 +363,11 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
       <div className="mt-2 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-8">
         <div>
           {animal.photos.length > 0 ? (
-            <PhotoCarousel photos={animal.photos} name={name} />
+            <PhotoCarousel
+              photos={animal.photos}
+              name={name}
+              alt={animalPhotoAlt(animal, !inactive)}
+            />
           ) : (
             <div className="relative aspect-[4/3] overflow-hidden rounded-md border border-warm-border">
               <PhotoFallback name={name} />
@@ -556,6 +566,17 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             <p>{STR.animal.publishedBy(animal.user.name)}</p>
             <p>{STR.animal.updated(relativeTimeRo(animal.updatedAt))}</p>
           </section>
+
+          {moreInCounty && (
+            <p className="mt-6">
+              <Link
+                href={moreInCounty.href}
+                className="inline-flex min-h-11 items-center text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+              >
+                {moreInCounty.label}
+              </Link>
+            </p>
+          )}
 
           {!animal.hidden && (
             // Le signalement en bas de fiche, derrière une hairline : une

@@ -29,6 +29,8 @@ export type AnimalCardProps = {
   /** « acum 3 zile » — l'âge de la dernière mise à jour, et sa date ISO. */
   updated?: { label: string; iso: string };
   photoUrl?: string | null;
+  /** Le texte alternatif (animalPhotoAlt). */
+  photoAlt?: string;
   adopted?: boolean;
   /** Inactive faute de confirmation — /favorite seulement. */
   inactive?: boolean;
@@ -75,6 +77,7 @@ export function AnimalCard({
   county,
   updated,
   photoUrl,
+  photoAlt,
   adopted = false,
   inactive = false,
   keepHeart = false,
@@ -87,7 +90,13 @@ export function AnimalCard({
     <div className="@container relative rounded-md border border-warm-border bg-card-ivory">
       <div className="relative aspect-[4/3] overflow-hidden rounded-t-[19px]">
         {photoUrl ? (
-          <AnimalPhoto src={photoUrl} name={name} sizes={sizes} eager={eager} />
+          <AnimalPhoto
+            src={photoUrl}
+            name={name}
+            alt={photoAlt}
+            sizes={sizes}
+            eager={eager}
+          />
         ) : (
           <PhotoFallback name={name} />
         )}

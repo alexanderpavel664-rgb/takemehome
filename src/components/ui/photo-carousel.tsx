@@ -30,9 +30,12 @@ const SIZES =
 export function PhotoCarousel({
   photos,
   name,
+  alt,
 }: {
   photos: { url: string }[];
   name: string;
+  /** Le texte alternatif (animalPhotoAlt) ; le numéro s'y ajoute. */
+  alt: string;
 }) {
   const trackRef = useRef<HTMLUListElement>(null);
   const [index, setIndex] = useState(0);
@@ -91,8 +94,8 @@ export function PhotoCarousel({
                   name={name}
                   alt={
                     count > 1
-                      ? `${STR.animal.photoAlt(name)} (${STR.animal.photoCounter(i + 1, count)})`
-                      : undefined
+                      ? `${alt} (${STR.animal.photoCounter(i + 1, count)})`
+                      : alt
                   }
                   sizes={SIZES}
                   fit="contain"
