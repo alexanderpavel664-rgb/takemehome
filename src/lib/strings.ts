@@ -184,6 +184,56 @@ export const STR = {
     link: (county: string, n: number) => `${county} (${n})`,
   },
 
+  /* ——— Kit de partage (/cont/animal/[id]/kit) : ce que le publiant poste
+         lui-même. ——— */
+  kit: {
+    cta: "Pregătește o postare",
+    metaTitle: "Pregătește o postare – TakeMeHome",
+    title: (name: string) => `Postare pentru ${name}`,
+    intro:
+      "Pentru grupurile de adopție din orașul tău. Copiază textul, salvează imaginea, apoi publică-le împreună.",
+    stepText: "1. Textul",
+    textLabel: "Textul postării",
+    textHint: "Poți să-l schimbi aici, de exemplu cu povestea lui. Anunțul rămâne la fel.",
+    copy: "Copiază textul",
+    stepImage: "2. Imaginea",
+    photoLabel: "Fotografia",
+    formatLabel: "Format",
+    formats: { "4x5": "Postare", "9x16": "Story" },
+    previewAlt: (name: string) => `Imaginea postării pentru ${name}`,
+    save: "Salvează imaginea",
+    preparing: "Se pregătește imaginea…",
+    imageFailed: "Imaginea nu s-a putut pregăti. Încearcă din nou.",
+    saveFailed: "Imaginea nu s-a putut salva. Ține apăsat pe ea și alege „Salvează”.",
+    noPhoto: "Anunțul nu are fotografie. Adaugă una ca să primești și imaginea.",
+    addPhoto: "Adaugă o fotografie",
+    stepPost: "3. Publică textul și imaginea în grupul de adopție din orașul tău.",
+    back: "Înapoi la contul meu",
+    // Le texte à copier (lib/share-kit.ts).
+    opening: (subject: string, place: string) =>
+      `${subject} din ${place} caută o familie.`,
+    call: (county: string, subject: string) =>
+      `Nu poți adopta acum? Distribuie: poate cineva din ${county} caută exact ${subject}.`,
+    // Accord de « acest cățel » (kitSubject). « cățelușă » et « motan » ne
+    // figurent nulle part ailleurs sur le site : il n'y a pas d'autre mot pour
+    // accorder le sexe.
+    subject: {
+      dog: "acest cățel",
+      adultDog: "acest câine",
+      femaleDog: "această cățelușă",
+      cat: "această pisică",
+      maleCat: "acest motan",
+      animal: "acest animal",
+      baby: "acest pui",
+      babies: "acești pui",
+      many: {
+        DOG: "acești câini",
+        CAT: "aceste pisici",
+        OTHER: "aceste animale",
+      },
+    },
+  },
+
   /* ——— Favoris : stockés dans le navigateur seulement (localStorage),
          sans compte ni donnée en base. ——— */
   favorite: {

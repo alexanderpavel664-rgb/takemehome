@@ -42,6 +42,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Lues à la requête par lib/kit-image.tsx, hors de ce que le suivi de
+  // fichiers voit à coup sûr : une police manquante ne se verrait qu'en ligne.
+  outputFileTracingIncludes: {
+    "/cont/animal/\\[id\\]/kit/imagine": ["./assets/fonts/*.ttf"],
+  },
   images: {
     // Largeurs générées (V3, octobre 2026) : chaque couple photo × largeur
     // coûte une transformation Vercel (5 000 par mois sur Hobby, recalculées
