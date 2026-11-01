@@ -31,7 +31,9 @@ export async function isRateLimited(
     // « A fost deja adoptat? » sur la fiche, sans compte : seule l'IP compte.
     | "adoption-signal"
     // Vues de fiches comptées pour les publiants (lib/animal-stats.ts).
-    | "view",
+    | "view"
+    // Images du kit de partage, par compte : chacune coûte un rendu.
+    | "kit",
   headers: Headers,
   /**
    * Entité comptée à la place de l'IP — l'identifiant du compte quand le

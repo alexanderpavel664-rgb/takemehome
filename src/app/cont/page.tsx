@@ -454,6 +454,14 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                           url={`${SITE_URL}/animal/${animal.id}`}
                         />
                       )}
+                      {shareable && (
+                        <ButtonLink
+                          variant="outline"
+                          href={`/cont/animal/${animal.id}/kit`}
+                        >
+                          {STR.kit.cta}
+                        </ButtonLink>
+                      )}
                       {/* La publiante voit son annonce comme un adoptant. */}
                       <ButtonLink variant="ghost" href={`/animal/${animal.id}`}>
                         {STR.cont.seePublicListing}

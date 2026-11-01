@@ -60,7 +60,9 @@ const runtimeCaching: RuntimeCaching[] = [
     // Vercel Blob : révalidées en arrière-plan, jamais bloquantes.
     matcher: ({ request, url: { pathname }, sameOrigin }) =>
       (sameOrigin && pathname.startsWith("/_next/image")) ||
-      request.destination === "image",
+      // Pas les images du kit de partage : elles suivent l'annonce, et une
+      // version périmée partirait telle quelle dans un groupe Facebook.
+      (request.destination === "image" && !pathname.startsWith("/cont/")),
     handler: new StaleWhileRevalidate({
       cacheName: "photos",
       plugins: [
