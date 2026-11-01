@@ -10,6 +10,7 @@ import { SITE_OG_IMAGE } from "@/lib/og-default";
 import { prisma } from "@/lib/prisma";
 import { SITE_URL } from "@/lib/site";
 import { STR } from "@/lib/strings";
+import { ButtonLink } from "@/components/ui/button";
 import { CardGrid } from "./card-grid";
 import { JudetLinks } from "./judet-links";
 
@@ -21,10 +22,13 @@ import { JudetLinks } from "./judet-links";
  * chaque route exporte `dynamic = "force-static"` et `revalidate = 600`. Les
  * combinaisons qui ont au moins un animal sont prérendues au build
  * (generateStaticParams) ; une combinaison qui en gagne un ensuite est rendue
- * à sa première visite, puis mise en cache. Une combinaison vide répond 404 —
- * une page sans animal nuirait au référencement —, et cette réponse est elle
- * aussi révalidée : la page apparaît dans les dix minutes qui suivent la
- * première annonce.
+ * à sa première visite, puis mise en cache. Une combinaison vide reste en 200
+ * avec noindex, un message et le chemin vers /animale : une page qui se vide
+ * peut se remplir de nouveau (le cycle de confirmation retire des annonces,
+ * d'autres arrivent), et un 404 dirait « lien erroné » à qui suit un ancien
+ * lien. Elle redevient indexable dans les dix minutes qui suivent la première
+ * annonce. Elle n'est ni dans le sitemap ni dans les liens de județe. Un slug
+ * qui n'est pas un județ répond 404.
  *
  * force-static rend headers() vide pendant le rendu : l'en-tête public y dit
  * toujours « Intră în cont » (layout de (public)).
@@ -46,9 +50,6 @@ const getJudet = cache(async (type: SeoType, slug: string) => {
     take: JUDET_MAX,
     select: CARD_SELECT,
   });
-  if (animals.length === 0) {
-    return null;
-  }
   // Des animaux, pas des annonces : une fratrie de 5 en compte 5.
   const total = animals.reduce((sum, animal) => sum + animal.count, 0);
   return { county, animals, total };
@@ -71,6 +72,13 @@ export async function judetMetadata(
   }
   const place = data.county.name;
   const title = STR.judet.title[type](place);
+  if (data.animals.length === 0) {
+    return {
+      title: `${title} – ${STR.site.name}`,
+      description: STR.judet.empty[type](place),
+      robots: { index: false },
+    };
+  }
   const description = STR.judet.description[type](data.total, place);
   const url = `${SITE_URL}${judetPath(type, data.county.code)}`;
   return {
@@ -100,6 +108,26 @@ export async function JudetPage({ type, slug }: { type: SeoType; slug: string })
   // Une seule lecture de l'horloge pour toute la grille. La page est mise en
   // cache dix minutes : « acum 3 zile » reste juste à dix minutes près.
   const now = new Date();
+
+  if (data.animals.length === 0) {
+    return (
+      <main className="px-4 py-4 md:px-6 lg:px-8">
+        <h1 className="text-2xl font-semibold text-warm-ink">
+          {STR.judet.title[type](place)}
+        </h1>
+        <p className="mt-1 mb-4 max-w-[66ch] text-base text-warm-gray">
+          {STR.judet.empty[type](place)}
+        </p>
+        <ButtonLink variant="primary" href="/animale">
+          {STR.animal.seeAvailable}
+        </ButtonLink>
+        <JudetLinks
+          combos={combos}
+          current={judetPath(type, data.county.code)}
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="px-4 py-4 md:px-6 lg:px-8">
