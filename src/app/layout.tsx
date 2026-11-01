@@ -53,10 +53,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* Enregistre /serwist/sw.js (périmètre : la racine). Désactivé en
             développement : un worker qui survit aux recompilations donnerait
-            de faux résultats en local. */}
+            de faux résultats en local. cacheOnNavigation coupé : par défaut,
+            chaque navigation interne fait recharger la page par le worker pour
+            la mettre en cache. Or sw.ts garde les pages en NetworkOnly : ce
+            second rendu serveur ne servait à rien, et comptait deux vues. */}
         <SerwistProvider
           swUrl="/serwist/sw.js"
           disable={process.env.NODE_ENV === "development"}
+          cacheOnNavigation={false}
         >
           {children}
         </SerwistProvider>

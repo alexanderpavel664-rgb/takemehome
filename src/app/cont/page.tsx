@@ -9,6 +9,7 @@ import {
   shareText,
 } from "@/lib/animal-display";
 import { STATUS_LABELS, TYPE_LABELS } from "@/lib/animal-labels";
+import { viewsByAnimal } from "@/lib/animal-stats";
 import { contactStatus } from "@/lib/contact-status";
 import { longDateRo, pendingHideDate } from "@/lib/confirmations";
 import { countyName } from "@/lib/counties";
@@ -70,11 +71,12 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
   // Isolation : uniquement les animaux du compte connecté. Select minimal :
   // la rangée n'affiche que nom, type, statut, masquage, date et photo —
   // plus, depuis V2, le nombre, l'âge (pour « 3 pui ») et l'échéance.
-  const [account, animals] = await Promise.all([
+  const [account, views, animals] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { suspended: true },
     }),
+    viewsByAnimal(session.user.id, new Date()),
     prisma.animal.findMany({
       where: { userId: session.user.id },
       orderBy: { updatedAt: "desc" },
@@ -349,6 +351,14 @@ export default async function ContPage({ searchParams }: PageProps<"/cont">) {
                     <p className="mt-1 text-sm text-warm-gray">
                       {STR.cont.updated(relativeTimeRo(animal.updatedAt))}
                     </p>
+                    {!animal.hidden && (
+                      <p className="mt-1 text-sm text-warm-gray">
+                        {STR.cont.views(
+                          views.get(animal.id)?.total ?? 0,
+                          views.get(animal.id)?.lastWeek ?? 0,
+                        )}
+                      </p>
+                    )}
                     {animal.hidden && (
                       // Compte suspendu : toutes ses annonces sont masquées
                       // d'un coup, et le bloc en haut de page a déjà dit
