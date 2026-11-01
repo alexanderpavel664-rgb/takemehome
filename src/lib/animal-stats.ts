@@ -70,6 +70,11 @@ export async function countAnimalView(animal: {
   id: string;
   userId: string;
 }): Promise<void> {
+  // Les préproductions utilisent la base de production : une visite de test
+  // n'y écrit jamais rien.
+  if (process.env.VERCEL_ENV === "preview") {
+    return;
+  }
   const requestHeaders = new Headers(await headers());
   if (!isHumanPageLoad(requestHeaders)) {
     return;
