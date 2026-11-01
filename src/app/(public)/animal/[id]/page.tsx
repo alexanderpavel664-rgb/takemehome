@@ -571,7 +571,7 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
             <p className="mt-6">
               <Link
                 href={moreInCounty.href}
-                className="inline-flex min-h-11 items-center text-warm-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
+                className="inline-flex min-h-11 items-center text-warm-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-ink"
               >
                 {moreInCounty.label}
               </Link>
