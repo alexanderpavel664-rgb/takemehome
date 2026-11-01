@@ -60,6 +60,10 @@ export async function GET(): Promise<Response> {
           orderBy: { position: "asc" },
           select: { url: true, position: true, createdAt: true },
         },
+        stats: {
+          orderBy: { day: "asc" },
+          select: { day: true, views: true },
+        },
       },
     }),
     // Les métadonnées de session SONT des données personnelles (IP et

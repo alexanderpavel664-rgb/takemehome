@@ -13,6 +13,7 @@ import {
   shareText,
 } from "@/lib/animal-display";
 import { MAX_PHOTOS } from "@/lib/animal-photo";
+import { countAnimalView } from "@/lib/animal-stats";
 import { contactStatus } from "@/lib/contact-status";
 import { countyName } from "@/lib/counties";
 import { moreInCountyLink } from "@/lib/judete-data";
@@ -267,6 +268,10 @@ export default async function AnimalPage(props: PageProps<"/animal/[id]">) {
     if (!viewer || (viewer.role !== "ADMIN" && viewer.id !== animal.userId)) {
       notFound();
     }
+  }
+
+  if (!animal.hidden) {
+    await countAnimalView(animal);
   }
 
   const adopted = animal.status === "ADOPTED";

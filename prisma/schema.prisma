@@ -209,6 +209,7 @@ model Animal {
 
   photos  AnimalPhoto[]
   reports Report[]
+  stats   AnimalStat[]
 
   @@index([userId])
   @@index([type])
@@ -221,6 +222,19 @@ model Animal {
   // (purpose n'a pas d'index : aucune requête V1 ne filtre dessus.)
   @@index([status, hidden, updatedAt, id])
   @@index([size])
+}
+
+// Combien de fois une annonce a été ouverte, par jour civil roumain : des
+// totaux, rien sur qui l'a ouverte. Une ligne par annonce et par jour où elle a
+// été vue. Écrite en SQL brut (lib/animal-stats.ts) : Animal n'est pas touchée,
+// donc ni updatedAt ni le cycle de confirmation. Disparaît avec l'annonce.
+model AnimalStat {
+  animalId String
+  animal   Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  day      DateTime @db.Date
+  views    Int      @default(0)
+
+  @@id([animalId, day])
 }
 
 // Signalement d'une annonce par un compte connecté. Le compte est exigé

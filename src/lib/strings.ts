@@ -698,6 +698,11 @@ export const STR = {
     emptyTitle: "Niciun animal deocamdată",
     emptyDescription: "Adaugă primul tău animal cu butonul de mai sus.",
     updated: (relative: string) => `Actualizat ${relative}`,
+    // « aproximativ » : voir lib/animal-stats.ts, on ne dédoublonne pas.
+    views: (total: number, lastWeek: number) =>
+      total === 0
+        ? "Încă nicio vizualizare"
+        : `Aproximativ ${countRo(total, "vizualizare", "vizualizări")}, ${lastWeek} în ultimele 7 zile`,
     seePublicListing: "Vezi anunțul public",
     markAdopted: "Marchează ca adoptat",
     markAvailable: "Marchează ca disponibil",

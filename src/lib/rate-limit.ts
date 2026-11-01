@@ -29,7 +29,9 @@ export async function isRateLimited(
     // Boutons de la page /confirmare (liens signés des emails, sans session).
     | "confirmation"
     // « A fost deja adoptat? » sur la fiche, sans compte : seule l'IP compte.
-    | "adoption-signal",
+    | "adoption-signal"
+    // Vues de fiches comptées pour les publiants (lib/animal-stats.ts).
+    | "view",
   headers: Headers,
   /**
    * Entité comptée à la place de l'IP — l'identifiant du compte quand le

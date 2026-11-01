@@ -98,9 +98,16 @@ export const FILL = "{}";
  * Resend ; au point 4, la durée (celle de l'annonce). Message de service,
  * sans consentement marketing : directive 2002/58, art. 13, et loi
  * roumaine 506/2004, art. 12, ne visent que les communications
- * commerciales (loi 365/2002, art. 1).
+ * commerciales (loi 365/2002, art. 1) ;
+ * « 2026-11-01 » = compteur de vues des annonces, affiché à la personne qui
+ * les a publiées. Politique : au point 2, la finalité (intérêt légitime,
+ * art. 6(1)(f)) et la limite de débit qui s'y applique ; au point 4, la durée
+ * (celle de l'annonce) ; au point 5, la phrase « aucun outil d'analyse du
+ * trafic » devient « aucun outil externe » et dit ce qui est compté. Pas de
+ * bandeau : rien n'est stocké sur l'appareil, le JavaScript n'y est pour rien
+ * (lib/animal-stats.ts). Conditions inchangées, leur date suit la version.
  */
-export const TERMS_VERSION = "2026-10-05";
+export const TERMS_VERSION = "2026-11-01";
 
 /**
  * L'opérateur du site : Kotech Engineering, SAS de droit français. Une seule
@@ -190,7 +197,7 @@ export const PRIVACY: LegalDocumentContent = {
   metaTitle: "Politica de confidențialitate – TakeMeHome",
   metaDescription:
     "Ce date colectează TakeMeHome, de ce, cine le mai vede și ce drepturi ai asupra lor.",
-  updatedLabel: "Ultima actualizare: 5 octombrie 2026",
+  updatedLabel: "Ultima actualizare: 1 noiembrie 2026",
   intro:
     "TakeMeHome pune în legătură persoanele care au animale de dat spre adopție cu persoanele care vor să adopte. Pentru asta prelucrează câteva date despre tine. Pagina de față arată care sunt aceste date, în ce scop sunt prelucrate, cine le mai primește și ce drepturi ai asupra lor.",
   sections: [
@@ -239,7 +246,10 @@ export const PRIVACY: LegalDocumentContent = {
           p: "Sesiunile tale. La fiecare autentificare păstrăm adresa IP și tipul de browser (user-agent) al dispozitivului de pe care ai intrat. Temei: interesul legitim de a-ți proteja contul și de a putea recunoaște o autentificare care nu îți aparține, art. 6(1)(f) GDPR.",
         },
         {
-          p: "Limitarea traficului. Adresa IP e folosită și pentru a număra câte încercări de autentificare, câte publicări, câte încărcări de fotografii, câte confirmări de anunțuri și câte mesaje „A fost deja adoptat?” vin de pe aceeași conexiune, ca să oprim atacurile automate. Temei: interesul legitim de a menține site-ul în funcțiune, art. 6(1)(f) GDPR.",
+          p: "Limitarea traficului. Adresa IP e folosită și pentru a număra câte încercări de autentificare, câte publicări, câte încărcări de fotografii, câte confirmări de anunțuri, câte mesaje „A fost deja adoptat?” și câte deschideri de anunțuri vin de pe aceeași conexiune, ca să oprim atacurile automate. Temei: interesul legitim de a menține site-ul în funcțiune, art. 6(1)(f) GDPR.",
+        },
+        {
+          p: "Vizualizările anunțurilor. Numărăm, pe zile, de câte ori a fost deschis fiecare anunț și arătăm totalul numai persoanei care l-a publicat. Nu păstrăm nimic despre cine l-a deschis. Temei: interesul legitim de a-i arăta acestei persoane dacă anunțul ajunge la oameni, art. 6(1)(f) GDPR.",
         },
         {
           p: "Semnalările. Poți semnala un anunț numai din contul tău. Păstrăm motivul, mesajul scris și contul din care a venit semnalarea, pentru a identifica semnalările repetate împotriva aceluiași anunț. Contul care a semnalat nu e afișat public și nu ajunge în jurnale: îl vede doar echipa TakeMeHome. Temei: interesul legitim de a preveni utilizarea abuzivă a mecanismului de semnalare, art. 6(1)(f) GDPR.",
@@ -343,6 +353,10 @@ export const PRIVACY: LegalDocumentContent = {
                 "cel mult 15 minute, apoi sunt șterse automat la fiecare fereastră nouă.",
             },
             {
+              term: "Vizualizările anunțurilor",
+              value: "cât timp există anunțul. Dispar odată cu el.",
+            },
+            {
               term: "Semnalările",
               value:
                 "6 luni de la trimitere, apoi sunt șterse automat. Dacă îți ștergi contul, semnalările tale dispar odată cu el.",
@@ -375,7 +389,7 @@ export const PRIVACY: LegalDocumentContent = {
       title: "5. Ce se păstrează pe dispozitivul tău",
       blocks: [
         {
-          p: "Site-ul nu folosește niciun instrument de analiză a traficului, niciun pixel publicitar și nicio componentă încărcată de pe alt site. Activitatea ta nu e urmărită nici pe site, nici în afara lui. De aceea nu există o bandă de cookie-uri: nu stocăm nimic pentru care ar fi necesar consimțământul tău.",
+          p: "Site-ul nu folosește niciun instrument extern de analiză a traficului, niciun pixel publicitar și nicio componentă încărcată de pe alt site. Numărăm doar, pentru fiecare anunț, de câte ori a fost deschis, ca persoana care l-a publicat să vadă dacă anunțul ajunge la oameni. Sunt simple totaluri, fără cookie, fără identificator și fără să păstrăm adresa IP. De aceea nu există o bandă de cookie-uri: nu stocăm nimic pentru care ar fi necesar consimțământul tău.",
         },
         {
           p: "Ce se stochează totuși pe dispozitivul tău, și în ce scop:",
@@ -520,7 +534,7 @@ export const TERMS: LegalDocumentContent = {
   metaTitle: "Termeni și condiții – TakeMeHome",
   metaDescription:
     "Ce face și ce nu face TakeMeHome, regulile de publicare și răspunderea fiecăruia.",
-  updatedLabel: "Ultima actualizare: 5 octombrie 2026",
+  updatedLabel: "Ultima actualizare: 1 noiembrie 2026",
   intro:
     "Prin folosirea TakeMeHome ești de acord cu termenii de mai jos.",
   sections: [
