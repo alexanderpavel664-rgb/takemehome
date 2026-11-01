@@ -2,8 +2,8 @@
  * Le nom saisi dans le formulaire d'annonce ressemble-t-il à autre chose
  * qu'au nom d'un animal ? Deux erreurs récurrentes en production : le nom de
  * la personne (le navigateur remplit tout champ `name`, et plusieurs
- * publiantes l'ont gardé) et un bouche-trou (« Nu are », « De adoptat »)
- * écrit à la place de la case « Nu are nume ».
+ * publiantes l'ont gardé) et un bouche-trou (« Nu are », « De adoptat »,
+ * « Pisicuți spre adopție ») écrit à la place de la case « Nu are nume ».
  *
  * Un AVERTISSEMENT, jamais un refus : Tina peut s'appeler comme sa
  * propriétaire. Aucune de ces règles ne doit donc servir à bloquer l'envoi.
@@ -25,7 +25,10 @@ function normalize(value: string): string {
 // Sur le texte normalisé. Liste fermée : un mot de plus ici, c'est un nom
 // d'animal de plus sur lequel on se trompe.
 const PLACEHOLDER =
-  /^(n a|nu (are|au)( inca)?( nume)?|fara( nume)?|nu (se )?sti[eum]|necunoscut|nimic|anonim|de adoptat|(spre |pentru )?adoptie)$/;
+  /^(n a|nu (are|au)( inca)?( nume)?|fara( nume)?|nu (se )?sti[eum]|necunoscut|nimic|anonim)$/;
+// Ceux-là n'ont pas besoin d'être seuls : un titre d'annonce dans le champ
+// du nom (« Cățel de talie mare pentru adopție »).
+const AD_TITLE = /\b(adoptie|de adoptat)\b/;
 
 export function animalNameWarning(
   name: string,
@@ -36,7 +39,7 @@ export function animalNameWarning(
   if (name.trim() && normalized.length < 2) {
     return "placeholder";
   }
-  if (PLACEHOLDER.test(normalized)) {
+  if (PLACEHOLDER.test(normalized) || AD_TITLE.test(normalized)) {
     return "placeholder";
   }
   if (normalized.length < 3) {
