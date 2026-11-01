@@ -1,7 +1,9 @@
+import type { AnimalType } from "@/generated/prisma/client";
 import { LISTED_WHERE } from "@/lib/animal-filters";
 import { COUNTY_CODES, countyName, type CountyCode } from "@/lib/counties";
-import { isSeoType, SEO_TYPES, type SeoType } from "@/lib/judete";
+import { isSeoType, judetPath, SEO_TYPES, type SeoType } from "@/lib/judete";
 import { prisma } from "@/lib/prisma";
+import { STR } from "@/lib/strings";
 
 export type JudetCombo = {
   type: SeoType;
@@ -44,4 +46,34 @@ export async function judetCombos(): Promise<JudetCombo[]> {
         SEO_TYPES.indexOf(a.type) - SEO_TYPES.indexOf(b.type) ||
         collator.compare(countyName(a.county), countyName(b.county)),
     );
+}
+
+/**
+ * Le lien d'une fiche vers sa page județ, ou null. Il faut un AUTRE animal
+ * listé du même type dans le județ : la page peut exister et ne contenir que
+ * cette annonce, et « Alți câini » serait faux. Pas de page pour le type
+ * Autre.
+ */
+export async function moreInCountyLink(animal: {
+  id: string;
+  type: AnimalType;
+  county: string;
+}): Promise<{ href: string; label: string } | null> {
+  const { type, county } = animal;
+  if (
+    !isSeoType(type) ||
+    !(COUNTY_CODES as readonly string[]).includes(county)
+  ) {
+    return null;
+  }
+  const other = await prisma.animal.findFirst({
+    where: { ...LISTED_WHERE, type, county, id: { not: animal.id } },
+    select: { id: true },
+  });
+  return other
+    ? {
+        href: judetPath(type, county as CountyCode),
+        label: STR.animal.moreInCounty[type](countyName(county)),
+      }
+    : null;
 }

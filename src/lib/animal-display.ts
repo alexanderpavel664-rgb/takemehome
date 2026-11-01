@@ -4,6 +4,8 @@ import {
   SEX_LABELS,
   TYPE_LABELS,
 } from "@/lib/animal-labels";
+import { countyName } from "@/lib/counties";
+import { countySlug } from "@/lib/judete";
 import { countRo, STR } from "@/lib/strings";
 
 /**
@@ -115,6 +117,31 @@ export function animalSubject(
     return name;
   }
   return groupLabel(animal) ?? STR.animal.unnamedSubject[animal.type];
+}
+
+/**
+ * Le texte alternatif d'une photo : « Cățel de adoptat în Apahida, Cluj »,
+ * « Blue, cățel de adoptat în Apahida, Cluj ». `adoptable` faux (adoptée,
+ * inactive, sans contact) : « Blue, cățel din Apahida, Cluj » — ne pas
+ * promettre un animal qu'on ne peut plus adopter. Le județ seul si la ville
+ * manque ou le répète (« Bucuresti » pour București).
+ */
+export function animalPhotoAlt(
+  animal: AnimalIdentity & { city: string | null; county: string },
+  adoptable: boolean,
+): string {
+  const county = countyName(animal.county);
+  const city = animal.city?.trim();
+  const place =
+    city && countySlug(city) !== countySlug(county)
+      ? `${city}, ${county}`
+      : county;
+  const word = animalDisplayName({ ...animal, name: null });
+  const name = animal.name?.trim();
+  const subject = name ? `${name}, ${word.toLocaleLowerCase("ro")}` : word;
+  return adoptable
+    ? STR.animal.photoAltAdoptable(subject, place)
+    : STR.animal.photoAltPlace(subject, place);
 }
 
 /** « Fulga caută o familie » — le `text` du partage natif. */

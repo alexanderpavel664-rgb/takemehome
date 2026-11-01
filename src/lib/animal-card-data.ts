@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import {
   animalDisplayName,
   animalMetaLine,
+  animalPhotoAlt,
   deadlineLabel,
   groupLabel,
 } from "@/lib/animal-display";
@@ -22,6 +23,8 @@ export const CARD_SELECT = {
   ageGroup: true,
   ageText: true,
   county: true,
+  // Le texte alternatif de la photo seulement : la carte n'affiche que le județ.
+  city: true,
   status: true,
   count: true,
   availableUntil: true,
@@ -45,6 +48,7 @@ export type CardData = {
   county: string;
   updated: { label: string; iso: string };
   photoUrl: string | null;
+  photoAlt: string;
   adopted: boolean;
   /**
    * Inactive faute de confirmation, ou disponible mais sans contact
@@ -85,6 +89,7 @@ export function cardData(
       iso: animal.updatedAt.toISOString(),
     },
     photoUrl: animal.photos[0]?.url ?? null,
+    photoAlt: animalPhotoAlt(animal, !adopted && !inactive),
     adopted,
     inactive,
     group: groupLabel(animal),

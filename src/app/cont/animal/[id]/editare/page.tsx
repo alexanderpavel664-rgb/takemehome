@@ -55,7 +55,7 @@ export default async function EditareAnimalPage({
     }),
     prisma.user.findUnique({
       where: { id: viewer.id },
-      select: { phone: true, publicEmail: true, contactConsent: true },
+      select: { name: true, phone: true, publicEmail: true, contactConsent: true },
     }),
   ]);
   if (!animal) {
@@ -81,6 +81,7 @@ export default async function EditareAnimalPage({
           action={updateAnimal}
           animalId={animal.id}
           userId={viewer.id}
+          accountName={account?.name ?? ""}
           initialPhotos={animal.photos}
           submitLabel={STR.animalForm.editSubmit}
           initial={{

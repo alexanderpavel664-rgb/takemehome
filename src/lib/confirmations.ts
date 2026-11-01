@@ -48,11 +48,13 @@ export const GROUP_WITH_DAYS = 14;
 /** « A fost deja adoptat? » : au plus une demande par annonce tous les 7 jours. */
 export const REQUEST_THROTTLE_DAYS = 7;
 /**
- * Forfait Resend Free : 100 emails par jour, tous envois confondus. 60 pour
- * cette tâche, 40 gardés pour les emails de compte (confirmation d'adresse,
- * mot de passe oublié). Les publiants au-delà passent au lendemain.
+ * Forfait Resend Free : 100 emails par jour, tous envois confondus. 40 pour
+ * cette tâche, 60 gardés pour les emails de compte (confirmation d'adresse,
+ * mot de passe oublié) : un partage qui prend amène des dizaines
+ * d'inscriptions le même jour (68 le 28 août 2026), et la tâche, qui passe
+ * le matin, servirait avant elles. Les publiants au-delà passent au lendemain.
  */
-export const DAILY_EMAIL_CAP = 60;
+export const DAILY_EMAIL_CAP = 40;
 
 const DAY_MS = 86_400_000;
 // La tâche part à une minute quelconque de l'heure prévue : sans marge, un

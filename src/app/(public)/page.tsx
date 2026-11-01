@@ -35,9 +35,24 @@ const RECENT_COUNT = 6;
 
 const STEPS = STR.home.steps;
 
+// Le nom du site dans les résultats Google : le signal qu'il lit en premier,
+// devant og:site_name et le <title>. Sur l'accueil seulement (doc Google).
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: STR.site.name,
+  url: SITE_URL,
+};
+
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 md:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(WEBSITE_JSON_LD).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* C'est quoi : le logo, une phrase, deux chemins — le tout tient sans
           défiler sur mobile. Le seul bouton plein va vers /animale, le
           parcours de 95 % des visiteurs (La Règle du Bouton Unique). */}

@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     "src/generated/**",
     // Projet Remotion à part (video/), avec ses propres dépendances et son lint.
     "video/**",
+    // Outils de l'éditeur, pas du code du site : leurs centaines
+    // d'avertissements noieraient les vrais.
+    ".cursor/**",
+    ".claude/**",
   ]),
 ]);
 

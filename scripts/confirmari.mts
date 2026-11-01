@@ -5,7 +5,7 @@
  *
  *   npm run confirmari                    mode à blanc : qui recevrait quoi
  *                                         si la tâche tournait maintenant,
- *                                         et l'étalement à 60 emails par jour
+ *                                         et l'étalement à 40 emails par jour
  *   npm run confirmari -- bilant          les chiffres depuis le début :
  *                                         emails, confirmations, adoptions,
  *                                         réponses, annonces masquées

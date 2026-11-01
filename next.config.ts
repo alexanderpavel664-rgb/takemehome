@@ -3,8 +3,10 @@ import { HTML_LIMITED_BOT_UA_RE } from "next/dist/shared/lib/router/utils/html-b
 import { withSerwist } from "@serwist/turbopack";
 import { BLOB_HOST } from "./src/lib/animal-photo";
 
-// Le domaine Vercel de production : il sert le même site que takemehome.ro.
+// Le domaine Vercel de production : il sert le même site que takemehome.ro,
+// et redirige vers lui.
 const VERCEL_HOST = "takemehome-hazel.vercel.app";
+const CANONICAL_ORIGIN = "https://takemehome.ro";
 
 const nextConfig: NextConfig = {
   // Pas d'indicateur de développement Next (le rond en bas à gauche) : il
@@ -24,15 +26,19 @@ const nextConfig: NextConfig = {
   // Googlebot. Import interne à next/dist : si un jour il casse, c'est au
   // build, pas en silence.
   htmlLimitedBots: new RegExp(`${HTML_LIMITED_BOT_UA_RE.source}|Googlebot`, "i"),
-  // Le domaine Vercel reste joignable (aucune redirection : la connexion
-  // Google et les anciens liens y passent peut-être encore), mais hors des
-  // index — sinon Google peut le prendre pour un double de takemehome.ro.
-  async headers() {
+  // Le domaine Vercel renvoie tout vers takemehome.ro, sauf /api/cron/ : la
+  // documentation dit que Vercel Cron appelle une adresse *.vercel.app, et il
+  // ne suit pas les redirections — une 308 terminerait la tâche sans erreur
+  // et sans ligne de journal. La condition sur l'hôte laisse les
+  // préproductions intactes. Une règle ici plutôt que dans Settings → Domains,
+  // qui redirige un hôte entier sans exception de chemin.
+  async redirects() {
     return [
       {
-        source: "/:path*",
+        source: "/:path((?!api/cron/).*)",
         has: [{ type: "host", value: VERCEL_HOST }],
-        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+        destination: `${CANONICAL_ORIGIN}/:path`,
+        permanent: true,
       },
     ];
   },
